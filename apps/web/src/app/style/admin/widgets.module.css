@@ -46,12 +46,12 @@
 .span3 { grid-column: span 3; }
 .span4 { grid-column: span 4; }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .widgetGrid { grid-template-columns: repeat(2, 1fr); }
   .span3, .span4 { grid-column: span 2; }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .widgetGrid { grid-template-columns: 1fr; }
   .span2, .span3, .span4 { grid-column: span 1; }
 }
@@ -69,23 +69,23 @@
 }
 
 .widgetAccent {
-  background: rgba(139, 111, 255, 0.08);
-  border-color: rgba(139, 111, 255, 0.28);
+  background: rgb(139 111 255 / 8%);
+  border-color: rgb(139 111 255 / 28%);
 }
 
 .widgetGreen {
-  background: rgba(52, 217, 139, 0.07);
-  border-color: rgba(52, 217, 139, 0.22);
+  background: rgb(52 217 139 / 7%);
+  border-color: rgb(52 217 139 / 22%);
 }
 
 .widgetAmber {
-  background: rgba(245, 166, 35, 0.07);
-  border-color: rgba(245, 166, 35, 0.22);
+  background: rgb(245 166 35 / 7%);
+  border-color: rgb(245 166 35 / 22%);
 }
 
 .widgetRed {
-  background: rgba(255, 95, 95, 0.07);
-  border-color: rgba(255, 95, 95, 0.22);
+  background: rgb(255 95 95 / 7%);
+  border-color: rgb(255 95 95 / 22%);
 }
 
 /* ── Widget Label ────────────────────────────────────────────────── */
@@ -144,23 +144,23 @@
 .sparkBar {
   flex: 1;
   border-radius: 2px 2px 0 0;
-  background: rgba(139, 111, 255, 0.22);
+  background: rgb(139 111 255 / 22%);
   transition: background 150ms;
 }
 
 .sparkBarHi { background: var(--accent); }
 
-.sparkBarGreen   { background: rgba(52, 217, 139, 0.25); }
+.sparkBarGreen   { background: rgb(52 217 139 / 25%); }
 .sparkBarGreenHi { background: var(--green); }
 
-.sparkBarAmber   { background: rgba(245, 166, 35, 0.25); }
+.sparkBarAmber   { background: rgb(245 166 35 / 25%); }
 .sparkBarAmberHi { background: var(--amber); }
 
 /* ── Progress Bar ────────────────────────────────────────────────── */
 
 .progWrap {
   height: 4px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgb(255 255 255 / 7%);
   border-radius: 2px;
   overflow: hidden;
   margin-top: 4px;
@@ -263,7 +263,7 @@
 }
 
 .widgetTr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .widgetTr:last-child {
@@ -272,7 +272,7 @@
 
 .widgetTd {
   font-size: 0.65rem;
-  color: rgba(240, 237, 232, 0.7);
+  color: rgb(240 237 232 / 70%);
   padding: 8px 8px 8px 0;
   vertical-align: middle;
   font-family: var(--font-dm-mono), monospace;
@@ -319,7 +319,7 @@
 .pipelineTrack {
   flex: 1;
   height: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
   overflow: hidden;
 }

@@ -42,13 +42,13 @@
   border: 1px solid #9db2b3;
   border-radius: 999px;
   padding: 0.4rem 0.75rem;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgb(255 255 255 / 70%);
   font-size: 0.92rem;
 }
 
 .ghostButton {
   border: 1px solid #9db2b3;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgb(255 255 255 / 70%);
   color: #1d2729;
   border-radius: 999px;
   padding: 0.45rem 0.9rem;
@@ -59,7 +59,7 @@
   margin-top: 1.4rem;
   border: 1px solid #c7d4d4;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgb(255 255 255 / 80%);
   padding: 1.1rem;
 }
 
@@ -108,9 +108,8 @@
 .card {
   border: 1px solid #c7d4d4;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgb(255 255 255 / 78%);
   padding: 1rem;
-  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -144,7 +143,7 @@
 .tableCard {
   border: 1px solid #c7d4d4;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgb(255 255 255 / 78%);
   padding: 1rem;
 }
 
@@ -171,7 +170,7 @@
   color: #972727;
 }
 
-@media (max-width: 860px) {
+@media (width <= 860px) {
   .grid {
     grid-template-columns: 1fr;
   }

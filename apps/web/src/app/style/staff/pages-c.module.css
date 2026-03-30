@@ -122,7 +122,7 @@
 
 .pcProjectItemActive {
   background: var(--accent-d);
-  border-color: rgba(249,115,22,0.2);
+  border-color: rgb(249 115 22 / 20%);
 }
 
 .pcProjectAvatar {
@@ -220,7 +220,7 @@
   height: 36px;
   border-radius: var(--r-sm);
   background: var(--accent-d);
-  border: 1px solid rgba(249,115,22,0.2);
+  border: 1px solid rgb(249 115 22 / 20%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -260,9 +260,9 @@
   color: var(--muted);
 }
 
-.pcStatusBadgeActive { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
-.pcStatusBadgeAtRisk { background: var(--amber-d); border-color: rgba(234,179,8,0.3); color: var(--amber); }
-.pcStatusBadgeCritical { background: var(--red-d); border-color: rgba(239,68,68,0.3); color: var(--red); }
+.pcStatusBadgeActive { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
+.pcStatusBadgeAtRisk { background: var(--amber-d); border-color: rgb(234 179 8 / 30%); color: var(--amber); }
+.pcStatusBadgeCritical { background: var(--red-d); border-color: rgb(239 68 68 / 30%); color: var(--red); }
 
 .pcPhaseBadge {
   display: inline-flex;
@@ -275,7 +275,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: var(--accent-d);
-  border: 1px solid rgba(249,115,22,0.2);
+  border: 1px solid rgb(249 115 22 / 20%);
   color: var(--accent);
 }
 
@@ -329,7 +329,7 @@
 
 .pcCriticalBanner {
   background: var(--red-d);
-  border: 1px solid rgba(239,68,68,0.3);
+  border: 1px solid rgb(239 68 68 / 30%);
   border-radius: var(--r-sm);
   padding: 10px 14px;
   font-size: 12px;
@@ -468,12 +468,12 @@
   color: var(--muted);
 }
 
-.pdocTypeSpec { background: var(--blue-d); border-color: rgba(59,130,246,0.25); color: var(--blue); }
-.pdocTypeBrief { background: var(--accent-d); border-color: rgba(249,115,22,0.25); color: var(--accent); }
-.pdocTypeDeliverable { background: var(--green-d); border-color: rgba(34,197,94,0.25); color: var(--green); }
-.pdocTypeDesign { background: var(--purple-d); border-color: rgba(168,85,247,0.25); color: var(--purple); }
+.pdocTypeSpec { background: var(--blue-d); border-color: rgb(59 130 246 / 25%); color: var(--blue); }
+.pdocTypeBrief { background: var(--accent-d); border-color: rgb(249 115 22 / 25%); color: var(--accent); }
+.pdocTypeDeliverable { background: var(--green-d); border-color: rgb(34 197 94 / 25%); color: var(--green); }
+.pdocTypeDesign { background: var(--purple-d); border-color: rgb(168 85 247 / 25%); color: var(--purple); }
 .pdocTypeNotes { background: var(--s3); border-color: var(--b2); color: var(--muted); }
-.pdocTypeResearch { background: var(--amber-d); border-color: rgba(234,179,8,0.25); color: var(--amber); }
+.pdocTypeResearch { background: var(--amber-d); border-color: rgb(234 179 8 / 25%); color: var(--amber); }
 
 .pdocViewBtn {
   padding: 4px 10px;
@@ -549,7 +549,7 @@
 
 .dlSortPillActive {
   background: var(--accent-d);
-  border-color: rgba(249,115,22,0.3);
+  border-color: rgb(249 115 22 / 30%);
   color: var(--accent);
 }
 
@@ -575,8 +575,8 @@
   color: var(--muted);
 }
 
-.dlStatusCompleted { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
-.dlStatusInProgress { background: var(--accent-d); border-color: rgba(249,115,22,0.3); color: var(--accent); }
+.dlStatusCompleted { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
+.dlStatusInProgress { background: var(--accent-d); border-color: rgb(249 115 22 / 30%); color: var(--accent); }
 .dlStatusPending { background: var(--s3); border-color: var(--b2); color: var(--muted); }
 
 .dlHandoffChip {
@@ -590,13 +590,13 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: var(--blue-d);
-  border: 1px solid rgba(59,130,246,0.3);
+  border: 1px solid rgb(59 130 246 / 30%);
   color: var(--blue);
 }
 
 .dlHandoffChipRed {
   background: var(--red-d);
-  border-color: rgba(239,68,68,0.3);
+  border-color: rgb(239 68 68 / 30%);
   color: var(--red);
 }
 
@@ -621,8 +621,8 @@
   color: var(--muted);
 }
 
-.dlFormatJson { background: var(--amber-d); border-color: rgba(234,179,8,0.25); color: var(--amber); }
-.dlFormatMd { background: var(--blue-d); border-color: rgba(59,130,246,0.25); color: var(--blue); }
+.dlFormatJson { background: var(--amber-d); border-color: rgb(234 179 8 / 25%); color: var(--amber); }
+.dlFormatMd { background: var(--blue-d); border-color: rgb(59 130 246 / 25%); color: var(--blue); }
 
 .dlItemHeader {
   display: flex;
@@ -809,15 +809,14 @@
 .dsvStatCard {
   background: var(--glass-card);
   backdrop-filter: blur(var(--glass-sm));
-  -webkit-backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
-  border-top-color: rgba(255,255,255,0.12);
+  border-top-color: rgb(255 255 255 / 12%);
   border-radius: var(--r-md);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 4%);
 }
 
 .dsvStatCardTop { font-size: 22px; font-weight: 800; font-family: var(--font-syne); color: var(--text); line-height: 1; }
@@ -845,7 +844,7 @@
 .dsvCardLast { margin-bottom: 0; }
 .dsvCardOnTrack { border-left: 3px solid var(--green); }
 .dsvCardAtRisk { border-left: 3px solid var(--amber); }
-.dsvCardMinorDelay { border-left: 3px solid rgba(234,179,8,0.5); }
+.dsvCardMinorDelay { border-left: 3px solid rgb(234 179 8 / 50%); }
 
 .dsvCardHead { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
 
@@ -889,9 +888,9 @@
   color: var(--muted);
 }
 
-.dsvStatusOnTrack { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
-.dsvStatusAtRisk { background: var(--amber-d); border-color: rgba(234,179,8,0.3); color: var(--amber); }
-.dsvStatusMinorDelay { background: rgba(234,179,8,0.06); border-color: rgba(234,179,8,0.2); color: rgba(234,179,8,0.7); }
+.dsvStatusOnTrack { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
+.dsvStatusAtRisk { background: var(--amber-d); border-color: rgb(234 179 8 / 30%); color: var(--amber); }
+.dsvStatusMinorDelay { background: rgb(234 179 8 / 6%); border-color: rgb(234 179 8 / 20%); color: rgb(234 179 8 / 70%); }
 
 .dsvClientPhase { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted2); }
 .dsvDueDate { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); }
@@ -960,7 +959,7 @@
   white-space: nowrap;
 }
 
-.dsvViewTasksBtn:hover { color: var(--accent); border-color: rgba(249,115,22,0.3); }
+.dsvViewTasksBtn:hover { color: var(--accent); border-color: rgb(249 115 22 / 30%); }
 
 /* ── Expandable row ──────────────────────────────────────────── */
 .dsvExpandList { display: flex; flex-direction: column; gap: 8px; }
@@ -981,9 +980,9 @@
 .dsvExpandRowOpen { /* open state — colour modifiers below */ }
 
 /* When open: top/right/bottom become translucent; left stays solid */
-.dsvExpandRowOpen.dsvAccentRed   { border-top-color: rgba(239,68,68,.2); border-right-color: rgba(239,68,68,.2); border-bottom-color: rgba(239,68,68,.2); }
-.dsvExpandRowOpen.dsvAccentAmber { border-top-color: rgba(234,179,8,.2); border-right-color: rgba(234,179,8,.2); border-bottom-color: rgba(234,179,8,.2); }
-.dsvExpandRowOpen.dsvAccentGreen { border-top-color: rgba(34,197,94,.2); border-right-color: rgba(34,197,94,.2); border-bottom-color: rgba(34,197,94,.2); }
+.dsvExpandRowOpen.dsvAccentRed   { border-top-color: rgb(239 68 68 / 20%); border-right-color: rgb(239 68 68 / 20%); border-bottom-color: rgb(239 68 68 / 20%); }
+.dsvExpandRowOpen.dsvAccentAmber { border-top-color: rgb(234 179 8 / 20%); border-right-color: rgb(234 179 8 / 20%); border-bottom-color: rgb(234 179 8 / 20%); }
+.dsvExpandRowOpen.dsvAccentGreen { border-top-color: rgb(34 197 94 / 20%); border-right-color: rgb(34 197 94 / 20%); border-bottom-color: rgb(34 197 94 / 20%); }
 
 /* Collapsed header */
 .dsvExpandHeader {
@@ -1024,6 +1023,7 @@
 .dsvExpandLeft { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 .dsvExpandProgress { display: flex; flex-direction: column; gap: 4px; }
+
 .dsvExpandProgressLabel {
   display: flex;
   justify-content: space-between;
@@ -1039,6 +1039,7 @@
 
 .dsvExpandStats { display: flex; gap: 20px; }
 .dsvExpandStat  { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
 .dsvExpandStatLabel {
   font-size: 8px;
   font-family: var(--font-dm-mono);
@@ -1050,6 +1051,7 @@
 
 /* Right: action buttons */
 .dsvExpandRight { display: flex; flex-direction: column; gap: 6px; min-width: 130px; }
+
 .dsvExpandActionBtn {
   background: var(--s1);
   border: 1px solid var(--b2);
@@ -1267,8 +1269,8 @@
   color: var(--muted);
 }
 
-.rskStatusOpen { background: var(--red-d); border-color: rgba(239,68,68,0.3); color: var(--red); }
-.rskStatusMitigating { background: var(--amber-d); border-color: rgba(234,179,8,0.3); color: var(--amber); }
+.rskStatusOpen { background: var(--red-d); border-color: rgb(239 68 68 / 30%); color: var(--red); }
+.rskStatusMitigating { background: var(--amber-d); border-color: rgb(234 179 8 / 30%); color: var(--amber); }
 
 .rskImpactBadge {
   display: inline-flex;
@@ -1285,9 +1287,9 @@
   color: var(--muted);
 }
 
-.rskImpactCritical { background: var(--red-d); border-color: rgba(239,68,68,0.3); color: var(--red); }
-.rskImpactHigh { background: var(--amber-d); border-color: rgba(234,179,8,0.3); color: var(--amber); }
-.rskImpactMedium { background: var(--blue-d); border-color: rgba(59,130,246,0.3); color: var(--blue); }
+.rskImpactCritical { background: var(--red-d); border-color: rgb(239 68 68 / 30%); color: var(--red); }
+.rskImpactHigh { background: var(--amber-d); border-color: rgb(234 179 8 / 30%); color: var(--amber); }
+.rskImpactMedium { background: var(--blue-d); border-color: rgb(59 130 246 / 30%); color: var(--blue); }
 
 .rskProbBadge {
   display: inline-flex;
@@ -1304,9 +1306,9 @@
   color: var(--muted);
 }
 
-.rskProbHigh { background: var(--red-d); border-color: rgba(239,68,68,0.3); color: var(--red); }
-.rskProbMedium { background: var(--amber-d); border-color: rgba(234,179,8,0.3); color: var(--amber); }
-.rskProbLow { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
+.rskProbHigh { background: var(--red-d); border-color: rgb(239 68 68 / 30%); color: var(--red); }
+.rskProbMedium { background: var(--amber-d); border-color: rgb(234 179 8 / 30%); color: var(--amber); }
+.rskProbLow { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
 
 .rskMetaRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 

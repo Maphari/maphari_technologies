@@ -1,10 +1,11 @@
 .page {
   --bg: #050508;
   --surface: #0d0d14;
-  --border: rgba(255, 255, 255, 0.08);
+  --border: rgb(255 255 255 / 8%);
   --accent: #c8f135;
   --text: #f0ede8;
-  --muted: rgba(240, 237, 232, 0.55);
+  --muted: rgb(240 237 232 / 55%);
+
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
@@ -33,7 +34,7 @@
   justify-content: space-between;
   padding: 20px 48px;
   border-bottom: 1px solid var(--border);
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
   backdrop-filter: blur(20px);
 }
 
@@ -85,7 +86,7 @@
 
 .hero {
   border: 1px solid var(--border);
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  background: linear-gradient(170deg, rgb(255 255 255 / 3%), rgb(255 255 255 / 1%));
   padding: 56px;
 }
 
@@ -180,7 +181,7 @@
 .textarea {
   width: 100%;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
   font-size: 0.92rem;
@@ -243,7 +244,7 @@
   overflow: hidden;
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .nav {
     padding: 16px 24px;
   }

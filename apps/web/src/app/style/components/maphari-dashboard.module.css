@@ -1,39 +1,40 @@
-@import "../dashboard-token-scale.css";
+@import url("../dashboard-token-scale.css");
 
 .dashboardRoot {
   --bg: var(--palette-bg, #050508);
   --s1: var(--palette-surface, #0d0d14);
   --s2: var(--palette-surface-2, #13131e);
   --s3: var(--palette-surface-3, #171726);
-  --border: var(--palette-border, rgba(255, 255, 255, 0.07));
-  --border2: var(--palette-border-strong, rgba(255, 255, 255, 0.12));
+  --border: var(--palette-border, rgb(255 255 255 / 7%));
+  --border2: var(--palette-border-strong, rgb(255 255 255 / 12%));
   --accent: var(--palette-accent, #8b6fff);
   --accent2: var(--palette-accent-2, #a989ff);
-  --accent-d: var(--palette-accent-dim, rgba(139, 111, 255, 0.16));
-  --accent-g: var(--palette-accent-glow, rgba(139, 111, 255, 0.08));
+  --accent-d: var(--palette-accent-dim, rgb(139 111 255 / 16%));
+  --accent-g: var(--palette-accent-glow, rgb(139 111 255 / 8%));
   --green: #34d98b;
-  --green-d: rgba(52, 217, 139, 0.12);
+  --green-d: rgb(52 217 139 / 12%);
   --amber: #f5a623;
-  --amber-d: rgba(245, 166, 35, 0.12);
+  --amber-d: rgb(245 166 35 / 12%);
   --red: #ff5f5f;
-  --red-d: rgba(255, 95, 95, 0.12);
+  --red-d: rgb(255 95 95 / 12%);
   --purple: #8b6fff;
-  --purple-d: rgba(139, 111, 255, 0.14);
+  --purple-d: rgb(139 111 255 / 14%);
   --text: var(--palette-text, #f0ede8);
-  --muted: var(--palette-muted, rgba(240, 237, 232, 0.45));
-  --muted2: var(--palette-muted-2, rgba(240, 237, 232, 0.25));
+  --muted: var(--palette-muted, rgb(240 237 232 / 45%));
+  --muted2: var(--palette-muted-2, rgb(240 237 232 / 25%));
   --surface: var(--s1);
   --b1: var(--border);
   --b2: var(--border2);
-  --b3: rgba(255, 255, 255, 0.16);
+  --b3: rgb(255 255 255 / 16%);
   --blue: #60a5fa;
-  --blue-d: rgba(91, 156, 245, 0.12);
+  --blue-d: rgb(91 156 245 / 12%);
   --r-xxs: 6px;
   --r-xs: 6px;
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 16px;
   --sw: var(--layout-sidebar-w, 240px);
+
   /* legacy aliases kept for admin-specific classes */
   --surface2: var(--s2);
   --sidebar-w: var(--sw);
@@ -42,6 +43,7 @@
   --purple-dim: var(--purple-d);
   --amber-dim: var(--amber-d);
   --red-dim: var(--red-d);
+
   background: var(--bg);
   color: var(--text);
   height: 100vh;
@@ -114,7 +116,7 @@
   display: flex;
   flex-direction: column;
   z-index: 20;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 38%);
 }
 
 .sidebarLogo {
@@ -269,7 +271,7 @@
 
 .navItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 .navItemActive {
@@ -280,7 +282,7 @@
 .navIcon {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
+  stroke: currentcolor;
   fill: none;
   stroke-width: 1.5;
   stroke-linecap: round;
@@ -387,7 +389,7 @@
   gap: 16px;
   padding: 0 20px;
   background: var(--surface);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 25%);
 }
 
 .topbarTitle {
@@ -449,19 +451,18 @@
   line-height: 0;
   position: relative;
   appearance: none;
-  -webkit-appearance: none;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .iconBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   color: var(--text);
 }
 
 .topbarIcon {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
+  stroke: currentcolor;
   fill: none;
   stroke-width: 1.5;
   stroke-linecap: round;
@@ -491,7 +492,7 @@
 }
 
 .topbarUserBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 .topbarUserAvatar {
@@ -521,7 +522,7 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 38%);
   z-index: 20;
   padding: 8px;
 }
@@ -549,7 +550,7 @@
 }
 
 .topbarUserItem:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 .dot {
@@ -595,7 +596,7 @@
 
 .btnGhost:hover {
   border-color: var(--border2);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 /* Global admin button consistency — scoped to .content so sidebar/topbar are unaffected */
@@ -724,7 +725,7 @@
 
 .statCard:hover {
   border-color: var(--border2);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 25%);
 }
 
 .statCard::before {
@@ -1060,7 +1061,7 @@
 
 .badgeBlue::before { background: var(--accent); }
 
-.badgeMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.badgeMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .badgeMuted::before { background: var(--muted2); }
 
@@ -1166,7 +1167,7 @@
   height: 36px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   display: grid;
   place-items: center;
 }
@@ -1210,7 +1211,7 @@
 }
 
 .listRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-color: var(--border2);
 }
 
@@ -1387,12 +1388,6 @@
   margin-top: 24px;
 }
 
-.formTextarea {
-  min-height: 96px;
-  resize: vertical;
-  grid-column: 1 / -1;
-}
-
 .checkboxRow {
   display: inline-flex;
   align-items: center;
@@ -1483,7 +1478,7 @@
   flex: 0 0 auto;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .filterRow {
     gap: 6px;
     padding: 6px;
@@ -1491,7 +1486,6 @@
 }
 
 .filterSelect {
-  -webkit-appearance: none;
   appearance: none;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
@@ -1855,7 +1849,7 @@
   width: 40px;
   height: 22px;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   position: relative;
   flex-shrink: 0;
 }
@@ -1876,11 +1870,6 @@
   background: #050508;
 }
 
-.switchThumbOff {
-  left: 3px;
-  background: var(--muted);
-}
-
 .toastStack {
   position: fixed;
   right: 20px;
@@ -1899,7 +1888,7 @@
   padding: 12px 14px;
   font-size: 0.78rem;
   line-height: 1.4;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
 }
 
 .toastSuccess {
@@ -1928,7 +1917,7 @@
   white-space: pre-wrap;
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .statsRowCols4,
   .statsRowCols3,
   .twoCol,
@@ -1969,7 +1958,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (width <= 700px) {
   .statsRowTight {
     grid-template-columns: 1fr;
   }
@@ -1984,7 +1973,7 @@
 
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .sidebar {
     display: none;
   }
@@ -2030,16 +2019,16 @@
 }
 
 .hamburger:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .hamburger {
     display: flex;
   }
 }
 
-@media (min-width: 769px) {
+@media (width >= 769px) {
   .hamburger {
     display: none;
   }
@@ -2047,7 +2036,7 @@
 
 /* ─── Topbar text labels — hidden at very small screens ─────────── */
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .topbarLabel {
     display: none;
   }
@@ -2055,7 +2044,7 @@
 
 /* ─── Sidebar mobile positioning ────────────────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .sidebar {
     display: flex;
     position: fixed;
@@ -2075,7 +2064,7 @@
   .sidebarOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgb(0 0 0 / 50%);
     z-index: 199;
     cursor: pointer;
   }
@@ -2083,13 +2072,13 @@
 
 /* ─── KPI / stat grids — responsive collapse ────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .topCardsStack {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .topCardsStack,
   .statsRowCols4,
   .statsRowCols3,
@@ -2100,7 +2089,7 @@
 
 /* ─── Tables — horizontal scroll on mobile ──────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .projTable,
   .invTable {
     display: block;
@@ -2111,7 +2100,7 @@
 
 /* ─── Modals — full screen at small screens ─────────────────────── */
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .modal,
   .modalBox,
   .modalContent,
@@ -2128,7 +2117,7 @@
 
 /* ─── Forms — single column on mobile ───────────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .formGrid,
   .createClientGrid {
     grid-template-columns: 1fr !important;
@@ -2184,7 +2173,7 @@
 
 .healthIntvExpanded {
   padding: 0 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .healthIntvExpandedGrid {
@@ -2205,7 +2194,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 1px;
 }
 
@@ -2275,17 +2264,16 @@
 }
 
 .healthIntvMiniFill {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .healthIntvMiniFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -2358,7 +2346,7 @@
 }
 
 .lglStatusMuted {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--muted);
 }
 
@@ -2397,7 +2385,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .lglTimelineCol {
@@ -2421,7 +2409,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   flex-shrink: 0;
 }
 
@@ -2461,7 +2449,7 @@
   grid-template-columns: 80px 1fr 1fr 100px 100px 90px 100px 120px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lglContractRow {
@@ -2535,7 +2523,7 @@
   grid-template-columns: 1.4fr 100px 100px 80px 100px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lglComplianceRow {
@@ -2639,7 +2627,7 @@
   grid-template-columns: 1.2fr 80px 1fr 70px 90px 100px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lglDataRow {
@@ -2732,6 +2720,7 @@
   gap: 0;
   height: 100%;
   min-height: 0;
+
   /* header · kpi cards · filter bar · inbox/escalations fill remaining */
   grid-template-rows: auto auto auto 1fr;
 }
@@ -2755,6 +2744,7 @@
   gap: 12px;
   margin-bottom: 12px;
 }
+
 .msgKpiCard {
   background: var(--s1);
   border: 1px solid var(--border2);
@@ -2766,6 +2756,7 @@
 .msgKpiCard.toneBlue   { border-left-color: var(--blue);   }
 .msgKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .msgKpiCard.toneRed    { border-left-color: var(--red);    }
+
 .msgKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem;
@@ -2774,6 +2765,7 @@
   color: var(--muted);
   margin-bottom: 6px;
 }
+
 .msgKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800;
@@ -2786,6 +2778,7 @@
 .msgKpiValue.toneBlue   { color: var(--blue);   }
 .msgKpiValue.toneAmber  { color: var(--amber);  }
 .msgKpiValue.toneRed    { color: var(--red);    }
+
 .msgKpiMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem;
@@ -2803,6 +2796,7 @@
   padding: 10px 14px;
   margin-bottom: 12px;
 }
+
 .msgToolbarDivider {
   width: 1px;
   align-self: stretch;
@@ -2810,6 +2804,7 @@
   flex-shrink: 0;
   margin: 0 4px;
 }
+
 .msgToolbarLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.52rem;
@@ -2820,11 +2815,13 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
 .msgSearchInput {
   width: 220px;
   min-width: 140px;
   flex-shrink: 0;
 }
+
 .msgSubjectInput {
   min-width: 160px;
   flex: 1;
@@ -2860,11 +2857,11 @@
 }
 
 .msgThreadBtn:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .msgThreadBtnSelected {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   border-left: 3px solid var(--accent);
 }
 
@@ -2967,7 +2964,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 /* ─── Notifications Page ────────────────────────────────────────── */
@@ -2990,6 +2987,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
+
 .notifKpiCard {
   background: var(--s1);
   border: 1px solid var(--border2);
@@ -3001,11 +2999,13 @@
 .notifKpiCard.toneBlue   { border-left-color: var(--blue);   }
 .notifKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .notifKpiCard.toneRed    { border-left-color: var(--red);    }
+
 .notifKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; text-transform: uppercase;
   letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px;
 }
+
 .notifKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800; font-size: 1.75rem;
@@ -3015,6 +3015,7 @@
 .notifKpiValue.toneBlue   { color: var(--blue);   }
 .notifKpiValue.toneAmber  { color: var(--amber);  }
 .notifKpiValue.toneRed    { color: var(--red);    }
+
 .notifKpiMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; color: var(--muted2);
@@ -3026,10 +3027,12 @@
   background: var(--s1); border: 1px solid var(--border2);
   border-radius: var(--r-sm); padding: 10px 14px;
 }
+
 .notifFiltersDivider {
   width: 1px; align-self: stretch;
   background: var(--border); flex-shrink: 0; margin: 0 4px;
 }
+
 .notifFiltersLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.52rem; font-weight: 600;
@@ -3044,14 +3047,17 @@
   background: var(--s1); border: 1px solid var(--border2);
   border-radius: var(--r-sm); overflow: hidden;
 }
+
 .notifSectionHeader {
   display: flex; align-items: center; justify-content: space-between;
   padding: 13px 20px; border-bottom: 1px solid var(--border);
 }
+
 .notifSectionTitle {
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem; font-weight: 700;
 }
+
 .notifSectionMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem; letter-spacing: 0.08em; color: var(--muted);
@@ -3062,29 +3068,31 @@
   display: grid;
   grid-template-columns: 0.8fr 1fr 1.4fr 0.9fr 0.6fr 1fr;
   gap: 12px; padding: 9px 20px 9px 23px;
-  background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+  background: rgb(255 255 255 / 2%); border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
 }
+
 .notifQueueRow {
   position: relative;
   display: grid;
   grid-template-columns: 0.8fr 1fr 1.4fr 0.9fr 0.6fr 1fr;
   gap: 12px; padding: 11px 20px 11px 23px;
-  align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04);
+  align-items: center; border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
+
 .notifQueueRow::before {
   content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
 }
-.notifQueueRow:hover { background: rgba(255,255,255,0.02); }
+.notifQueueRow:hover { background: rgb(255 255 255 / 2%); }
 .notifQueueRow:last-child { border-bottom: none; }
 
 /* ── Row strips ── */
 .notifStripAccent::before { background: var(--accent); }
 .notifStripAmber::before  { background: var(--amber);  }
 .notifStripRed::before    { background: var(--red);    }
-.notifStripMuted::before  { background: rgba(255,255,255,0.12); }
+.notifStripMuted::before  { background: rgb(255 255 255 / 12%); }
 
 /* ── Status + channel tags ── */
 .notifStatusTag,
@@ -3095,13 +3103,16 @@
   font-size: 0.58rem; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
 }
+
 .notifStatusTag.toneAccent,
 .notifChannelTag.toneAccent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+
 .notifStatusTag.toneAmber,
 .notifChannelTag.toneAmber  { background: color-mix(in srgb, var(--amber)  12%, transparent); color: var(--amber);  }
+
 .notifStatusTag.toneRed,
 .notifChannelTag.toneRed    { background: color-mix(in srgb, var(--red)    12%, transparent); color: var(--red);    }
-.notifStatusTag.toneMuted   { background: rgba(255,255,255,0.06); color: var(--muted); }
+.notifStatusTag.toneMuted   { background: rgb(255 255 255 / 6%); color: var(--muted); }
 .notifChannelTag.toneBlue   { background: color-mix(in srgb, var(--blue)   12%, transparent); color: var(--blue);   }
 
 /* ── Composer form ── */
@@ -3109,12 +3120,15 @@
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
   padding: 16px 20px;
 }
+
 .notifComposerBody {
   padding: 0 20px 16px;
 }
+
 .notifComposerTextarea {
   width: 100%;
 }
+
 .notifComposerActions {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 20px; border-top: 1px solid var(--border);
@@ -3124,15 +3138,18 @@
 .notifDeliverySplit {
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
 }
+
 .notifDeliveryChannel {
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .notifDeliveryChannel:last-child { border-bottom: none; }
+
 .notifDeliveryHead {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 8px;
 }
+
 .notifDeliveryChLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.68rem; font-weight: 700;
@@ -3141,6 +3158,7 @@
 .notifDeliveryChLabel.toneBlue   { color: var(--blue);   }
 .notifDeliveryChLabel.toneAmber  { color: var(--amber);  }
 .notifDeliveryChLabel.toneAccent { color: var(--accent); }
+
 .notifDeliveryPct {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.9rem; font-weight: 800; line-height: 1;
@@ -3150,7 +3168,7 @@
 .notifFailRow {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 12px; padding: 12px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .notifFailRow:last-child { border-bottom: none; }
 
@@ -3159,22 +3177,23 @@
   padding: 20px; font-size: 0.75rem; color: var(--muted); text-align: center;
 }
 
-@media (max-width: 1100px) { .notifKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 700px)  { .notifKpiGrid { grid-template-columns: 1fr; } }
-@media (max-width: 900px)  { .notifDeliverySplit { grid-template-columns: 1fr; } }
+@media (width <= 1100px) { .notifKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (width <= 700px)  { .notifKpiGrid { grid-template-columns: 1fr; } }
+
+@media (width <= 900px)  { .notifDeliverySplit { grid-template-columns: 1fr; } }
 
 .notifProgress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .notifProgress::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3296,17 +3315,16 @@
 }
 
 .ownerProgFill {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
   border: none;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .ownerProgFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 2px;
 }
 
@@ -3320,17 +3338,16 @@
 }
 
 .ownerProgFillMd {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .ownerProgFillMd::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3429,7 +3446,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .perfScoreWarn {
@@ -3439,22 +3456,21 @@
 .perfBarTrack {
   width: 100%;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
 }
 
 .perfBarFill {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .perfBarFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3499,7 +3515,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .perfIncentiveSplit {
@@ -3514,7 +3530,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 /* ─── Platform Infrastructure Page ──────────────────────────────── */
@@ -3675,17 +3691,16 @@
 }
 
 .pifProgress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 8px;
   border: none;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .pifProgress::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 4px;
 }
 
@@ -3712,7 +3727,7 @@
 }
 
 .pifMiniCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 12px;
   border-radius: var(--r-sm);
   border: 1px solid var(--border);
@@ -3768,7 +3783,7 @@
   grid-template-columns: 80px 1fr 60px 1fr 60px 80px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .pifErrorRow {
@@ -3838,7 +3853,7 @@
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   position: relative;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -3956,7 +3971,7 @@
 
 .prrTagTonePurple { background: var(--purple-d); color: var(--purple); }
 
-.prrTagToneMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.prrTagToneMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .prrCenterCol {
   text-align: center;
@@ -3978,7 +3993,7 @@
 
 .prrExpanded {
   padding: 0 20px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .prrExpandedGrid {
@@ -4014,7 +4029,7 @@
 .prrLevelCard {
   padding: 12px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-left: 3px solid transparent;
 }
 
@@ -4101,7 +4116,7 @@
 
 .prrMatrixCellMedium { background: color-mix(in srgb, var(--amber) 5%, transparent); }
 
-.prrMatrixCellLow { background: rgba(255, 255, 255, 0.02); }
+.prrMatrixCellLow { background: rgb(255 255 255 / 2%); }
 
 .prrMatrixScore {
   font-family: var(--font-dm-mono), monospace;
@@ -4130,7 +4145,7 @@
 
 .prrMatrixRiskPurple { background: var(--purple-d); color: var(--purple); }
 
-.prrMatrixRiskMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.prrMatrixRiskMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .prrMatrixXAxis {
   display: grid;
@@ -4246,7 +4261,7 @@
   padding: 12px 14px;
   border-radius: var(--r-sm);
   margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4379,7 +4394,7 @@
   padding: 10px 12px;
   border-radius: var(--r-sm);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   cursor: pointer;
   transition: border-color 0.12s ease;
   flex-shrink: 0;
@@ -4458,7 +4473,7 @@
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   padding: 2px 8px;
   border-radius: var(--r-xs);
 }
@@ -4483,7 +4498,7 @@
 }
 
 .projOpsMetricCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 10px;
   border-radius: var(--r-sm);
   border: 1px solid var(--border);
@@ -4506,7 +4521,7 @@
 }
 
 .projOpsFocusCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 14px;
   border-radius: var(--r-sm);
   font-size: 0.75rem;
@@ -4554,7 +4569,7 @@
   margin-bottom: 16px;
   padding: 12px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* ─── Project Portfolio Page ────────────────────────────────────── */
@@ -4616,7 +4631,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pportStatusPurple { background: var(--purple-d); color: var(--purple); }
 
-.pportStatusMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.pportStatusMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .pportRiskStat {
   border-color: var(--red-d);
@@ -4748,12 +4763,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .pportTrack6 {
   height: 6px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
 }
 
 .pportTrack6 progress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
@@ -4825,7 +4839,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pportExpanded {
   padding: 0 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .pportExpandGrid {
@@ -4883,7 +4897,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 0.75rem;
   padding: 8px 10px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   margin-bottom: 6px;
   border-left: 3px solid var(--red);
   color: var(--muted);
@@ -4918,7 +4932,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 70px 1.4fr 1fr 80px 100px 70px 60px 90px 60px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .pportListRow {
@@ -4947,13 +4961,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .pportListTrack {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
   margin-bottom: 3px;
 }
 
 .pportListTrack progress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
@@ -5044,7 +5057,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pportMetricCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 10px;
   border-radius: var(--r-sm);
   text-align: center;
@@ -5093,8 +5106,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .qaFilterChipActive {
-  border-color: currentColor;
-  background: rgba(255, 255, 255, 0.04);
+  border-color: currentcolor;
+  background: rgb(255 255 255 / 4%);
 }
 
 .qaFilterChipIdle {
@@ -5106,7 +5119,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 .qaCardTone.toneRed    { border-left-color: var(--red);    }
 .qaCardTone.toneAmber  { border-left-color: var(--amber);  }
-.qaCardTone.toneMuted  { border-left-color: rgba(255,255,255,0.1); }
+.qaCardTone.toneMuted  { border-left-color: rgb(255 255 255 / 10%); }
 
 .qaDeliverableRow {
   display: grid;
@@ -5126,7 +5139,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .qaToneTag.toneBlue   { background: var(--blue-d);   color: var(--blue);   }
 .qaToneTag.toneAmber  { background: var(--amber-d);  color: var(--amber);  }
 .qaToneTag.tonePurple { background: var(--purple-d); color: var(--purple); }
-.qaToneTag.toneMuted  { background: rgba(255,255,255,0.05); color: var(--muted); }
+.qaToneTag.toneMuted  { background: rgb(255 255 255 / 5%); color: var(--muted); }
 
 .qaStatusChip {
   display: inline-flex;
@@ -5144,7 +5157,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaExpandedWrap {
   padding: 0 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .qaExpandedGrid {
@@ -5220,7 +5233,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .qaFlex1 {
@@ -5238,17 +5251,16 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .qaFillRound3 {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .qaFillRound3::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -5348,7 +5360,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .resAllocBar {
   height: 28px;
   border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .resAllocBarSeg {
@@ -5361,7 +5373,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .resAllocBarSeg.toneAccent { background: var(--accent-d); color: var(--accent); }
 .resAllocBarSeg.toneBlue   { background: var(--blue-d);   color: var(--blue);   }
 .resAllocBarSeg.toneAmber  { background: var(--amber-d);  color: var(--amber);  }
-.resAllocBarSeg.toneMuted  { background: rgba(255,255,255,0.06); color: var(--muted); }
+.resAllocBarSeg.toneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .resAllocBarSeg:first-child {
   border-radius: var(--r-xs) 0 0 var(--r-xs);
@@ -5466,17 +5478,16 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* ─── SLA Tracker Page ──────────────────────────────────────────── */
 
 .slaProgressLg {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 8px;
   border: none;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .slaProgressLg::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 4px;
 }
 
@@ -5512,7 +5523,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .timelineToneOrange { color: var(--amber); background: var(--amber-d); }
 
-.timelineToneMuted { color: var(--muted); background: rgba(255, 255, 255, 0.06); }
+.timelineToneMuted { color: var(--muted); background: rgb(255 255 255 / 6%); }
 
 .timelineFillAccent { background: var(--accent); }
 
@@ -5529,8 +5540,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineFillMuted { background: var(--muted); }
 
 .timelineScrollShell {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto hidden;
 }
 
 .timelineScrollInner {
@@ -5548,8 +5558,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: center;
   padding: 12px 8px;
-  border-left: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.015);
+  border-left: 1px solid rgb(255 255 255 / 4%);
+  background: rgb(255 255 255 / 1.5%);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -5563,7 +5573,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 220px;
   flex-shrink: 0;
   padding: 12px 16px;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgb(255 255 255 / 4%);
   display: flex;
   align-items: center;
   letter-spacing: 0.06em;
@@ -5581,7 +5591,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgb(255 255 255 / 4%);
 }
 
 .timelineTrackCell {
@@ -5592,12 +5602,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   background:
     repeating-linear-gradient(
       to right,
-      rgba(255, 255, 255, 0.045) 0,
-      rgba(255, 255, 255, 0.045) 1px,
+      rgb(255 255 255 / 4.5%) 0,
+      rgb(255 255 255 / 4.5%) 1px,
       transparent 1px,
       transparent calc(100% / 89)
     ),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.005));
+    linear-gradient(to bottom, rgb(255 255 255 / 1%), rgb(255 255 255 / 0.5%));
 }
 
 .timelineTrackSvg {
@@ -5621,7 +5631,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border: 1px solid color-mix(in srgb, currentcolor 20%, transparent);
 }
 
 .timelineAvatar28 {
@@ -5641,7 +5651,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 7.6px;
   font-weight: 700;
   paint-order: stroke;
-  stroke: rgba(5, 5, 8, 0.52);
+  stroke: rgb(5 5 8 / 52%);
   stroke-width: 0.8px;
 }
 
@@ -5649,12 +5659,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-family: var(--font-dm-mono), monospace;
   font-size: 5.6px;
   paint-order: stroke;
-  stroke: rgba(5, 5, 8, 0.52);
+  stroke: rgb(5 5 8 / 52%);
   stroke-width: 0.6px;
 }
 
 .timelineTodayMarkerLine {
-  stroke: rgba(255, 255, 255, 0.14);
+  stroke: rgb(255 255 255 / 14%);
   stroke-width: 0.45;
   stroke-dasharray: 1.2 0.9;
 }
@@ -5671,7 +5681,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   text-transform: uppercase;
   letter-spacing: 0.04em;
   paint-order: stroke;
-  stroke: rgba(5, 5, 8, 0.5);
+  stroke: rgb(5 5 8 / 50%);
   stroke-width: 0.5px;
 }
 
@@ -5700,8 +5710,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineLegendWrap {
   padding: 12px 16px 16px;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.01);
+  border-top: 1px solid rgb(255 255 255 / 4%);
+  background: rgb(255 255 255 / 1%);
 }
 
 .timelineLegendCompleted {
@@ -5735,7 +5745,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineLegendToday {
   width: 18px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(255 255 255 / 14%);
   border-radius: 1px;
   flex-shrink: 0;
 }
@@ -5760,7 +5770,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .accessAvatar.toneAmber  { background: color-mix(in oklab, var(--amber)  14%, transparent); color: var(--amber);  border-color: color-mix(in oklab, var(--amber)  25%, transparent); }
 .accessAvatar.toneRed    { background: color-mix(in oklab, var(--red)    14%, transparent); color: var(--red);    border-color: color-mix(in oklab, var(--red)    25%, transparent); }
 .accessAvatar.tonePurple { background: color-mix(in oklab, var(--purple) 14%, transparent); color: var(--purple); border-color: color-mix(in oklab, var(--purple) 25%, transparent); }
-.accessAvatar.toneMuted  { background: rgba(255,255,255,0.07); color: var(--muted); border-color: rgba(255,255,255,0.12); }
+.accessAvatar.toneMuted  { background: rgb(255 255 255 / 7%); color: var(--muted); border-color: rgb(255 255 255 / 12%); }
 
 .accessAvatar36 { width: 36px; height: 36px; font-size: 0.65rem; }
 
@@ -5874,7 +5884,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .accessChipMuted {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--muted);
 }
 
@@ -5930,7 +5940,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 0.72rem;
   color: var(--muted);
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessPermValCell {
@@ -5938,7 +5948,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   place-items: center;
   padding: 10px 0;
   font-size: 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessToggleRow {
@@ -5946,14 +5956,14 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessToggle {
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -5982,7 +5992,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 80px 100px 1fr 90px 140px;
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.1em;
@@ -5997,7 +6007,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessAuditRowLast { border-bottom: none; }
@@ -6021,7 +6031,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .accessAuditType.toneAmber  { background: color-mix(in oklab, var(--amber)  12%, transparent); color: var(--amber);  }
 .accessAuditType.toneRed    { background: color-mix(in oklab, var(--red)    12%, transparent); color: var(--red);    }
 .accessAuditType.tonePurple { background: color-mix(in oklab, var(--purple) 12%, transparent); color: var(--purple); }
-.accessAuditType.toneMuted  { background: rgba(255,255,255,0.06); color: var(--muted); }
+.accessAuditType.toneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .accessInfoCard {
   background: var(--surface);
@@ -6144,7 +6154,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandPreviewCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 16px;
@@ -6182,7 +6192,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandTypoCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 16px;
@@ -6202,7 +6212,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandLogoCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 24px;
@@ -6433,7 +6443,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 72px 32px 1fr 80px 80px 48px 56px 80px 40px;
   gap: 8px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -6447,9 +6457,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   transition: background 0.1s ease;
 }
 
-.dvtRow:hover { background: rgba(255, 255, 255, 0.02); }
+.dvtRow:hover { background: rgb(255 255 255 / 2%); }
 
-.dvtRowSelected { background: rgba(255, 255, 255, 0.04); border-left: 3px solid var(--accent); }
+.dvtRowSelected { background: rgb(255 255 255 / 4%); border-left: 3px solid var(--accent); }
 
 .dvtRowFlagged { background: color-mix(in srgb, var(--red) 4%, transparent); }
 
@@ -6490,7 +6500,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .dvtStatusRejected { background: var(--red-d); color: var(--red); }
 
-.dvtStatusArchived { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.dvtStatusArchived { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .dvtSideCard {
   background: var(--surface);
@@ -6514,7 +6524,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.72rem;
 }
 
@@ -6666,7 +6676,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 16px;
   padding: 10px 16px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-left: 3px solid transparent;
 }
 
@@ -6700,7 +6710,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   margin-bottom: 24px;
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .topCardsStack,
   .gridAutoFit,
   .exdKpiGrid {
@@ -6708,7 +6718,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .topCardsStack,
   .gridAutoFit,
   .exdKpiGrid {
@@ -6818,7 +6828,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .exdDot {
@@ -6846,7 +6856,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdHealthTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -6857,7 +6866,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .exdHealthTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -6896,7 +6905,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdPulseBlock {
   padding: 14px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .exdPulseHead {
@@ -6925,7 +6934,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .exdRevName {
@@ -6936,7 +6945,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdRevTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -6947,7 +6955,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .exdRevTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7021,7 +7029,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdTrack8 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -7031,7 +7038,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .exdTrack8::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7226,7 +7233,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(5, 1fr);
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   font-family: var(--font-dm-mono), monospace;
@@ -7264,7 +7271,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revopsTrackFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -7274,7 +7280,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revopsTrackFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7323,7 +7329,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revopsTrackBar {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -7333,7 +7338,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revopsTrackBar::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7394,7 +7399,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   position: relative;
   width: 100%;
   height: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
   overflow: hidden;
 }
@@ -7592,7 +7597,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfNowRect {
-  fill: rgba(255, 255, 255, 0.08);
+  fill: rgb(255 255 255 / 8%);
 }
 
 .revfStackedBar {
@@ -7630,7 +7635,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(6, 1fr);
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -7641,7 +7646,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 12px 16px;
   align-items: center;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .revfTableRow {
@@ -7740,7 +7745,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revfProbTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -7750,7 +7754,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfProbTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7866,7 +7870,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .revfColorDot {
@@ -7896,7 +7900,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revfAssumeTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -7907,7 +7910,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfAssumeTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7934,14 +7937,14 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.75rem;
 }
 
 .revfModelNote {
   margin-top: 20px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   border: 1px solid var(--border);
 }
@@ -8045,7 +8048,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcTrack10 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 10px;
   border: none;
@@ -8055,7 +8057,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcTrack10::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -8138,7 +8140,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   padding: 12px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .ppcCostTile {
@@ -8196,7 +8198,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .ppcDot10 {
@@ -8227,7 +8229,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcBar100 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -8238,7 +8239,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcBar100::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -8412,7 +8413,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcTrendFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 10px;
   border: none;
@@ -8422,7 +8422,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcTrendFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -8469,7 +8469,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcBlendTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 12px;
   border: none;
@@ -8479,7 +8478,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcBlendTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -8663,7 +8662,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   padding: 12px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .pppCostBox {
@@ -8710,7 +8709,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pppTrack8 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -8720,7 +8718,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pppTrack8::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -8867,7 +8865,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .pppDot {
@@ -8885,7 +8883,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pppLineTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -8896,7 +8893,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pppLineTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -9002,7 +8999,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .cashFlowStatusBadge.tonePurple { background: var(--purple-d); color: var(--purple); }
 
-.cashFlowStatusBadge.toneMuted { background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+.cashFlowStatusBadge.toneMuted { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 /* --- Cash Flow: Calendar view --- */
 
@@ -9025,7 +9022,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .cashFlowDayToday {
   border: 1px solid var(--accent-d);
   border-radius: var(--r-sm);
-  background: rgba(167, 139, 250, 0.04);
+  background: rgb(167 139 250 / 4%);
 }
 
 .cashFlowTagOverdue {
@@ -9199,7 +9196,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .fySubRow {
   padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgb(255 255 255 / 3%);
 }
 
 .fyPl16 {
@@ -9257,7 +9254,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 0.56rem;
   color: var(--muted);
   letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   padding: 2px 8px;
   border-radius: 3px;
 }
@@ -9318,7 +9315,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 0.5fr 0.5fr 2fr 0.7fr 0.8fr 0.6fr 0.4fr 0.4fr 0.6fr 0.7fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   font-family: var(--font-dm-mono), monospace;
@@ -9333,11 +9330,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgb(255 255 255 / 3%);
 }
 
 .expenseRowFlagged {
-  background: rgba(255, 95, 95, 0.03);
+  background: rgb(255 95 95 / 3%);
   border-left: 3px solid var(--red);
 }
 
@@ -9360,7 +9357,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .expenseBarFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 100%;
   border: none;
@@ -9370,7 +9366,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .expenseBarFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -9511,7 +9507,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .payRowSelected {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .payAlignCenter {
@@ -9523,7 +9519,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
   gap: 10px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   border-top: 1px solid var(--border);
 }
 
@@ -9588,7 +9584,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .payToneTag {
@@ -9626,7 +9622,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .payToneTag.toneMuted {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   color: var(--muted);
 }
 
@@ -9677,7 +9673,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.5fr 1fr 0.7fr 0.7fr 0.7fr 0.7fr 60px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -9690,7 +9686,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pricRowEditing {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .pricMarginBadge {
@@ -9700,7 +9696,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-xs);
   font-size: 0.625rem;
   font-family: var(--font-dm-mono), monospace;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .pricQuoteSplit {
@@ -9749,7 +9745,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.5fr 0.5fr 0.8fr 0.8fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -9776,7 +9772,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pricAddItemBtn:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .pricSideStack {
@@ -9796,7 +9792,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .pricTotalRow {
@@ -9860,7 +9856,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pricTierCardPopular {
   border-color: var(--accent);
-  background: rgba(167, 139, 250, 0.04);
+  background: rgb(167 139 250 / 4%);
 }
 
 .pricPopularTag {
@@ -9931,7 +9927,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pricOverageBox {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   padding: 10px 12px;
   margin-bottom: 16px;
@@ -9954,7 +9950,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: 1px solid var(--amber-d);
   border-radius: var(--r-md);
   padding: 16px 20px;
-  background: rgba(245, 166, 35, 0.04);
+  background: rgb(245 166 35 / 4%);
 }
 
 .pricPolicyTitle {
@@ -10066,12 +10062,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .invcStatusBadge.toneMuted {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   color: var(--muted);
 }
 
 .invcStatusBadge.toneText {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   color: var(--text);
 }
 
@@ -10108,7 +10104,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .invcDashedBtn:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-color: var(--accent);
 }
 
@@ -10117,7 +10113,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .invcPendingBg {
-  background: rgba(245, 166, 35, 0.04);
+  background: rgb(245 166 35 / 4%);
 }
 
 .invcRejectBtn {
@@ -10137,7 +10133,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .invcOverdueRow {
-  background: rgba(255, 95, 95, 0.04);
+  background: rgb(255 95 95 / 4%);
 }
 
 .invcChaseBtn {
@@ -10177,14 +10173,14 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .invcVatDueCard {
   border: 1px solid var(--accent-d);
   border-radius: var(--r-md);
   padding: 20px;
-  background: rgba(167, 139, 250, 0.04);
+  background: rgb(167 139 250 / 4%);
 }
 
 .invcVatDueValue {
@@ -10202,7 +10198,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: 1px solid var(--amber-d);
   border-radius: var(--r-md);
   padding: 16px 20px;
-  background: rgba(245, 166, 35, 0.04);
+  background: rgb(245 166 35 / 4%);
 }
 
 .invcWarnIcon {
@@ -10244,7 +10240,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .invcWriteoffBtn:hover {
-  background: rgba(255, 95, 95, 0.04);
+  background: rgb(255 95 95 / 4%);
   border-color: var(--red);
 }
 
@@ -10299,7 +10295,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .bdevTagPurple { background: var(--purple-d); color: var(--purple); }
 
-.bdevTagMuted { background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+.bdevTagMuted { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 /* --- Segment card tone (left border) --- */
 
@@ -10326,7 +10322,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 0.6fr 1.4fr 1fr 0.7fr 0.6fr 0.6fr 0.8fr 0.7fr 60px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -10404,7 +10400,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .bdevMiniTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -10413,7 +10408,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .bdevMiniTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -10451,7 +10446,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .bdevPartnerRowExploring {
   border-color: var(--amber-d);
-  background: rgba(245, 166, 35, 0.03);
+  background: rgb(245 166 35 / 3%);
 }
 
 .bdevPartnerName {
@@ -10492,7 +10487,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .bdevAddPartnership:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-color: var(--accent);
 }
 
@@ -10556,7 +10551,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .bdevMiniCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   padding: 10px 12px;
 }
@@ -10609,7 +10604,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .bdevTargetTrackFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -10618,7 +10612,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .bdevTargetTrackFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -10653,7 +10647,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .bdevSourceTrackFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -10662,7 +10655,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .bdevSourceTrackFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -10677,7 +10670,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: 1px solid var(--accent-d);
   border-radius: var(--r-md);
   padding: 20px;
-  background: rgba(167, 139, 250, 0.04);
+  background: rgb(167 139 250 / 4%);
 }
 
 .bdevAnnualTitle {
@@ -10724,7 +10717,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .healthRowAtRisk {
-  background: rgba(255, 95, 95, 0.04);
+  background: rgb(255 95 95 / 4%);
 }
 
 .healthDot8 {
@@ -10754,7 +10747,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .healthTinyFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 4px;
   border: none;
@@ -10763,7 +10755,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .healthTinyFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -10879,18 +10871,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .healthTrackBg {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
   overflow: hidden;
 }
 
 .healthFillFull {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -10899,7 +10890,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .healthFillFull::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -10952,7 +10943,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .healthRiskCard {
   border-color: var(--red-d);
-  background: rgba(255, 95, 95, 0.03);
+  background: rgb(255 95 95 / 3%);
 }
 
 .healthRiskGrid {
@@ -10972,7 +10963,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .journeyAgingRow {
@@ -10981,7 +10972,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .journeyMomentsSplit {
@@ -11037,7 +11028,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .cobReasonPurple { background: var(--purple-d); color: var(--purple); }
 
-.cobReasonMuted { background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+.cobReasonMuted { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 /* --- Template card tone (left border) --- */
 
@@ -11077,7 +11068,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cobHead:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .cobHeadRow {
@@ -11173,7 +11164,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .cobExpanded {
   padding: 16px 20px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-top: 1px solid var(--border);
 }
 
@@ -11185,7 +11176,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cobCategoryCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   padding: 14px;
 }
@@ -11317,7 +11308,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cobRootCause {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   padding: 14px;
   margin-bottom: 16px;
@@ -11344,7 +11335,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cobPmWell {
-  background: rgba(52, 217, 139, 0.04);
+  background: rgb(52 217 139 / 4%);
   border-radius: var(--r-sm);
   padding: 14px;
 }
@@ -11359,7 +11350,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cobPmWrong {
-  background: rgba(255, 95, 95, 0.04);
+  background: rgb(255 95 95 / 4%);
   border-radius: var(--r-sm);
   padding: 14px;
 }
@@ -11374,7 +11365,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cobPmPrev {
-  background: rgba(91, 156, 245, 0.04);
+  background: rgb(91 156 245 / 4%);
   border-radius: var(--r-sm);
   padding: 14px;
 }
@@ -11410,7 +11401,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cobCreateBtn:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-color: var(--accent);
 }
 
@@ -11441,7 +11432,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .cobTemplateBox {
@@ -11499,7 +11490,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .cobCellStrong {
@@ -11531,7 +11522,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: none;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
   background: transparent;
 }
 
@@ -11576,7 +11566,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .conbStatusPurple { background: var(--purple-d); color: var(--purple); }
 
-.conbStatusMuted { background: rgba(255,255,255,0.04); color: var(--muted); }
+.conbStatusMuted { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 .conbCategoryCardAccent { border-left: 3px solid var(--accent); }
 
@@ -11628,7 +11618,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .conbCardHead:hover {
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .conbBlockerChip {
@@ -11676,7 +11666,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 16px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .conbCategoryTitle {
@@ -11691,7 +11681,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: flex-start;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .conbTaskRow:last-child {
@@ -11746,7 +11736,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .conbTemplateRow:last-child {
@@ -11786,7 +11776,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .conbSpeedRow:last-child {
@@ -11796,7 +11786,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .conbAvgBox {
   margin-top: 20px;
   padding: 16px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   text-align: center;
 }
@@ -11820,7 +11810,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 8px;
   padding: 8px 0;
   font-size: 0.75rem;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .conbBlockerRow:last-child {
@@ -11832,7 +11822,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .conbRateRow:last-child {
@@ -11876,11 +11866,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .csatTonePurple { --csat-tone: var(--purple); --csat-tone-d: var(--purple-d); color: var(--purple); }
 
-.csatToneMuted { --csat-tone: var(--muted); --csat-tone-d: rgba(255,255,255,0.04); color: var(--muted); }
+.csatToneMuted { --csat-tone: var(--muted); --csat-tone-d: rgb(255 255 255 / 4%); color: var(--muted); }
 
-.csatToneBorder { --csat-tone: var(--border); --csat-tone-d: rgba(255,255,255,0.03); color: var(--border); }
+.csatToneBorder { --csat-tone: var(--border); --csat-tone-d: rgb(255 255 255 / 3%); color: var(--border); }
 
-.csatToneOrange { --csat-tone: #ff8c00; --csat-tone-d: rgba(255,140,0,0.12); color: #ff8c00; }
+.csatToneOrange { --csat-tone: #ff8c00; --csat-tone-d: rgb(255 140 0 / 12%); color: #ff8c00; }
 
 .csatMiniChartSvg {
   display: block;
@@ -11949,7 +11939,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .csatFeedbackQuote {
   margin-top: 14px;
   padding: 12px 16px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   font-size: 0.75rem;
   color: var(--muted);
@@ -11981,7 +11971,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 100%;
   height: 4px;
   appearance: none;
-  -webkit-appearance: none;
   border: none;
   border-radius: 2px;
   background: var(--border);
@@ -12013,6 +12002,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 14px;
   margin-bottom: 4px;
 }
+
 .clmKpiCard {
   position: relative;
   background: var(--s1);
@@ -12026,6 +12016,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .clmKpiCard.toneBlue   { border-left-color: var(--blue);   }
 .clmKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .clmKpiCard.toneRed    { border-left-color: var(--red);    }
+
 .clmKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -12034,6 +12025,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   color: var(--muted);
   margin-bottom: 6px;
 }
+
 .clmKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800;
@@ -12046,6 +12038,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .clmKpiValue.toneBlue   { color: var(--blue);   }
 .clmKpiValue.toneAmber  { color: var(--amber);  }
 .clmKpiValue.toneRed    { color: var(--red);    }
+
 .clmKpiMeta {
   font-size: 0.62rem;
   color: var(--muted2);
@@ -12058,6 +12051,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   margin-bottom: 4px;
 }
+
 .clmStatusTile {
   position: relative;
   background: var(--s1);
@@ -12066,6 +12060,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 14px 16px;
   overflow: hidden;
 }
+
 .clmStatusTile::before {
   content: "";
   position: absolute;
@@ -12073,6 +12068,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 3px;
   border-radius: 0 2px 2px 0;
 }
+
 .clmStatusTileLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -12082,6 +12078,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   color: var(--muted);
   margin-bottom: 8px;
 }
+
 .clmStatusTileCount {
   font-family: var(--font-syne), sans-serif;
   font-size: 1.3rem;
@@ -12089,6 +12086,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   line-height: 1;
   margin-bottom: 4px;
 }
+
 .clmStatusTilePct {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.55rem;
@@ -12101,7 +12099,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .clmStripBlue::before   { background: var(--blue);   }
 .clmStripAmber::before  { background: var(--amber);  }
 .clmStripRed::before    { background: var(--red);    }
-.clmStripMuted::before  { background: rgba(255,255,255,0.12); }
+.clmStripMuted::before  { background: rgb(255 255 255 / 12%); }
 
 /* ── Filter bar ── */
 .clmFilters {
@@ -12131,6 +12129,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-sm);
   overflow: hidden;
 }
+
 .clmSectionHeader {
   display: flex;
   align-items: center;
@@ -12138,11 +12137,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 13px 20px;
   border-bottom: 1px solid var(--border);
 }
+
 .clmSectionTitle {
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem;
   font-weight: 700;
 }
+
 .clmSectionMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem;
@@ -12156,7 +12157,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 0.8fr 0.7fr 1fr 1fr 0.5fr 0.6fr 56px;
   gap: 10px;
   padding: 9px 20px 9px 23px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -12173,17 +12174,18 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 13px 20px 13px 23px;
   align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
   cursor: pointer;
 }
+
 .clmClientRow::before {
   content: "";
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 3px;
 }
-.clmClientRow:hover { background: rgba(255,255,255,0.02); }
+.clmClientRow:hover { background: rgb(255 255 255 / 2%); }
 .clmClientRow:last-child { border-bottom: none; }
 .clmClientSelected { background: var(--accent-d) !important; }
 .clmClientSelected::before { background: var(--accent) !important; }
@@ -12204,7 +12206,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .clmChipAccent  { background: var(--accent-d); color: var(--accent); }
 .clmChipAmber   { background: var(--amber-d);  color: var(--amber);  }
 .clmChipRed     { background: var(--red-d);    color: var(--red);    }
-.clmChipMuted   { background: rgba(255,255,255,0.05); color: var(--muted); }
+.clmChipMuted   { background: rgb(255 255 255 / 5%); color: var(--muted); }
 
 /* Tier chips */
 .clmTierChip {
@@ -12215,9 +12217,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   letter-spacing: 0.06em; text-transform: uppercase;
   white-space: nowrap;
 }
-.clmTierEnterprise { background: rgba(139,111,255,0.12); color: var(--accent); }
+.clmTierEnterprise { background: rgb(139 111 255 / 12%); color: var(--accent); }
 .clmTierGrowth     { background: var(--blue-d);          color: var(--blue);   }
-.clmTierStarter    { background: rgba(255,255,255,0.05); color: var(--muted);  }
+.clmTierStarter    { background: rgb(255 255 255 / 5%); color: var(--muted);  }
 
 /* Inline health bar */
 .clmHealthCell  { display: flex; flex-direction: column; gap: 4px; }
@@ -12248,6 +12250,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 /* ── Portfolio grid ── */
 .clmPortfolioGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
 .clmPortfolioCard {
   position: relative;
   background: var(--s1); border: 1px solid var(--border2);
@@ -12255,6 +12258,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   cursor: pointer; transition: background 120ms ease, border-color 120ms ease;
   overflow: hidden;
 }
+
 .clmPortfolioCard::before {
   content: ""; position: absolute;
   left: 0; top: 0; bottom: 0; width: 3px;
@@ -12271,7 +12275,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .clmPortfolioHealthLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 
 .clmPortfolioMeta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
-.clmPortfolioMetaCell { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 7px 10px; }
+.clmPortfolioMetaCell { background: rgb(255 255 255 / 2%); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 7px 10px; }
 .clmPortfolioMetaLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
 .clmPortfolioMetaVal   { font-family: var(--font-dm-mono), monospace; font-size: 0.66rem; font-weight: 700; }
 .clmPortfolioMetaVal.toneAccent { color: var(--accent); }
@@ -12300,7 +12304,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 /* 4-cell metric grid */
 .clmMetaGrid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.clmMetaCell  { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 10px 12px; }
+.clmMetaCell  { background: rgb(255 255 255 / 2%); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 10px 12px; }
 .clmMetaLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 5px; }
 .clmMetaValue { font-family: var(--font-dm-mono), monospace; font-size: 0.7rem; font-weight: 700; }
 .clmMetaValue.toneAccent { color: var(--accent); }
@@ -12310,7 +12314,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 /* Info blocks */
 .clmInfoLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 5px; }
-.clmInfoBlock { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 10px 14px; font-family: var(--font-dm-mono), monospace; font-size: 0.64rem; }
+.clmInfoBlock { background: rgb(255 255 255 / 2%); border: 1px solid var(--border); border-radius: var(--r-xs); padding: 10px 14px; font-family: var(--font-dm-mono), monospace; font-size: 0.64rem; }
 
 /* Actions */
 .clmDetailActions { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -12326,43 +12330,33 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   display: grid;
   grid-template-columns: 1.6fr 1fr 0.6fr 1fr 1.5fr;
   gap: 10px; padding: 9px 20px;
-  background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+  background: rgb(255 255 255 / 2%); border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
 }
+
 .clmRenewalRow {
   display: grid;
   grid-template-columns: 1.6fr 1fr 0.6fr 1fr 1.5fr;
   gap: 10px; padding: 13px 20px; align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 .clmRenewalRow:last-child { border-bottom: none; }
-.clmRenewalRowUrgent { background: rgba(255,95,95,0.04); }
+.clmRenewalRowUrgent { background: rgb(255 95 95 / 4%); }
 .clmRenewalClientName { font-size: 0.78rem; font-weight: 700; margin-bottom: 2px; }
 .clmRenewalClientSub  { font-family: var(--font-dm-mono), monospace; font-size: 0.58rem; color: var(--muted); }
 .clmRenewalAction     { font-size: 0.68rem; color: var(--muted); }
 
 /* ── Responsive ── */
-@media (max-width: 1200px) {
-  .clmLayout { grid-template-columns: 1fr; }
-  .clmDetailPanel { position: static; }
-  .clmKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 900px) {
-  .clmStatusRail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .clmPortfolioGrid { grid-template-columns: 1fr; }
-  .clmListHead { display: none; }
-  .clmClientRow { grid-template-columns: 1fr 0.8fr 56px; }
+
+@media (width <= 900px) {
   .clmClientRow > :nth-child(3),
   .clmClientRow > :nth-child(4),
   .clmClientRow > :nth-child(5),
   .clmClientRow > :nth-child(7) { display: none; }
 }
-@media (max-width: 600px) {
-  .clmStatusRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .clmKpiGrid    { grid-template-columns: 1fr; }
-}
+
 
 /* ==========================================================================
    4. COMMUNICATION AUDIT PAGE
@@ -12457,7 +12451,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .commToneBorder {
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .commTitle15 {
@@ -12487,7 +12481,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   flex: 1;
   height: 6px;
   appearance: none;
-  -webkit-appearance: none;
   border: none;
   border-radius: 3px;
   background: var(--border);
@@ -12500,12 +12493,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .commBarFillTone::-webkit-progress-value {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .commBarFillTone::-moz-progress-bar {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 /* Tone-specific fills for progress bars */
@@ -12561,7 +12554,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .cmpiTonePurple { --cmpi-tone: var(--purple); --cmpi-tone-d: var(--purple-d); color: var(--purple); border-color: var(--purple); }
 
-.cmpiToneMuted { --cmpi-tone: var(--muted); --cmpi-tone-d: rgba(255,255,255,0.04); color: var(--muted); border-color: var(--muted); }
+.cmpiToneMuted { --cmpi-tone: var(--muted); --cmpi-tone-d: rgb(255 255 255 / 4%); color: var(--muted); border-color: var(--muted); }
 
 .cmpiValue18 {
   font-size: 1.125rem;
@@ -12582,12 +12575,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .cmpiCompItem {
   cursor: pointer;
   border: 1px solid var(--border);
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
   border-radius: var(--r-md);
-  padding-top: 26px;
-  padding-bottom: 26px;
-  padding-left: 18px;
-  padding-right: 18px;
+  padding: 26px 18px;
   background: var(--s1);
   text-align: left;
   color: var(--text);
@@ -12596,7 +12586,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .cmpiCompItem:hover {
-  background: rgba(255,255,255,0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .cmpiCompItemActive {
@@ -12637,7 +12627,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   padding: 28px;
   background: var(--s1);
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .cmpiCompDetailHead {
@@ -12686,7 +12676,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .cmpiTile {
   padding: 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -12729,7 +12719,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 8px;
   padding: 6px 0;
   font-size: 0.75rem;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .cmpiPointRow:last-child {
@@ -12794,7 +12784,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .cmpiTableHead {
   padding: 10px 16px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   color: var(--muted);
@@ -12834,7 +12824,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .cmpiSummaryCell {
   text-align: center;
   padding: 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -12856,7 +12846,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 100%;
   height: 8px;
   appearance: none;
-  -webkit-appearance: none;
   border: none;
   border-radius: 4px;
   background: var(--border);
@@ -12973,7 +12962,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .cmpiPosRange {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: 3px;
 }
 
@@ -13004,7 +12993,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   position: relative;
   width: 100%;
   aspect-ratio: 1.4 / 1;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-md);
   border: 1px solid var(--border);
   overflow: hidden;
@@ -13096,15 +13085,15 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
   border: 2px solid var(--bg);
-  box-shadow: 0 0 0 2px currentColor;
+  box-shadow: 0 0 0 2px currentcolor;
 }
 
 .cmpiDotUs {
   width: 18px;
   height: 18px;
-  box-shadow: 0 0 0 3px currentColor, 0 0 12px currentColor;
+  box-shadow: 0 0 0 3px currentcolor, 0 0 12px currentcolor;
 }
 
 .cmpiDotLabel {
@@ -13234,7 +13223,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .crisHead:hover {
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .crisHeadTop {
@@ -13302,7 +13291,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .crisSeverityTagMedium { background: var(--blue-d); color: var(--blue); }
 
-.crisSeverityTagLow { background: rgba(255,255,255,0.04); color: var(--muted); }
+.crisSeverityTagLow { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 .crisClient {
   font-size: 0.75rem;
@@ -13353,7 +13342,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .crisActionBox {
   padding: 12px 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -13388,7 +13377,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .crisExpandedInner {
   padding: 20px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -13484,7 +13473,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   padding: 20px;
   background: var(--s1);
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .crisChainRow {
@@ -13548,7 +13537,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: flex-start;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .crisPolicyRow:last-child {
@@ -13679,7 +13668,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .refToneBorder {
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .refLogRow {
@@ -13710,7 +13699,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .refToneTag.tonePurple { background: var(--purple-d); }
 
-.refToneTag.toneMuted { background: rgba(255,255,255,0.04); }
+.refToneTag.toneMuted { background: rgb(255 255 255 / 4%); }
 
 .refTopRow {
   display: grid;
@@ -13743,7 +13732,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .refTopRank.toneRed { background: var(--red-d); color: var(--red); }
 
-.refTopRank.toneMuted { background: rgba(255,255,255,0.04); color: var(--muted); }
+.refTopRank.toneMuted { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 .refTitle15 {
   font-size: 0.9375rem;
@@ -13755,7 +13744,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .refToneBtn {
   cursor: pointer;
-  border: 1px solid currentColor;
+  border: 1px solid currentcolor;
   background: transparent;
   padding: 6px 14px;
   border-radius: var(--r-xs);
@@ -13765,7 +13754,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .refToneBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .refBarTone {
@@ -13774,12 +13763,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .refBarTone::-webkit-progress-value {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .refBarTone::-moz-progress-bar {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .refBarTone.toneAccent::-webkit-progress-value { background: var(--accent); }
@@ -13870,9 +13859,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .sciTonePurple { --sci-tone: var(--purple); --sci-tone-d: var(--purple-d); color: var(--purple); border-color: var(--purple); }
 
-.sciToneMuted { --sci-tone: var(--muted); --sci-tone-d: rgba(255,255,255,0.04); color: var(--muted); border-color: var(--muted); }
+.sciToneMuted { --sci-tone: var(--muted); --sci-tone-d: rgb(255 255 255 / 4%); color: var(--muted); border-color: var(--muted); }
 
-.sciToneBorder { --sci-tone: var(--border); --sci-tone-d: rgba(255,255,255,0.03); color: var(--border); border-color: var(--border); }
+.sciToneBorder { --sci-tone: var(--border); --sci-tone-d: rgb(255 255 255 / 3%); color: var(--border); border-color: var(--border); }
 
 /* Fill variants for SCI progress bars */
 
@@ -13910,7 +13899,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-family: var(--font-dm-mono), monospace;
   font-weight: 700;
   text-transform: uppercase;
-  background: var(--sci-tone-d, rgba(255,255,255,0.04));
+  background: var(--sci-tone-d, rgb(255 255 255 / 4%));
 }
 
 .sciAvatar {
@@ -13952,12 +13941,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .sciSegBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .sciSegBtnActive {
   background: var(--sci-tone-d, var(--accent-d));
-  border-color: currentColor;
+  border-color: currentcolor;
   color: inherit;
 }
 
@@ -13980,7 +13969,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .sciStatBox {
   padding: 12px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   text-align: center;
 }
@@ -14067,7 +14056,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 100%;
   border: none;
   appearance: none;
-  -webkit-appearance: none;
   background: transparent;
 }
 
@@ -14223,7 +14211,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .sciMonitorBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .sciRiskSummary {
@@ -14288,7 +14276,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1fr 0.6fr 0.8fr 0.8fr 0.6fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   color: var(--muted);
@@ -14332,7 +14320,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .sciRetentionTile {
   padding: 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   text-align: center;
 }
@@ -14382,7 +14370,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .sciUpsellBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .sciTextBg {
@@ -14446,7 +14434,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 1.4fr 0.9fr 0.9fr 0.8fr 0.9fr 0.5fr 0.7fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -14460,11 +14448,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .emprTableRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .emprReviewWarn {
-  background: rgba(239, 68, 68, 0.04);
+  background: rgb(239 68 68 / 4%);
 }
 
 .emprEmpCell {
@@ -14538,12 +14526,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .emprSideItem:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .emprSideItemActive {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--r-sm);
 }
 
@@ -14571,7 +14559,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .emprDetailCardTone {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgb(255 255 255 / 8%);
 }
 
 .emprProfileHead {
@@ -14623,7 +14611,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.78rem;
 }
 
@@ -14635,7 +14623,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .emprFieldBlock {
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .emprBlockLabel {
@@ -14677,9 +14665,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-family: var(--font-dm-mono), monospace;
   padding: 4px 10px;
   border-radius: var(--r-xs);
-  background: rgba(239, 68, 68, 0.08);
+  background: rgb(239 68 68 / 8%);
   color: var(--red);
-  border: 1px solid rgba(239, 68, 68, 0.15);
+  border: 1px solid rgb(239 68 68 / 15%);
 }
 
 /* --- Notes --- */
@@ -14687,8 +14675,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .emprNotesBox {
   padding: 14px 16px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 3%);
+  border: 1px solid rgb(255 255 255 / 6%);
   margin-bottom: 20px;
 }
 
@@ -14732,7 +14720,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .emprComplianceLeft {
@@ -14842,7 +14830,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .emprLeadCardTone {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgb(255 255 255 / 10%);
 }
 
 .emprLeadId {
@@ -14875,7 +14863,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .emprReportCardTone {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgb(255 255 255 / 8%);
 }
 
 .emprReportName {
@@ -14928,15 +14916,15 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .lvaToneAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.lvaToneRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.lvaToneRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.lvaToneAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.lvaToneAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.lvaToneBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.lvaToneBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.lvaTonePurple { background: rgba(167, 139, 250, 0.12); color: var(--purple); }
+.lvaTonePurple { background: rgb(167 139 250 / 12%); color: var(--purple); }
 
-.lvaToneMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.lvaToneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Status pills --- */
 
@@ -14951,13 +14939,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .lvaStatusAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.lvaStatusRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.lvaStatusRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.lvaStatusAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.lvaStatusAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.lvaStatusBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.lvaStatusBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.lvaStatusMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.lvaStatusMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Fill variants (progress bars) --- */
 
@@ -14992,12 +14980,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .lvaReqRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lvaReqRowPending {
-  border-color: rgba(245, 158, 11, 0.2);
-  background: rgba(245, 158, 11, 0.03);
+  border-color: rgb(245 158 11 / 20%);
+  background: rgb(245 158 11 / 3%);
 }
 
 .lvaReqId {
@@ -15083,8 +15071,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 28px;
   height: 28px;
   border-radius: var(--r-xs);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgb(239 68 68 / 30%);
+  background: rgb(239 68 68 / 8%);
   color: var(--red);
   font-size: 0.82rem;
   cursor: pointer;
@@ -15094,7 +15082,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .lvaDeclineBtn:hover {
-  background: rgba(239, 68, 68, 0.18);
+  background: rgb(239 68 68 / 18%);
 }
 
 /* --- Leave Balances Table --- */
@@ -15110,7 +15098,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 1.4fr 1.2fr 0.8fr 0.5fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -15124,11 +15112,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .lvaBalRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lvaBalLow {
-  background: rgba(239, 68, 68, 0.04);
+  background: rgb(239 68 68 / 4%);
 }
 
 .lvaRole {
@@ -15160,12 +15148,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 5px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
   background: transparent;
 }
 
 .lvaMiniBar::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -15197,7 +15184,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 100px;
-  background: rgba(239, 68, 68, 0.12);
+  background: rgb(239 68 68 / 12%);
   color: var(--red);
 }
 
@@ -15218,7 +15205,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 100px repeat(23, 1fr);
   gap: 0;
   padding: 8px 0;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -15266,11 +15253,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .lvaCalDayPending {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgb(245 158 11 / 10%);
 }
 
 .lvaCalDayLeave {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .lvaCalDot {
@@ -15320,7 +15307,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .lvaUtilName {
@@ -15334,11 +15321,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .lvaUtilTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -15359,7 +15345,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .lvaTypeName {
@@ -15373,11 +15359,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .lvaTypeTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -15397,7 +15382,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lvaComplianceTitle {
@@ -15448,15 +15433,15 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .lndToneAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.lndToneRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.lndToneRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.lndToneAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.lndToneAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.lndToneBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.lndToneBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.lndTonePurple { background: rgba(167, 139, 250, 0.12); color: var(--purple); }
+.lndTonePurple { background: rgb(167 139 250 / 12%); color: var(--purple); }
 
-.lndToneMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.lndToneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Fill variants (progress) --- */
 
@@ -15472,21 +15457,21 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .lndPlanFillAccent { fill: color-mix(in oklab, var(--accent) 25%, transparent); }
 
-.lndPlanFillAmber  { fill: rgba(245, 158, 11, 0.25); }
+.lndPlanFillAmber  { fill: rgb(245 158 11 / 25%); }
 
-.lndPlanFillBlue   { fill: rgba(96, 165, 250, 0.25); }
+.lndPlanFillBlue   { fill: rgb(96 165 250 / 25%); }
 
-.lndPlanFillMuted  { fill: rgba(255, 255, 255, 0.1); }
+.lndPlanFillMuted  { fill: rgb(255 255 255 / 10%); }
 
 /* --- Skill tone variants --- */
 
-.lndSkillTone0 { background: rgba(255, 255, 255, 0.04); }
+.lndSkillTone0 { background: rgb(255 255 255 / 4%); }
 
-.lndSkillTone1 { background: rgba(239, 68, 68, 0.35); }
+.lndSkillTone1 { background: rgb(239 68 68 / 35%); }
 
-.lndSkillTone2 { background: rgba(245, 158, 11, 0.35); }
+.lndSkillTone2 { background: rgb(245 158 11 / 35%); }
 
-.lndSkillTone3 { background: rgba(96, 165, 250, 0.4); }
+.lndSkillTone3 { background: rgb(96 165 250 / 40%); }
 
 .lndSkillTone4 { background: color-mix(in oklab, var(--accent) 40%, transparent); }
 
@@ -15514,7 +15499,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .lndCardHead:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lndHeadGrid {
@@ -15563,11 +15548,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .lndTrack6::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -15591,7 +15575,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .lndExpandWrap {
   padding: 0 20px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-top: 1px solid var(--border);
 }
 
@@ -15609,7 +15593,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   padding: 10px 14px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgb(255 255 255 / 4%);
 }
 
 .lndCourseName {
@@ -15675,7 +15659,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1fr 2fr 1.2fr 0.8fr 0.8fr 0.6fr 0.5fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -15741,7 +15725,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 100%;
   height: 8px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
 }
 
@@ -15794,7 +15778,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 16px 18px;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .lndPortfolioStats {
@@ -15822,7 +15806,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .lndSkillsCellHead {
   padding: 12px 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -15833,9 +15817,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   color: var(--muted);
   text-transform: uppercase;
   text-align: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
-  border-left: 1px solid rgba(255, 255, 255, 0.03);
+  border-left: 1px solid rgb(255 255 255 / 3%);
 }
 
 .lndSkillsContents {
@@ -15846,7 +15830,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 10px;
+  padding: 10px;
 }
 
 .lndSkillsStaffName {
@@ -15860,7 +15844,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: center;
   gap: 3px;
   padding: 10px 4px;
-  border-left: 1px solid rgba(255, 255, 255, 0.03);
+  border-left: 1px solid rgb(255 255 255 / 3%);
 }
 
 .lndSkillSquare {
@@ -15932,25 +15916,25 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .rcpPillAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.rcpPillRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.rcpPillRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.rcpPillAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.rcpPillAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.rcpPillBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.rcpPillBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.rcpPillMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.rcpPillMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Kanban card tone --- */
 
 .rcpKanbanCardAccent { border-color: color-mix(in oklab, var(--accent) 15%, transparent); background: color-mix(in oklab, var(--accent) 4%, transparent); }
 
-.rcpKanbanCardRed    { border-color: rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.04); }
+.rcpKanbanCardRed    { border-color: rgb(239 68 68 / 15%); background: rgb(239 68 68 / 4%); }
 
-.rcpKanbanCardAmber  { border-color: rgba(245, 158, 11, 0.15); background: rgba(245, 158, 11, 0.04); }
+.rcpKanbanCardAmber  { border-color: rgb(245 158 11 / 15%); background: rgb(245 158 11 / 4%); }
 
-.rcpKanbanCardBlue   { border-color: rgba(96, 165, 250, 0.15); background: rgba(96, 165, 250, 0.04); }
+.rcpKanbanCardBlue   { border-color: rgb(96 165 250 / 15%); background: rgb(96 165 250 / 4%); }
 
-.rcpKanbanCardMuted  { border-color: rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); }
+.rcpKanbanCardMuted  { border-color: rgb(255 255 255 / 8%); background: rgb(255 255 255 / 2%); }
 
 /* --- Bar fill variants --- */
 
@@ -15958,12 +15942,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
 }
 
 .rcpBarFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -15997,7 +15980,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .rcpRoleCardHigh {
-  border-color: rgba(239, 68, 68, 0.2);
+  border-color: rgb(239 68 68 / 20%);
 }
 
 .rcpRoleHead {
@@ -16007,7 +15990,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .rcpRoleHead:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .rcpRoleSummary {
@@ -16073,7 +16056,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .rcpExpanded {
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-top: 1px solid var(--border);
 }
 
@@ -16103,7 +16086,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   align-items: center;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgb(255 255 255 / 5%);
   border-radius: var(--r-sm);
 }
 
@@ -16132,7 +16115,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   color: var(--red);
   padding: 3px 8px;
   border-radius: var(--r-xs);
-  background: rgba(239, 68, 68, 0.08);
+  background: rgb(239 68 68 / 8%);
 }
 
 .rcpActionRow {
@@ -16222,7 +16205,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.4fr 1.2fr 1fr 1fr 0.5fr 0.5fr auto;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -16262,7 +16245,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .rcpTrack80 {
@@ -16304,12 +16287,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   padding: 14px 18px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 
 .staffReqRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .staffAcctHead {
@@ -16317,7 +16300,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 1fr 1fr auto;
   gap: 12px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -16351,17 +16334,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .onboardToneAccent    { --_tone: var(--accent);  --_tone-bg: color-mix(in oklab, var(--accent) 12%, transparent); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneRed       { --_tone: var(--red);     --_tone-bg: rgba(239, 68, 68, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneRed       { --_tone: var(--red);     --_tone-bg: rgb(239 68 68 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneAmber     { --_tone: var(--amber);   --_tone-bg: rgba(245, 158, 11, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneAmber     { --_tone: var(--amber);   --_tone-bg: rgb(245 158 11 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneBlue      { --_tone: var(--blue);    --_tone-bg: rgba(96, 165, 250, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneBlue      { --_tone: var(--blue);    --_tone-bg: rgb(96 165 250 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardTonePurple    { --_tone: var(--purple);  --_tone-bg: rgba(167, 139, 250, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardTonePurple    { --_tone: var(--purple);  --_tone-bg: rgb(167 139 250 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneMuted     { --_tone: var(--muted);   --_tone-bg: rgba(255, 255, 255, 0.06); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneMuted     { --_tone: var(--muted);   --_tone-bg: rgb(255 255 255 / 6%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneVarBorder { --_tone: var(--border);  --_tone-bg: rgba(255, 255, 255, 0.04); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneVarBorder { --_tone: var(--border);  --_tone-bg: rgb(255 255 255 / 4%); background: var(--_tone-bg); color: var(--_tone); }
 
 /* text/border tone helpers */
 
@@ -16378,7 +16361,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .onboardToneText.toneRed    { color: var(--red);    }
 .onboardToneText.tonePurple { color: var(--purple); }
 .onboardToneText.toneMuted  { color: var(--muted);  }
-.onboardToneText.toneText   { color: rgba(255,255,255,0.45); }
+.onboardToneText.toneText   { color: rgb(255 255 255 / 45%); }
 
 /* onboardToneBorder.tone* */
 .onboardToneBorder.toneAccent { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
@@ -16399,7 +16382,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .onboardTaskCheck.toneBlue   { border-color: var(--blue);   }
 .onboardTaskCheck.toneAmber  { border-color: var(--amber);  }
 .onboardTaskCheck.toneRed    { border-color: var(--red);    }
-.onboardTaskCheck.toneText   { border-color: rgba(255,255,255,0.15); }
+.onboardTaskCheck.toneText   { border-color: rgb(255 255 255 / 15%); }
 
 /* onboardTemplateCard.tone* (left-border accent strip) */
 .onboardTemplateCard.toneAccent { border-left: 3px solid var(--accent); }
@@ -16411,9 +16394,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* --- Alert banner --- */
 
 .onboardAlert {
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  border: 1px solid rgb(245 158 11 / 20%);
   border-radius: var(--r-sm);
-  background: rgba(245, 158, 11, 0.04);
+  background: rgb(245 158 11 / 4%);
 }
 
 /* --- Row layout --- */
@@ -16432,11 +16415,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .onboardProgTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -16564,13 +16546,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .sstFeedbackNeg {
-  border-color: rgba(239, 68, 68, 0.15);
-  background: rgba(239, 68, 68, 0.03);
+  border-color: rgb(239 68 68 / 15%);
+  background: rgb(239 68 68 / 3%);
 }
 
 .sstFeedbackNeutral {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* --- Latest Pulse split --- */
@@ -16595,8 +16577,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .sstScoreCardWarn {
-  border-color: rgba(245, 158, 11, 0.2);
-  background: rgba(245, 158, 11, 0.03);
+  border-color: rgb(245 158 11 / 20%);
+  background: rgb(245 158 11 / 3%);
 }
 
 .sstScoreRow {
@@ -16616,11 +16598,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .sstTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -16835,7 +16816,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 12px 16px;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   margin-bottom: 16px;
 }
 
@@ -16889,7 +16870,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-style: italic;
   line-height: 1.5;
   padding-left: 12px;
-  border-left: 2px solid rgba(255, 255, 255, 0.08);
+  border-left: 2px solid rgb(255 255 255 / 8%);
 }
 
 .sstEmpty {
@@ -16919,7 +16900,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.78rem;
 }
 
@@ -16934,7 +16915,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .sstQuestionNo {
@@ -16995,15 +16976,15 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .tprToneAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.tprToneRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.tprToneRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.tprToneAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.tprToneAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.tprToneBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.tprToneBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.tprTonePurple { background: rgba(167, 139, 250, 0.12); color: var(--purple); }
+.tprTonePurple { background: rgb(167 139 250 / 12%); color: var(--purple); }
 
-.tprToneMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.tprToneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .tprToneBorder { background: transparent; border-color: var(--border); }
 
@@ -17043,7 +17024,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .tprOverviewRow:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .tprNameCol {
@@ -17091,11 +17072,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .tprTrack6::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -17141,12 +17121,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .tprProfileNavItem:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .tprProfileNavItemActive {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 6%);
 }
 
 .tprProfileNavName {
@@ -17206,7 +17186,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   text-align: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .tprMetricValue {
@@ -17282,9 +17262,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .tprDevCard {
   padding: 16px;
-  border: 1px solid rgba(245, 158, 11, 0.15);
+  border: 1px solid rgb(245 158 11 / 15%);
   border-radius: var(--r-sm);
-  background: rgba(245, 158, 11, 0.03);
+  background: rgb(245 158 11 / 3%);
 }
 
 .tprStrengthHd {
@@ -17357,7 +17337,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .tprUtilName {
@@ -17376,11 +17356,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 8px;
   border-radius: 4px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .tprUtilFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 4px;
 }
 
@@ -17401,7 +17380,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   top: 0;
   width: 1px;
   height: 8px;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgb(255 255 255 / 40%);
 }
 
 .tprUtilPct {
@@ -17418,7 +17397,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 100px;
-  background: rgba(245, 158, 11, 0.12);
+  background: rgb(245 158 11 / 12%);
   color: var(--amber);
 }
 
@@ -17427,7 +17406,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   color: var(--muted);
   margin-top: 14px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 /* --- Big Trend Bars --- */
@@ -17466,7 +17445,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 0.7fr 0.7fr 1.2fr 0.6fr 0.6fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -17516,12 +17495,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
   margin-bottom: 4px;
 }
 
 .tprTrack6Mb::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -17577,7 +17555,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .teamOrgCard {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--r-md);
   padding: 20px;
   background: var(--s1);
@@ -17588,7 +17566,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .teamOrgCard:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .teamOrgWrap {
@@ -17639,7 +17617,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
 }
 
 /* --- Departments --- */
@@ -17657,7 +17635,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .teamRounded8 {
@@ -17669,7 +17647,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .teamToneBtn {
-  border: 1px solid currentColor;
+  border: 1px solid currentcolor;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -17680,7 +17658,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .teamToneBtn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .teamAddCard {
@@ -17703,7 +17681,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 1fr 0.8fr 0.5fr 2fr;
   gap: 12px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -17717,7 +17695,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 1fr 0.8fr 0.5fr 2fr;
   gap: 12px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .teamRolesRowPad {
@@ -17728,7 +17706,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .teamInfoCard {
   padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .teamHireCard {
@@ -17749,9 +17727,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 /* ── Team Structure — root + utilities ── */
 .teamRoot { display: grid; gap: 20px; }
+
 .teamInfoBanner {
   border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,0.015);
+  background: rgb(255 255 255 / 1.5%);
   line-height: 1.6;
 }
 .teamAddHireFooter { border-top: 1px solid var(--border); }
@@ -17762,6 +17741,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
+
 .teamKpiCard {
   position: relative;
   background: var(--s1);
@@ -17775,11 +17755,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .teamKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .teamKpiCard.toneRed    { border-left-color: var(--red);    }
 .teamKpiCard.tonePurple { border-left-color: var(--purple); }
+
 .teamKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; text-transform: uppercase;
   letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px;
 }
+
 .teamKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800; font-size: 1.75rem;
@@ -17790,6 +17772,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .teamKpiValue.toneAmber  { color: var(--amber);  }
 .teamKpiValue.toneRed    { color: var(--red);    }
 .teamKpiValue.tonePurple { color: var(--purple); }
+
 .teamKpiMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; color: var(--muted2);
@@ -17807,14 +17790,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   background: var(--s1); border: 1px solid var(--border2);
   border-radius: var(--r-sm); overflow: hidden;
 }
+
 .teamSectionHeader {
   display: flex; align-items: center; justify-content: space-between;
   padding: 13px 20px; border-bottom: 1px solid var(--border);
 }
+
 .teamSectionTitle {
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem; font-weight: 700;
 }
+
 .teamSectionMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem; letter-spacing: 0.08em; color: var(--muted);
@@ -17826,7 +17812,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr auto 0.8fr 1fr auto auto;
   gap: 16px; align-items: center;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .teamHireRow:last-child { border-bottom: none; }
 
@@ -17873,10 +17859,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .teamToneBtn.toneRed    { border-color: var(--red);    color: var(--red);    }
 .teamToneBtn.tonePurple { border-color: var(--purple); color: var(--purple); }
 
-@media (max-width: 1100px) { .teamKpiGrid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 700px)  { .teamKpiGrid { grid-template-columns: 1fr; } }
+@media (width <= 1100px) { .teamKpiGrid { grid-template-columns: repeat(2, 1fr); } }
+
+@media (width <= 700px)  { .teamKpiGrid { grid-template-columns: 1fr; } }
 
 /* ═══ Missing classes patch ═══ */
+
 /* ═══════════════════════════════════════════════════════════════════
    Admin Dashboard — Missing CSS Class Definitions
    Generated for: analytics, automation, integrations, reports, settings
@@ -17947,7 +17935,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .dotPurple {
   background: var(--purple);
 }
-
 
 /* ─── Automation Page ──────────────────────────────────────────────── */
 
@@ -18047,7 +18034,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* Status chip tone: draft/muted */
 .autoStatusMuted {
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-color: var(--border);
 }
 
@@ -18059,13 +18046,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border: none;
   border-radius: 3px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .autoFailTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -18199,7 +18185,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   line-height: 1.55;
 }
 
-
 /* ─── Integrations Page ────────────────────────────────────────────── */
 
 /* Table header row for the keys inventory (6 columns) */
@@ -18260,29 +18245,34 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   background:   color-mix(in oklab, var(--accent) 10%, transparent);
   color: var(--accent);
 }
+
 .integrationsToneTag.toneBlue {
   border-color: color-mix(in oklab, var(--blue) 25%, transparent);
   background:   color-mix(in oklab, var(--blue) 10%, transparent);
   color: var(--blue);
 }
+
 .integrationsToneTag.toneAmber {
   border-color: color-mix(in oklab, var(--amber) 25%, transparent);
   background:   color-mix(in oklab, var(--amber) 10%, transparent);
   color: var(--amber);
 }
+
 .integrationsToneTag.toneRed {
   border-color: color-mix(in oklab, var(--red) 25%, transparent);
   background:   color-mix(in oklab, var(--red) 10%, transparent);
   color: var(--red);
 }
+
 .integrationsToneTag.tonePurple {
   border-color: color-mix(in oklab, var(--purple) 25%, transparent);
   background:   color-mix(in oklab, var(--purple) 10%, transparent);
   color: var(--purple);
 }
+
 .integrationsToneTag.toneMuted {
   border-color: var(--border2);
-  background:   rgba(255,255,255,0.04);
+  background:   rgb(255 255 255 / 4%);
   color: var(--muted);
 }
 
@@ -18296,7 +18286,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .integrationsLine17 {
   line-height: 1.6;
 }
-
 
 /* ─── Reports Page ─────────────────────────────────────────────────── */
 
@@ -18335,7 +18324,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   line-height: 1.6;
 }
 
-
 /* ─── Settings Page ────────────────────────────────────────────────── */
 
 /* Row in the settings change monitor log */
@@ -18352,10 +18340,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-bottom: none;
 }
 
-
 /* ─── Responsive ───────────────────────────────────────────────────── */
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .autoSplitHealth {
     grid-template-columns: 1fr;
   }
@@ -18375,7 +18362,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   }
 }
 
-@media (max-width: 880px) {
+@media (width <= 880px) {
   .analyticsBarsWrap {
     height: auto;
     min-height: 100px;
@@ -18441,11 +18428,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
     display: none;
   }
 }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Missing CSS class definitions for admin dashboard pages
    Generated for: maphari-dashboard.module.css (admin-specific module)
    ═══════════════════════════════════════════════════════════════════════════ */
-
 
 /* ─── Admin Leads Page (ldr) ──────────────────────────────────────────────── */
 
@@ -18524,7 +18511,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .ldrStripAmber::before  { background: var(--amber); }
 .ldrStripGreen::before  { background: var(--green); }
 .ldrStripRed::before    { background: var(--red); }
-.ldrStripMuted::before  { background: rgba(255, 255, 255, 0.15); }
+.ldrStripMuted::before  { background: rgb(255 255 255 / 15%); }
 
 /* ── Filter row ── */
 .ldrFilters {
@@ -18578,7 +18565,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 0.9fr 0.8fr 1fr 0.5fr 0.8fr 56px;
   gap: 10px;
   padding: 9px 20px 9px 23px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -18595,7 +18582,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 13px 20px 13px 23px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
   cursor: pointer;
 }
@@ -18609,7 +18596,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 3px;
 }
 
-.ldrLeadRow:hover { background: rgba(255, 255, 255, 0.02); }
+.ldrLeadRow:hover { background: rgb(255 255 255 / 2%); }
 .ldrLeadRow:last-child { border-bottom: none; }
 
 /* Priority strip colours on rows */
@@ -18657,7 +18644,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .ldrBadgeAmber  { background: var(--amber-d);  color: var(--amber); }
 .ldrBadgeGreen  { background: var(--green-d);  color: var(--green); }
 .ldrBadgeRed    { background: var(--red-d);    color: var(--red); }
-.ldrBadgeMuted  { background: rgba(255, 255, 255, 0.05); color: var(--muted); }
+.ldrBadgeMuted  { background: rgb(255 255 255 / 5%); color: var(--muted); }
 
 /* Inline score cell */
 .ldrScoreCell {
@@ -18783,7 +18770,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ldrKanbanCard {
   position: relative;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
   border-radius: var(--r-xs);
   padding: 10px 12px 10px 15px;
@@ -18801,7 +18788,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: 2px 0 0 2px;
 }
 
-.ldrKanbanCard:hover { background: rgba(255, 255, 255, 0.035); }
+.ldrKanbanCard:hover { background: rgb(255 255 255 / 3.5%); }
 
 .ldrKanbanSelected {
   background: var(--accent-d) !important;
@@ -18854,7 +18841,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ldrPrioBadgeRed   { background: var(--red-d);   color: var(--red); }
 .ldrPrioBadgeAmber { background: var(--amber-d); color: var(--amber); }
-.ldrPrioBadgeMuted { background: rgba(255, 255, 255, 0.05); color: var(--muted); }
+.ldrPrioBadgeMuted { background: rgb(255 255 255 / 5%); color: var(--muted); }
 
 .ldrKanbanMoveBtn {
   cursor: pointer;
@@ -18980,7 +18967,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ldrMetaCell {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
   border-radius: var(--r-xs);
   padding: 10px 12px;
@@ -19006,7 +18993,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
   border-radius: var(--r-xs);
   padding: 10px 14px;
@@ -19026,7 +19013,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 /* Notes */
 .ldrNotesBox {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border: 1px solid var(--border);
   border-radius: var(--r-xs);
   padding: 12px 14px;
@@ -19075,34 +19062,23 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 /* ── Responsive ── */
-@media (max-width: 1200px) {
-  .ldrLayout { grid-template-columns: 1fr; }
-  .ldrDetailPanel { position: static; }
-}
 
-@media (max-width: 900px) {
-  .ldrRail   { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .ldrKanban { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ldrListHead { display: none; }
+@media (width <= 900px) {
   .ldrLeadRow {
     grid-template-columns: 1fr 0.9fr 56px;
     padding-left: 23px;
   }
+
   .ldrLeadRow > :nth-child(3),
   .ldrLeadRow > :nth-child(4),
   .ldrLeadRow > :nth-child(5),
   .ldrLeadRow > :nth-child(6) { display: none; }
 }
 
-@media (max-width: 600px) {
-  .ldrRail   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ldrKanban { grid-template-columns: 1fr; }
-}
 
 .p10 {
   padding: 10px;
 }
-
 
 /* ─── Cash Flow Calendar Page ─────────────────────────────────────────────── */
 
@@ -19114,7 +19090,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 12px 14px;
 }
 
-
 /* ─── Client Health Scorecard Page ────────────────────────────────────────── */
 
 .healthGridHead {
@@ -19122,7 +19097,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.2fr repeat(7, 0.6fr) 0.6fr 0.6fr 0.5fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -19132,14 +19107,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 
 .healthGridRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
-
 
 /* ─── Client Journey Page ─────────────────────────────────────────────────── */
 
@@ -19148,7 +19122,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.3fr 0.8fr 0.6fr 0.7fr 0.7fr 0.8fr 1.2fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -19157,10 +19131,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.3fr 0.8fr 0.7fr 0.6fr 1.5fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
-
 
 /* ─── Client Satisfaction Page ────────────────────────────────────────────── */
 
@@ -19191,7 +19164,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-
 /* ─── Invoices Page ───────────────────────────────────────────────────────── */
 
 .invcInvGrid {
@@ -19208,7 +19180,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
 }
 
-
 /* ─── Messages Page ───────────────────────────────────────────────────────── */
 
 .msgEscHead {
@@ -19216,10 +19187,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.2fr 80px 90px 120px 1fr 140px;
   gap: 10px;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
-
 
 /* ─── Notifications Page ──────────────────────────────────────────────────── */
 
@@ -19228,7 +19198,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 0.7fr 1fr 1.2fr 0.7fr 0.6fr 1fr;
   gap: 10px;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -19238,20 +19208,20 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 
 .notifTableRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
+
 /* ================================================================
    MISSING CSS CLASS DEFINITIONS — Admin Dashboard Pages
    Generated from JSX analysis of page components.
    These classes should be added to:
      apps/web/src/app/style/components/maphari-dashboard.module.css
    ================================================================ */
-
 
 /* ────────────────────────────────────────────────────────────────
    barFill — Generic progress bar fill
@@ -19262,17 +19232,16 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
    ──────────────────────────────────────────────────────────────── */
 
 .barFill {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .barFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -19298,7 +19267,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   background: var(--muted);
 }
 
-
 /* ================================================================
    PAYROLL LEDGER PAGE
    File: payroll-ledger-page.tsx
@@ -19314,7 +19282,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -19333,12 +19301,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 
 .payTableRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* payHistHead — Column header row for the payroll history table.
@@ -19350,7 +19318,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 60px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -19358,7 +19326,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 
 /* ================================================================
    PERFORMANCE PAGE
@@ -19375,7 +19342,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 70px 70px 70px 80px 100px 1fr;
   gap: 10px;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -19393,7 +19360,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 80px 80px 80px 80px 90px;
   gap: 10px;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -19411,7 +19378,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 70px 70px 70px 1fr;
   gap: 10px;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -19419,7 +19386,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 
 /* ================================================================
    QUALITY ASSURANCE PAGE
@@ -19436,7 +19402,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 70px 80px 1fr 1fr 90px 60px;
   gap: 10px;
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -19444,7 +19410,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 
 /* ================================================================
    SLA TRACKER PAGE
@@ -19528,6 +19493,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   background: color-mix(in srgb, var(--accent) 8%, transparent);
   border-radius: var(--r-xs);
 }
+
 .slaMatrixCellFail {
   background: color-mix(in srgb, var(--red) 10%, transparent);
   border-radius: var(--r-xs);
@@ -19556,7 +19522,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .slaMatrixRow    { min-height: 56px; }
 .slaBreachBadge  { background: color-mix(in srgb, var(--red) 10%, transparent); border-radius: var(--r-xs); }
 .slaBreachCard   { transition: background 120ms ease; }
-.slaBreachCard:hover { background: rgba(255, 255, 255, 0.02); }
+.slaBreachCard:hover { background: rgb(255 255 255 / 2%); }
+
 .slaAddDefBtn    {
   border: 1px dashed var(--border);
   border-radius: var(--r-sm);
@@ -19566,8 +19533,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 .slaAddDefBtn:hover { border-color: var(--accent); color: var(--accent); }
 .slaDefRow       { transition: background 120ms ease; }
-.slaDefRow:hover { background: rgba(255, 255, 255, 0.02); }
-
+.slaDefRow:hover { background: rgb(255 255 255 / 2%); }
 
 /* ================================================================
    STAFF ACCESS PAGE
@@ -19583,7 +19549,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 1fr 0.6fr 1fr auto;
   gap: 12px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -19602,14 +19568,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   padding: 14px 18px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 
 .staffAcctRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
-
 
 /* ================================================================
    TIMELINE & GANTT PAGE
@@ -19627,7 +19592,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: 2px;
   flex-shrink: 0;
 }
-
 
 /* ================================================================
    VENDOR & COST CONTROL PAGE
@@ -19649,7 +19613,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .vendorRegRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* vendorSoftwareSplit — Two-column layout for software spend tab.
@@ -19676,7 +19640,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .vendorProjectRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* vendorBarFillRound — Progress bar fill for vendor software spend bars.
@@ -19684,17 +19648,16 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
    Rounded variant with a blue fill (software tool cost bars). */
 
 .vendorBarFillRound {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .vendorBarFillRound::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -19707,7 +19670,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: 3px;
   background: var(--blue);
 }
-
 
 /* ================================================================
    CLIENT JOURNEY PAGE — cj* (redesigned)
@@ -19780,6 +19742,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 12px 14px;
   overflow: hidden;
 }
+
 .cjStageTile::before {
   content: "";
   position: absolute;
@@ -19817,7 +19780,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .cjStripBlue::before   { background: var(--blue);   }
 .cjStripAmber::before  { background: var(--amber);  }
 .cjStripRed::before    { background: var(--red);    }
-.cjStripMuted::before  { background: rgba(255, 255, 255, 0.12); }
+.cjStripMuted::before  { background: rgb(255 255 255 / 12%); }
 
 /* ── Filter bar ── */
 .cjFilters {
@@ -19867,7 +19830,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 1fr 0.8fr 1.2fr 0.8fr 1fr 1.8fr;
   gap: 12px;
   padding: 9px 20px 9px 23px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -19883,16 +19846,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   padding: 12px 20px 12px 23px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
+
 .cjMapRow::before {
   content: "";
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 3px;
 }
-.cjMapRow:hover { background: rgba(255, 255, 255, 0.02); }
+.cjMapRow:hover { background: rgb(255 255 255 / 2%); }
 .cjMapRow:last-child { border-bottom: none; }
 
 /* ── Stage Aging table ── */
@@ -19901,7 +19865,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 1fr 1.2fr 0.8fr 1.6fr;
   gap: 12px;
   padding: 9px 20px 9px 23px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -19917,16 +19881,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   padding: 12px 20px 12px 23px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
+
 .cjAgingRow::before {
   content: "";
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 3px;
 }
-.cjAgingRow:hover { background: rgba(255, 255, 255, 0.02); }
+.cjAgingRow:hover { background: rgb(255 255 255 / 2%); }
 .cjAgingRow:last-child { border-bottom: none; }
 
 /* ── Inline age bar ── */
@@ -19938,7 +19903,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .cjFillBlue   { background: var(--blue);   }
 .cjFillAmber  { background: var(--amber);  }
 .cjFillRed    { background: var(--red);    }
-.cjFillMuted  { background: rgba(255, 255, 255, 0.2); }
+.cjFillMuted  { background: rgb(255 255 255 / 20%); }
 
 /* ── Client row typography ── */
 .cjClientName { font-size: 0.8rem; font-weight: 700; margin-bottom: 2px; }
@@ -19972,7 +19937,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   gap: 12px;
   padding: 12px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .cjHandoffRow:last-child { border-bottom: none; }
 
@@ -19986,7 +19951,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   gap: 12px;
   padding: 12px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .cjCheckRow:last-child { border-bottom: none; }
 
@@ -20015,7 +19980,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   gap: 12px;
   padding: 12px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 .cjMomentRow:last-child { border-bottom: none; }
@@ -20046,17 +20011,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 /* ── Responsive ── */
-@media (max-width: 1100px) {
-  .cjKpiGrid   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cjStageRail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 900px) {
-  .cjMomentsSplit { grid-template-columns: 1fr; }
-}
-@media (max-width: 700px) {
-  .cjKpiGrid   { grid-template-columns: 1fr; }
-  .cjStageRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
+
 
 
 /* ================================================================
@@ -20069,73 +20024,26 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
    Next Milestone.
    Used with: cx("journeyMapHead", "fontMono", "text10", "colorMuted", "uppercase") */
 
-.journeyMapHead {
-  display: grid;
-  grid-template-columns: 2fr 1fr 0.8fr 0.8fr 0.8fr 1fr 1.8fr;
-  gap: 12px;
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
-}
-
 /* journeyMapRow — Data row in the Journey Map tab. Mirrors journeyMapHead grid.
    Referenced as styles.journeyMapRow. */
 
-.journeyMapRow {
-  display: grid;
-  grid-template-columns: 2fr 1fr 0.8fr 0.8fr 0.8fr 1fr 1.8fr;
-  gap: 12px;
-  padding: 12px 20px;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  transition: background 120ms ease;
-}
-
-.journeyMapRow:hover { background: rgba(255, 255, 255, 0.02); }
+.journeyMapRow:hover { background: rgb(255 255 255 / 2%); }
 .journeyMapRow:last-child { border-bottom: none; }
 
 /* journeyAgingHead — Column header row for the Stage Aging tab.
    5 columns: Client, Stage, Age, Risk, Primary Friction.
    Used with: cx("journeyAgingHead", "fontMono", "text10", "colorMuted", "uppercase") */
 
-.journeyAgingHead {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 0.7fr 0.7fr 1.6fr;
-  gap: 12px;
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
-}
-
 /* journeyAgingRow — Data row in the Stage Aging tab. Mirrors journeyAgingHead grid.
    Referenced as styles.journeyAgingRow. */
 
-.journeyAgingRow {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 0.7fr 0.7fr 1.6fr;
-  gap: 12px;
-  padding: 12px 20px;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  transition: background 120ms ease;
-}
-
-.journeyAgingRow:hover { background: rgba(255, 255, 255, 0.02); }
+.journeyAgingRow:hover { background: rgb(255 255 255 / 2%); }
 .journeyAgingRow:last-child { border-bottom: none; }
 
 /* journeyMomentsSplit — Two-column layout for the Moments tab.
    Left: upcoming moments list. Right: lifecycle actions.
    Referenced as styles.journeyMomentsSplit. */
 
-.journeyMomentsSplit {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-@media (max-width: 900px) {
-  .journeyMomentsSplit { grid-template-columns: 1fr; }
-}
 
 /* journeyMomentHigh — Highlight modifier for high-severity moments.
    Applied alongside bgBg + borderDefault on the moment card. */
@@ -20184,7 +20092,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .journeyLine16 { line-height: 1.6; }
 
-
 /* ================================================================
    REFERRAL TRACKING PAGE
    File: referral-tracking-page.tsx
@@ -20199,7 +20106,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .refToneText.tonePurple  { color: var(--purple);  }
 
 /* ── refToneBorder — left-border accent on cards ── */
-.refToneBorder { border-left: 3px solid transparent; }
 .refToneBorder.toneAccent { border-left-color: var(--accent); }
 .refToneBorder.toneBlue   { border-left-color: var(--blue);   }
 .refToneBorder.toneAmber  { border-left-color: var(--amber);  }
@@ -20207,89 +20113,29 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .refToneBorder.toneText   { border-left-color: var(--border); }
 
 /* ── refToneTag — status chip (In Pipeline / Converted / Lost) ── */
-.refToneTag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-.refToneTag.toneAccent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
-.refToneTag.toneBlue   { background: color-mix(in srgb, var(--blue)   12%, transparent); color: var(--blue);   }
-.refToneTag.toneRed    { background: color-mix(in srgb, var(--red)    12%, transparent); color: var(--red);    }
 
 /* ── refTopRank — rank badge circle on top-referrers cards ── */
-.refTopRank {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  font-size: 0.875rem;
-}
-.refTopRank.toneAccent { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
-.refTopRank.toneAmber  { background: color-mix(in srgb, var(--amber)  14%, transparent); color: var(--amber);  }
-.refTopRank.toneBlue   { background: color-mix(in srgb, var(--blue)   14%, transparent); color: var(--blue);   }
 
 /* ── refToneBtn — "Thank Client" tone button ── */
-.refToneBtn {
-  border: 1px solid transparent;
-  border-radius: var(--r-xs);
-  cursor: pointer;
-  white-space: nowrap;
-}
 .refToneBtn.toneAccent { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 28%, transparent); }
 .refToneBtn.toneAmber  { background: color-mix(in srgb, var(--amber)  14%, transparent); color: var(--amber);  border-color: color-mix(in srgb, var(--amber)  28%, transparent); }
 .refToneBtn.toneBlue   { background: color-mix(in srgb, var(--blue)   14%, transparent); color: var(--blue);   border-color: color-mix(in srgb, var(--blue)   28%, transparent); }
 
 /* ── refBarTone — progress bar, colors via existing barFill.tone* compound selectors ── */
-.refBarTone { display: block; }
 
 /* ── Referral log row grid ── */
-.refLogRow {
-  display: grid;
-  grid-template-columns: 68px 1.2fr 1.2fr 64px 1fr 72px 1.2fr 80px auto;
-  gap: 12px;
-  align-items: center;
-}
 
 /* ── Top referrers row grid ── */
-.refTopRow {
-  display: grid;
-  grid-template-columns: 2fr 72px 80px 110px 120px auto;
-  gap: 16px;
-  align-items: center;
-}
 
 /* ── Layout / typography helpers ── */
-.refAlignCenter  { align-items: center; }
-.refTitle15      { font-size: 0.9375rem; }
-.refValue20      { font-size: 1.25rem; line-height: 1; }
-.refValue40      { font-size: 2.5rem; line-height: 1; font-weight: 800; }
-.refPad28        { padding: 28px; }
-.refFlex1        { flex: 1; }
-.refW20          { width: 20px; text-align: right; flex-shrink: 0; }
 
 /* ── Program settings helpers ── */
-.refRuleRow    { padding: 12px 0; }
-.refPendingCard { padding: 14px 16px; border-radius: var(--r-sm); border: 1px solid var(--border); }
 
 /* ── Apply credit button — purple variant ── */
-.refApplyBtnPurple {
-  background: color-mix(in srgb, var(--purple) 14%, transparent);
-  color: var(--purple);
-  border: 1px solid color-mix(in srgb, var(--purple) 28%, transparent);
-  border-radius: var(--r-xs);
-  cursor: pointer;
-}
 
 /* ── Analytics progress bar sizing ── */
-.refProg10     { height: 10px; border-radius: 5px; }
-.refProgFill10 { height: 10px; }
 
 /* ── ROI card accent border ── */
-.refAccentBorder { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
-
 
 /* ================================================================
    COMMUNICATION AUDIT PAGE
@@ -20304,119 +20150,37 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .commToneText.toneMuted  { color: var(--muted);  }
 
 /* ── commToneBorder — left-border accent on "by client" cards ── */
-.commToneBorder { border-left: 3px solid transparent; }
 .commToneBorder.toneAccent { border-left-color: var(--accent); }
 .commToneBorder.toneBlue   { border-left-color: var(--blue);   }
 .commToneBorder.toneAmber  { border-left-color: var(--amber);  }
 
 /* ── commBarFillTone — progress bar fill via tone modifier ── */
-.commProgressSm {
-  -webkit-appearance: none;
-  appearance: none;
-  flex: 1;
-  height: 5px;
-  border: none;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
-}
-.commProgressSm::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 3px;
-}
+
 .commProgressSm::-webkit-progress-value {
   border-radius: 3px;
   background: var(--muted);
 }
 .commProgressSm::-moz-progress-bar { border-radius: 3px; background: var(--muted); }
 
-.commBarFillTone.toneAccent::-webkit-progress-value { background: var(--accent); }
-.commBarFillTone.toneBlue::-webkit-progress-value   { background: var(--blue);   }
-.commBarFillTone.toneAmber::-webkit-progress-value  { background: var(--amber);  }
-.commBarFillTone.toneRed::-webkit-progress-value    { background: var(--red);    }
-.commBarFillTone.toneMuted::-webkit-progress-value  { background: var(--muted);  }
-
-.commBarFillTone.toneAccent::-moz-progress-bar { background: var(--accent); }
-.commBarFillTone.toneBlue::-moz-progress-bar   { background: var(--blue);   }
-.commBarFillTone.toneAmber::-moz-progress-bar  { background: var(--amber);  }
-.commBarFillTone.toneRed::-moz-progress-bar    { background: var(--red);    }
-.commBarFillTone.toneMuted::-moz-progress-bar  { background: var(--muted);  }
-
 /* ── Split layout (list + detail panel) ── */
-.commDetailSplit {
-  display: grid;
-  gap: 16px;
-}
-.commDetailSplitClosed { grid-template-columns: 1fr; }
-.commDetailSplitOpen   { grid-template-columns: 1fr 360px; }
 
 /* ── Detail panel ── */
-.commSticky {
-  position: sticky;
-  top: 20px;
-  align-self: start;
-}
 
 /* ── Comm row grid ── */
-.commRow {
-  display: grid;
-  grid-template-columns: 36px 1.2fr 2.5fr 60px 74px 24px 20px;
-  gap: 12px;
-  align-items: center;
-}
 
 /* ── Type icon ── */
-.commTypeIcon {
-  font-size: 1rem;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: var(--r-xs);
-  flex-shrink: 0;
-}
-
-.commTypeIconFixed {
-  font-size: 1rem;
-  width: 24px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-}
 
 /* ── Type badge ── */
-.commTypeBadge {
-  font-family: var(--font-dm-mono), monospace;
-  font-size: 0.56rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 4px;
-  text-align: center;
-}
 
 /* ── Sentiment icons ── */
-.commSentIcon   { font-size: 0.75rem; font-weight: 700; text-align: center; }
-.commSentIconSm { font-size: 0.7rem; font-weight: 700; width: 20px; text-align: center; }
 
 /* ── Card states ── */
-.commCardSelected { border-color: var(--accent) !important; background: color-mix(in srgb, var(--accent) 6%, transparent); }
-.commCardFlagged  { border-left: 2px solid color-mix(in srgb, var(--red) 50%, transparent); }
 
 /* ── Typography helpers ── */
-.commTitle16 { font-size: 1rem; line-height: 1.3; }
-.commTitle15 { font-size: 0.9375rem; }
-.commValue22 { font-size: 1.375rem; line-height: 1; }
 
 /* ── Snippet block ── */
-.commSnippet { border-radius: var(--r-xs); line-height: 1.5; }
 
 /* ── Layout utilities ── */
-.commFlex1   { flex: 1; }
-.commW20     { width: 20px; text-align: right; flex-shrink: 0; }
-.commRounded6 { border-radius: 6px; }
-.commRounded8 { border-radius: 8px; }
 
 /* ================================================================
    VENDOR & COST CONTROL PAGE (vendor*)
@@ -20430,6 +20194,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .vendorToneText.toneRed    { color: var(--red);    }
 .vendorToneText.tonePurple { color: var(--purple); }
 .vendorToneText.toneMuted  { color: var(--muted);  }
+
 /* "high" priority maps to toneText (--orange fallback) → warm orange */
 .vendorToneText.toneText   { color: color-mix(in srgb, var(--amber) 65%, var(--red) 35%); }
 
@@ -20457,7 +20222,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.6fr 0.7fr 0.8fr 0.7fr 0.8fr 0.6fr 0.6fr auto;
   gap: 12px;
   padding: 9px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -20465,6 +20230,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .vendorReviewRow {
   background: color-mix(in srgb, var(--amber) 4%, transparent);
 }
+
 .vendorReviewRow:hover {
   background: color-mix(in srgb, var(--amber) 7%, transparent) !important;
 }
@@ -20512,7 +20278,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
   gap: 12px;
   padding: 9px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -20536,7 +20302,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2.5fr 0.7fr 0.7fr 0.9fr 0.6fr 0.7fr 1fr;
   gap: 12px;
   padding: 9px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -20544,16 +20310,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+
 .annRow {
   display: grid;
   grid-template-columns: 2.5fr 0.7fr 0.7fr 0.9fr 0.6fr 0.7fr 1fr;
   gap: 12px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
-.annRow:hover { background: rgba(255, 255, 255, 0.02); }
+.annRow:hover { background: rgb(255 255 255 / 2%); }
 .annRow:last-child { border-bottom: none; }
 
 /* ── Loyalty & Credits ── */
@@ -20562,7 +20329,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.8fr 0.7fr 0.9fr 1.1fr 1fr 1.2fr;
   gap: 12px;
   padding: 9px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -20570,16 +20337,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+
 .loyRow {
   display: grid;
   grid-template-columns: 1.8fr 0.7fr 0.9fr 1.1fr 1fr 1.2fr;
   gap: 12px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
-.loyRow:hover { background: rgba(255, 255, 255, 0.02); }
+.loyRow:hover { background: rgb(255 255 255 / 2%); }
 .loyRow:last-child { border-bottom: none; }
 
 /* ── Booking & Appointments ── */
@@ -20588,7 +20356,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.5fr 0.9fr 1fr 0.6fr 0.9fr 0.7fr 0.8fr 1fr;
   gap: 12px;
   padding: 9px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -20596,16 +20364,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+
 .bkngRow {
   display: grid;
   grid-template-columns: 1.5fr 0.9fr 1fr 0.6fr 0.9fr 0.7fr 0.8fr 1fr;
   gap: 12px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
-.bkngRow:hover { background: rgba(255, 255, 255, 0.02); }
+.bkngRow:hover { background: rgb(255 255 255 / 2%); }
 .bkngRow:last-child { border-bottom: none; }
 
 /* ── Design Review Admin ── */
@@ -20614,7 +20383,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 1.8fr 1.2fr 0.9fr 0.9fr 0.5fr 0.7fr 1.2fr;
   gap: 12px;
   padding: 9px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -20622,16 +20391,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+
 .drvRow {
   display: grid;
   grid-template-columns: 1.8fr 1.2fr 0.9fr 0.9fr 0.5fr 0.7fr 1.2fr;
   gap: 12px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
-.drvRow:hover { background: rgba(255, 255, 255, 0.02); }
+.drvRow:hover { background: rgb(255 255 255 / 2%); }
 .drvRow:last-child { border-bottom: none; }
 
 /* ── Sprint Board Admin ── */
@@ -20646,7 +20416,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 1fr 0.8fr 0.9fr 0.9fr 0.7fr 1.1fr;
   gap: 12px;
   padding: 9px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -20654,16 +20424,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+
 .capRow {
   display: grid;
   grid-template-columns: 2fr 1fr 0.8fr 0.9fr 0.9fr 0.7fr 1.1fr;
   gap: 12px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
-.capRow:hover { background: rgba(255, 255, 255, 0.02); }
+.capRow:hover { background: rgb(255 255 255 / 2%); }
 .capRow:last-child { border-bottom: none; }
 
 /* ── Meeting Archive ── */
@@ -20672,7 +20443,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 2fr 1fr 1fr 0.7fr 0.6fr 0.8fr 0.8fr;
   gap: 12px;
   padding: 9px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -20680,16 +20451,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+
 .mtaRow {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 0.7fr 0.6fr 0.8fr 0.8fr;
   gap: 12px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
-.mtaRow:hover { background: rgba(255, 255, 255, 0.02); }
+.mtaRow:hover { background: rgb(255 255 255 / 2%); }
 .mtaRow:last-child { border-bottom: none; }
 
 /* ── Messages page — Start Call button states ─────────────────────── */
@@ -20698,6 +20470,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   color: #050508;
   border: none;
 }
+
 .btnCallPending {
   background: var(--s3);
   color: #050508;

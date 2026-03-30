@@ -12,7 +12,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 18px 0;
   display: flex;
   flex-direction: column;
@@ -193,7 +192,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -343,7 +341,6 @@
   overflow: hidden;
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .svcGrowPortfolioThumb {
@@ -360,7 +357,7 @@
   top: 8px;
   left: 8px;
   border: 1px solid var(--border);
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
   border-radius: 999px;
   padding: 2px 8px;
   font-family: var(--font-dm-mono), monospace;
@@ -409,7 +406,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -567,7 +563,7 @@
 .svcGrowModalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 5, 8, 0.82);
+  background: rgb(5 5 8 / 82%);
   backdrop-filter: blur(6px);
   z-index: 100;
   display: grid;
@@ -581,7 +577,6 @@
   border-radius: var(--r-md);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -688,7 +683,7 @@
   gap: 8px;
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .svcGrowLayout {
     grid-template-columns: 210px minmax(0, 1fr);
   }
@@ -702,7 +697,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .svcGrowLayout {
     grid-template-columns: 1fr;
   }
@@ -718,7 +713,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .svcGrowTabs {
     padding: 0 10px;
   }
@@ -738,7 +733,9 @@
 }
 
 /* ========================================================================== */
+
 /* Project Overview Page                                                      */
+
 /* ========================================================================== */
 
 .projOverviewRoot {
@@ -787,7 +784,7 @@
 
 .projOverviewSideItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .projOverviewSideItemActive {
@@ -889,7 +886,7 @@
 
 .projOverviewProgressTrack {
   height: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
 }
 
 .projOverviewProgressFill {
@@ -1280,7 +1277,7 @@
 }
 
 .projOverviewMilestonePending {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border: 1px solid var(--border);
   color: var(--muted2);
 }
@@ -1313,7 +1310,7 @@
 
 .projOverviewMilestoneTrack {
   height: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   margin-bottom: 6px;
 }
 
@@ -1406,7 +1403,7 @@
 }
 
 .projOverviewLegendPlanned {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
 }
 
 .projOverviewLegendActual {
@@ -1492,7 +1489,7 @@
 }
 
 .projOverviewTimelinePlanned {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgb(255 255 255 / 9%);
   color: var(--muted2);
 }
 
@@ -1771,7 +1768,7 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 8, 0.82);
+  background: rgb(5 5 8 / 82%);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -1905,7 +1902,7 @@
   font-family: var(--font-mono);
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .projOverviewLayout {
     grid-template-columns: 1fr;
   }
@@ -1924,7 +1921,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .projOverviewContent {
     padding: 16px;
   }
@@ -1953,7 +1950,9 @@
 }
 
 /* ========================================================================== */
+
 /* Onboarding & Offboarding Page                                              */
+
 /* ========================================================================== */
 
 .onboardFlowRoot {
@@ -2001,7 +2000,7 @@
 
 .onboardFlowSideItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .onboardFlowSideItemActive {
@@ -2072,7 +2071,7 @@
 
 .onboardFlowProgressTrack {
   height: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   margin-bottom: 6px;
 }
 
@@ -2109,8 +2108,7 @@
     radial-gradient(circle at top right, color-mix(in oklab, var(--accent) 14%, transparent), transparent 34%),
     linear-gradient(160deg, color-mix(in oklab, var(--surface) 82%, transparent), color-mix(in oklab, var(--surface2) 92%, black));
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 22px 64px rgb(0 0 0 / 24%);
   overflow: hidden;
 }
 
@@ -2145,16 +2143,14 @@
   border: 1px solid color-mix(in oklab, white 8%, transparent);
   background: color-mix(in oklab, var(--surface) 58%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
 }
 
 .onboardFlowTabs {
   border: 1px solid color-mix(in oklab, var(--accent) 18%, var(--border));
   background: color-mix(in oklab, var(--surface) 60%, transparent);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
   padding: 8px;
   display: flex;
   gap: 8px;
@@ -2186,7 +2182,7 @@
   color: color-mix(in oklab, white 88%, var(--accent));
   border-color: color-mix(in oklab, var(--accent) 42%, transparent);
   background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 18%, transparent), color-mix(in oklab, var(--blue) 8%, transparent));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 22px color-mix(in oklab, var(--accent) 16%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%), 0 10px 22px color-mix(in oklab, var(--accent) 16%, transparent);
 }
 
 .onboardFlowContent {
@@ -2219,8 +2215,7 @@
   border-radius: calc(var(--r-md) + 2px);
   background: color-mix(in oklab, var(--surface) 70%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
 }
 
 .onboardFlowSectionTitle {
@@ -2254,8 +2249,7 @@
     radial-gradient(circle at top right, color-mix(in oklab, var(--accent) 18%, transparent), transparent 42%),
     linear-gradient(145deg, color-mix(in oklab, var(--surface) 82%, transparent), color-mix(in oklab, var(--surface2) 92%, black));
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 28%);
   padding: 28px;
   position: relative;
   border-radius: calc(var(--r-md) + 4px);
@@ -2310,7 +2304,6 @@
   border: 1px solid color-mix(in oklab, white 8%, transparent);
   background: color-mix(in oklab, var(--surface) 68%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   padding: 10px 12px;
   display: flex;
   align-items: center;
@@ -2445,7 +2438,6 @@
   gap: 10px;
   background: color-mix(in oklab, var(--surface) 70%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-radius: calc(var(--r-md) + 2px);
   border: 1px solid color-mix(in oklab, white 8%, transparent);
 }
@@ -2536,7 +2528,6 @@
   gap: 10px;
   background: color-mix(in oklab, var(--surface) 70%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-radius: calc(var(--r-md) + 2px);
   border: 1px solid color-mix(in oklab, white 8%, transparent);
 }
@@ -2577,7 +2568,7 @@
 }
 
 .onboardFlowStepPending {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgb(255 255 255 / 7%);
   border: 1px solid var(--border);
   color: var(--muted2);
 }
@@ -2607,8 +2598,7 @@
   border: 1px solid color-mix(in oklab, white 7%, transparent);
   background: color-mix(in oklab, var(--surface) 76%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
 }
 
 .onboardFlowCommsIcon {
@@ -2690,7 +2680,6 @@
   gap: 10px;
   background: color-mix(in oklab, var(--surface) 70%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-radius: calc(var(--r-md) + 2px);
   border: 1px solid color-mix(in oklab, white 8%, transparent);
 }
@@ -2810,7 +2799,7 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 8, 0.84);
+  background: rgb(5 5 8 / 84%);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -2907,7 +2896,7 @@
   border-color: var(--accent);
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .onboardFlowLayout {
     grid-template-columns: 1fr;
   }
@@ -2922,7 +2911,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .onboardFlowTopShell {
     padding: 20px 16px 14px;
   }
@@ -2956,7 +2945,9 @@
 }
 
 /* ========================================================================== */
+
 /* Feedback & Collaboration Page                                              */
+
 /* ========================================================================== */
 
 .fbCollabRoot {
@@ -3004,7 +2995,7 @@
 
 .fbCollabSideItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .fbCollabSideItemActive {
@@ -3383,7 +3374,7 @@
   position: absolute;
   right: 10px;
   bottom: 8px;
-  background: rgba(5, 5, 8, 0.82);
+  background: rgb(5 5 8 / 82%);
   color: var(--muted2);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -3553,7 +3544,7 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 8, 0.84);
+  background: rgb(5 5 8 / 84%);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -3709,7 +3700,7 @@
   color: var(--text);
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .fbCollabLayout {
     grid-template-columns: 1fr;
   }
@@ -3720,7 +3711,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .fbCollabContent {
     padding: 16px;
   }
@@ -3741,7 +3732,9 @@
 }
 
 /* ========================================================================== */
+
 /* Status & Launch Page                                                       */
+
 /* ========================================================================== */
 
 .statusLaunchRoot {
@@ -3789,7 +3782,7 @@
 
 .statusLaunchSideItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .statusLaunchSideItemActive {
@@ -3850,7 +3843,7 @@
 
 .statusLaunchProgressTrack {
   height: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   margin-bottom: 6px;
 }
 
@@ -4389,7 +4382,7 @@
   color: var(--muted2);
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .statusLaunchLayout {
     grid-template-columns: 1fr;
   }
@@ -4404,7 +4397,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .statusLaunchContent {
     padding: 16px;
   }
@@ -4464,7 +4457,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .progKnowSection {
@@ -4705,7 +4697,7 @@
   right: 12px;
   bottom: 10px;
   padding: 2px 8px;
-  background: rgba(5, 5, 8, 0.7);
+  background: rgb(5 5 8 / 70%);
   color: var(--muted2);
   font-family: var(--font-mono);
   font-size: 9px;
@@ -4932,7 +4924,7 @@
   margin-top: 12px;
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .progKnowLayout {
     grid-template-columns: 1fr;
   }
@@ -4947,7 +4939,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .progKnowContent {
     padding: 16px;
   }
@@ -4991,7 +4983,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .projBriefSection {
@@ -5300,7 +5291,7 @@
   line-height: 1.7;
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .projBriefLayout {
     grid-template-columns: 1fr;
   }
@@ -5311,7 +5302,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .projBriefContent {
     padding: 16px;
   }
@@ -5352,7 +5343,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .teamMgmtSection {
@@ -5704,7 +5694,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
   backdrop-filter: blur(8px);
 }
 
@@ -5850,7 +5840,7 @@
   font-size: 10px;
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .teamMgmtLayout {
     grid-template-columns: 1fr;
   }
@@ -5865,7 +5855,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .teamMgmtContent {
     padding: 16px;
   }
@@ -5914,7 +5904,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .timeTrackSection {
@@ -6300,7 +6289,7 @@
   color: var(--text);
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .timeTrackLayout {
     grid-template-columns: 1fr;
   }
@@ -6315,7 +6304,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .timeTrackContent {
     padding: 16px;
   }
@@ -6359,7 +6348,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .budgetTransSection {
@@ -6581,7 +6569,7 @@
   right: 0;
   width: 2px;
   height: 100%;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgb(255 255 255 / 40%);
 }
 
 .budgetTransMarkers {
@@ -6751,7 +6739,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .budgetTransLayout {
     grid-template-columns: 1fr;
   }
@@ -6766,7 +6754,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .budgetTransContent {
     padding: 16px;
   }
@@ -6816,7 +6804,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .commLogSection {
@@ -7080,7 +7067,7 @@
   font-size: 11px;
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .commLogLayout {
     grid-template-columns: 1fr;
   }
@@ -7091,7 +7078,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .commLogHeader {
     padding: 16px;
     flex-direction: column;
@@ -7145,7 +7132,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .changeHistSection {
@@ -7422,7 +7408,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
   backdrop-filter: blur(8px);
 }
 
@@ -7502,7 +7488,7 @@
   letter-spacing: 0.06em;
 }
 
-@media (max-width: 1180px) {
+@media (width <= 1180px) {
   .changeHistLayout {
     grid-template-columns: 1fr;
   }
@@ -7513,7 +7499,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .changeHistHeader {
     padding: 16px;
   }
@@ -7620,7 +7606,7 @@
   cursor: pointer;
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .pillTabs {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -7639,8 +7625,8 @@
 }
 
 .pillTabActive {
-  border-color: rgba(200, 241, 53, 0.4);
-  background: rgba(200, 241, 53, 0.12);
+  border-color: rgb(200 241 53 / 40%);
+  background: rgb(200 241 53 / 12%);
   color: var(--lime);
 }
 
@@ -7704,7 +7690,6 @@
   border-radius: 50%;
   background: var(--s3);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   display: flex;
   align-items: center;
@@ -7730,10 +7715,9 @@
     radial-gradient(circle at top right, color-mix(in oklab, var(--lime) 14%, transparent) 0, transparent 38%),
     color-mix(in oklab, var(--s1) 90%, transparent);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 20px 44px rgba(0, 0, 0, 0.18);
+    inset 0 1px 0 rgb(255 255 255 / 5%),
+    0 20px 44px rgb(0 0 0 / 18%);
   padding: 24px;
 }
 
@@ -7755,7 +7739,7 @@
   min-height: 108px;
   background: color-mix(in oklab, var(--s2) 88%, transparent);
   border: 1px solid color-mix(in oklab, var(--b2) 86%, transparent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
 }
 
 .teamAccessTabRail {
@@ -7772,7 +7756,6 @@
     radial-gradient(circle at top left, color-mix(in oklab, var(--amber) 10%, transparent), transparent 52%),
     color-mix(in oklab, var(--s1) 88%, transparent);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 .teamAccessReadOnlyTitle {
@@ -7814,10 +7797,9 @@
   border-radius: 24px;
   background: color-mix(in oklab, var(--s1) 88%, transparent);
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 18px 38px rgba(0, 0, 0, 0.14);
+    inset 0 1px 0 rgb(255 255 255 / 4%),
+    0 18px 38px rgb(0 0 0 / 14%);
 }
 
 .teamAccessPanel {
@@ -8021,7 +8003,7 @@
   background:
     linear-gradient(135deg, color-mix(in oklab, var(--team-tone) 6%, transparent), transparent 36%),
     color-mix(in oklab, var(--s2) 84%, transparent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
 }
 
 .teamAccessMemberCard::before {
@@ -8099,7 +8081,7 @@
   border-radius: 18px;
 }
 
-@media (max-width: 980px) {
+@media (width <= 980px) {
   .teamAccessStatsGrid,
   .teamAccessPermGrid,
   .teamAccessMembersLayout {
@@ -8113,7 +8095,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .teamAccessShell,
   .teamAccessListShell,
   .teamAccessPanel {
@@ -8164,17 +8146,17 @@
 
 .alertCardAccent {
   border-left-color: var(--lime);
-  background: rgba(200, 241, 53, 0.04);
+  background: rgb(200 241 53 / 4%);
 }
 
 .alertCardAmber {
   border-left-color: var(--amber);
-  background: rgba(245, 166, 35, 0.04);
+  background: rgb(245 166 35 / 4%);
 }
 
 .alertCardRed {
   border-left-color: var(--red);
-  background: rgba(255, 95, 95, 0.04);
+  background: rgb(255 95 95 / 4%);
 }
 
 /* ─── Dot indicator ──────────────────────────────────────────────── */
@@ -8270,7 +8252,6 @@
   margin: 8px 10px 0;
   background: var(--s3);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-radius: var(--r-sm);
   padding: 10px 12px;
@@ -8279,27 +8260,28 @@
 /* ─── Section header (eyebrow-style) ─────────────────────────────── */
 
 /* ── Responsive: KPI grids ──────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .timeTrackStats,
   .budgetTransStatGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .timeTrackStats,
   .budgetTransStatGrid {
     grid-template-columns: 1fr;
   }
 }
 
-
 /* ── Responsive: card grids ──────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .projOverviewPriorityGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .projOverviewPriorityGrid {
     grid-template-columns: 1fr;
   }
@@ -8315,10 +8297,11 @@
   font-size: 0.65rem;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
-  background: rgba(245,166,35,0.12);
+  background: rgb(245 166 35 / 12%);
   color: var(--amber, #f5a623);
-  border: 1px solid rgba(245,166,35,0.25);
+  border: 1px solid rgb(245 166 35 / 25%);
 }
+
 .deadlineBadgeOverdue {
   display: inline-flex;
   align-items: center;
@@ -8328,9 +8311,9 @@
   font-size: 0.65rem;
   font-weight: 600;
   font-family: var(--font-dm-mono), monospace;
-  background: rgba(255,95,95,0.12);
+  background: rgb(255 95 95 / 12%);
   color: var(--red, #ff5f5f);
-  border: 1px solid rgba(255,95,95,0.25);
+  border: 1px solid rgb(255 95 95 / 25%);
 }
 
 /* Revision modal textarea for approvals */
@@ -8348,6 +8331,7 @@
   outline: none;
   transition: border-color 0.14s;
 }
+
 .approvalRevisionTextarea:focus {
   border-color: var(--b3);
 }
@@ -8360,6 +8344,7 @@
   border: 1px solid var(--b2);
   border-radius: var(--r-md);
 }
+
 .approvalRevisionBoxTitle {
   font-size: 0.72rem;
   font-weight: 700;
@@ -8367,6 +8352,7 @@
   margin-bottom: 8px;
   color: var(--text);
 }
+
 .approvalRevisionBtnRow {
   display: flex;
   gap: 8px;

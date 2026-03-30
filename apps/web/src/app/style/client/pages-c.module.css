@@ -41,7 +41,7 @@
 
 .secxSideItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .secxSideItemActive {
@@ -82,7 +82,6 @@
   border-radius: var(--r-sm);
   background: var(--s2);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -114,7 +113,6 @@
   border-radius: var(--r-md);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -169,7 +167,7 @@
   width: 56px;
   height: 4px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   overflow: hidden;
 }
 
@@ -334,7 +332,7 @@
 .secuScoreTrack {
   width: 120px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -378,7 +376,7 @@
 
 .secuPwdBar {
   height: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   border-radius: 99px;
   overflow: hidden;
   margin-top: 6px;
@@ -447,7 +445,6 @@
   border-radius: var(--r-sm);
   background: var(--s2);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 14px 16px;
 }
 
@@ -480,7 +477,6 @@
   border: 1px solid var(--border);
   background: var(--s2);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-xs);
   padding: 5px 8px;
 }
@@ -541,7 +537,6 @@
   border-bottom: none;
   background: var(--s2);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-sm) var(--r-sm) 0 0;
   padding: 8px 10px;
 }
@@ -580,7 +575,7 @@
   margin: 0 auto;
   border: 1px solid var(--border);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   color: var(--muted2);
   font-size: 0.56rem;
   display: inline-flex;
@@ -608,7 +603,7 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .secuFilterRow {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -633,7 +628,6 @@
   border-bottom: none;
   background: var(--s2);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-sm) var(--r-sm) 0 0;
   padding: 8px 10px;
 }
@@ -686,7 +680,7 @@
   position: fixed;
   inset: 0;
   z-index: 140;
-  background: rgba(5, 5, 8, 0.84);
+  background: rgb(5 5 8 / 84%);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -698,7 +692,6 @@
   border-radius: var(--r-md);
   background: var(--s2);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   box-shadow: var(--shadow-modal);
   color: inherit;
 }
@@ -907,7 +900,7 @@
 }
 
 .secuSessBadgeOld {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--muted2);
 }
 
@@ -920,7 +913,6 @@
 }
 
 @keyframes sessPulse {
-
   0%,
   100% {
     opacity: 1;
@@ -1156,7 +1148,7 @@
   font-weight: 600;
 }
 
-@media (max-width: 980px) {
+@media (width <= 980px) {
   .secxPage {
     grid-template-columns: 1fr;
   }
@@ -1202,7 +1194,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .secxStatStrip {
     grid-template-columns: 1fr;
   }
@@ -1223,7 +1215,6 @@
   background: var(--surface);
   border-right: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 18px 0;
   display: flex;
   flex-direction: column;
@@ -1386,7 +1377,6 @@
 }
 
 @keyframes aiAutoBlink {
-
   0%,
   100% {
     opacity: 1;
@@ -1446,7 +1436,6 @@
   border: 1px solid color-mix(in oklab, var(--purple) 48%, var(--border));
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--r-md);
   padding: 18px 18px 14px;
   position: relative;
@@ -1456,7 +1445,7 @@
 .aiAutoSummaryCard::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 0 auto;
   height: 2px;
   background: linear-gradient(90deg, var(--purple), var(--blue), var(--purple));
 }
@@ -1567,7 +1556,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -1680,7 +1668,6 @@
 }
 
 @keyframes aiAutoTypingPulse {
-
   0%,
   100% {
     opacity: 0.3;
@@ -1724,7 +1711,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .aiAutoFaqQ {
@@ -1764,7 +1750,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
 }
 
@@ -1855,7 +1840,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 12px 14px;
 }
 
@@ -1889,7 +1873,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -1979,7 +1962,7 @@
   color: var(--muted);
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .aiAutoLayout {
     grid-template-columns: 210px minmax(0, 1fr);
   }
@@ -1989,7 +1972,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .aiAutoLayout {
     grid-template-columns: 1fr;
   }
@@ -2011,7 +1994,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .aiAutoTabs {
     padding: 0 10px;
   }
@@ -2044,7 +2027,6 @@
   border-right: 1px solid var(--border);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 18px 0;
   display: flex;
   flex-direction: column;
@@ -2204,7 +2186,7 @@
 
 .docsStatBar {
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 0 auto;
   height: 2px;
 }
 
@@ -2415,7 +2397,6 @@
   border-radius: var(--r-sm);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   padding: 14px;
 }
 
@@ -2654,7 +2635,7 @@
 .docsModalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 5, 8, 0.82);
+  background: rgb(5 5 8 / 82%);
   backdrop-filter: blur(6px);
   z-index: 100;
   display: grid;
@@ -2668,7 +2649,6 @@
   border-radius: var(--r-md);
   background: var(--surface);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -2794,7 +2774,7 @@
   border-color: color-mix(in oklab, var(--accent) 44%, var(--border2));
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .docsLayout {
     grid-template-columns: 210px minmax(0, 1fr);
   }
@@ -2808,7 +2788,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .docsLayout {
     grid-template-columns: 1fr;
   }
@@ -2836,7 +2816,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .docsStatStrip {
     grid-template-columns: 1fr;
   }
@@ -2858,22 +2838,22 @@
 /* ─── Services & Growth Page ───────────────────────────────────── */
 
 /* ── Responsive: KPI grids ──────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .secxStatStrip,
   .docsStatStrip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .secxStatStrip,
   .docsStatStrip {
     grid-template-columns: 1fr;
   }
 }
 
-
 /* ── Responsive: layout splits ───────────────────────────────────── */
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .secuCodeGrid {
     grid-template-columns: 1fr;
   }

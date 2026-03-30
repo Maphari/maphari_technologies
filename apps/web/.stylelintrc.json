@@ -2,10 +2,22 @@
   "extends": ["stylelint-config-standard"],
   "rules": {
     "selector-class-pattern": null,
-    "max-nesting-depth": 2,
-    "declaration-block-no-duplicate-properties": true,
+    "keyframes-name-pattern": null,
+    "custom-property-pattern": null,
+    "declaration-block-single-line-max-declarations": null,
+    "no-descending-specificity": null,
+    "selector-type-no-unknown": null,
+    "selector-type-case": null,
+    "declaration-property-value-keyword-no-deprecated": null,
+    "property-no-deprecated": null,
+    "declaration-block-no-duplicate-properties": [
+      true,
+      { "ignore": ["consecutive-duplicates-with-different-syntaxes"] }
+    ],
     "no-duplicate-selectors": true,
     "color-no-invalid-hex": true,
-    "unit-no-unknown": true
+    "unit-no-unknown": true,
+    "block-no-empty": true,
+    "max-nesting-depth": 2
   }
 }

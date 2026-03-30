@@ -44,11 +44,12 @@
   --ease-ui: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Shadows */
-  --shadow-float: 0 10px 28px rgba(0, 0, 0, 0.25);
-  --shadow-overlay: 0 16px 40px rgba(0, 0, 0, 0.38);
+  --shadow-float: 0 10px 28px rgb(0 0 0 / 25%);
+  --shadow-overlay: 0 16px 40px rgb(0 0 0 / 38%);
   --surface-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
 
   /* Form control tokens — 8px grid (Atlassian-aligned), Adobe Spectrum-inspired */
+
   /* These enforce consistent height, padding, radius, and font-size across all 3 dashboards */
   --ctrl-height:    36px;   /* Target input/select/button height on desktop */
   --ctrl-pad-v:     8px;    /* Vertical padding (yields ~36px with 1rem line-height) */
@@ -65,6 +66,7 @@
   --ctrl-height-touch: 44px;
 
   /* Breakpoint references (informational — CSS custom props can't be used in @media rules) */
+
   /* Active breakpoints: 700px (grid collapse), 900px (sidebar hide), 1200px (wide layout) */
 }
 
@@ -74,11 +76,11 @@
   --palette-surface: #0d0d14;
   --palette-surface-2: #13131e;
   --palette-surface-3: #171726;
-  --palette-border: rgba(255, 255, 255, 0.07);
-  --palette-border-strong: rgba(255, 255, 255, 0.12);
+  --palette-border: rgb(255 255 255 / 7%);
+  --palette-border-strong: rgb(255 255 255 / 12%);
   --palette-text: #f0ede8;
-  --palette-muted: rgba(240, 237, 232, 0.45);
-  --palette-muted-2: rgba(240, 237, 232, 0.25);
+  --palette-muted: rgb(240 237 232 / 45%);
+  --palette-muted-2: rgb(240 237 232 / 25%);
   --palette-accent-dim: color-mix(in oklab, var(--palette-accent) 16%, transparent);
   --palette-accent-glow: color-mix(in oklab, var(--palette-accent) 8%, transparent);
 }
@@ -89,22 +91,22 @@
   --palette-surface: #0d0d14;
   --palette-surface-2: #13131e;
   --palette-surface-3: #171726;
-  --palette-border: rgba(255, 255, 255, 0.07);
-  --palette-border-strong: rgba(255, 255, 255, 0.12);
+  --palette-border: rgb(255 255 255 / 7%);
+  --palette-border-strong: rgb(255 255 255 / 12%);
   --palette-text: #f0ede8;
-  --palette-muted: rgba(240, 237, 232, 0.45);
-  --palette-muted-2: rgba(240, 237, 232, 0.22);
+  --palette-muted: rgb(240 237 232 / 45%);
+  --palette-muted-2: rgb(240 237 232 / 22%);
   --palette-accent: #c8f135;
   --palette-accent-2: #d6f55a;
-  --palette-accent-dim: rgba(200, 241, 53, 0.12);
-  --palette-accent-glow: rgba(200, 241, 53, 0.06);
+  --palette-accent-dim: rgb(200 241 53 / 12%);
+  --palette-accent-glow: rgb(200 241 53 / 6%);
 }
 
 .dashboardThemeAdmin {
   --palette-accent: #8b6fff;
   --palette-accent-2: #a989ff;
-  --palette-accent-dim: rgba(139, 111, 255, 0.16);
-  --palette-accent-glow: rgba(139, 111, 255, 0.08);
+  --palette-accent-dim: rgb(139 111 255 / 16%);
+  --palette-accent-glow: rgb(139 111 255 / 8%);
 }
 
 .dashboardThemeClient {
@@ -134,21 +136,24 @@
   /* Text */
   --text: #f0f0f2;
   --text-muted: #8888a0;
-  --text-faint: #555566;
+  --text-faint: #556;
 
   /* Shadows */
-  --shadow-card: 0 2px 12px rgba(0,0,0,0.5);
-  --shadow-modal: 0 8px 40px rgba(0,0,0,0.7);
+  --shadow-card: 0 2px 12px rgb(0 0 0 / 50%);
+  --shadow-modal: 0 8px 40px rgb(0 0 0 / 70%);
 
   /* Accent colours stay the same (lime, purple, teal) */
+
   /* Client lime: #c8f135 — no change */
+
   /* Admin purple: #8b6fff — no change */
+
   /* Staff teal: #24b8a8 — no change */
 }
 
 [data-theme="light"] {
   --bg-page: #f5f5f7;
-  --s1: #ffffff;
+  --s1: #fff;
   --s2: #f8f8fa;
   --s3: #f0f0f4;
   --s4: #e8e8ee;
@@ -158,6 +163,6 @@
   --text: #0d0d0f;
   --text-muted: #666680;
   --text-faint: #9999b0;
-  --shadow-card: 0 1px 4px rgba(0,0,0,0.08);
-  --shadow-modal: 0 8px 32px rgba(0,0,0,0.15);
+  --shadow-card: 0 1px 4px rgb(0 0 0 / 8%);
+  --shadow-modal: 0 8px 32px rgb(0 0 0 / 15%);
 }

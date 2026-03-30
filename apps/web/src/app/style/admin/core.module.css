@@ -1,40 +1,40 @@
-@import "../dashboard-token-scale.css";
+@import url("../dashboard-token-scale.css");
 
 .dashboardRoot {
   /* ── Background ── */
   --bg: #04040a;
 
   /* ── Surfaces — white-glass (same pattern as staff) ── */
-  --s1: rgba(255, 255, 255, 0.04);
-  --s2: rgba(255, 255, 255, 0.07);
-  --s3: rgba(255, 255, 255, 0.10);
-  --s4: rgba(255, 255, 255, 0.14);
+  --s1: rgb(255 255 255 / 4%);
+  --s2: rgb(255 255 255 / 7%);
+  --s3: rgb(255 255 255 / 10%);
+  --s4: rgb(255 255 255 / 14%);
 
   /* ── Borders ── */
-  --b1: rgba(255, 255, 255, 0.06);
-  --b2: rgba(255, 255, 255, 0.10);
-  --b3: rgba(255, 255, 255, 0.16);
-  --b-top: rgba(255, 255, 255, 0.10);
+  --b1: rgb(255 255 255 / 6%);
+  --b2: rgb(255 255 255 / 10%);
+  --b3: rgb(255 255 255 / 16%);
+  --b-top: rgb(255 255 255 / 10%);
   --border:  var(--b1);
   --border2: var(--b2);
 
   /* ── Accent — admin purple identity ── */
   --accent:   var(--palette-accent,   #8b6fff);
   --accent2:  var(--palette-accent-2, #a989ff);
-  --accent-d: rgba(139, 111, 255, 0.14);
-  --accent-g: rgba(139, 111, 255, 0.07);
+  --accent-d: rgb(139 111 255 / 14%);
+  --accent-g: rgb(139 111 255 / 7%);
 
   /* ── Semantic palette ── */
-  --green:  #34d98b;  --green-d:  rgba(52,  217, 139, 0.12);
-  --amber:  #f5a623;  --amber-d:  rgba(245, 166,  35, 0.12);
-  --red:    #ff5f5f;  --red-d:    rgba(255,  95,  95, 0.12);
-  --purple: #8b6fff;  --purple-d: rgba(139, 111, 255, 0.14);
-  --blue:   #60a5fa;  --blue-d:   rgba(91,  156, 245, 0.12);
+  --green:  #34d98b;  --green-d:  rgb(52  217 139 / 12%);
+  --amber:  #f5a623;  --amber-d:  rgb(245 166  35 / 12%);
+  --red:    #ff5f5f;  --red-d:    rgb(255  95  95 / 12%);
+  --purple: #8b6fff;  --purple-d: rgb(139 111 255 / 14%);
+  --blue:   #60a5fa;  --blue-d:   rgb(91  156 245 / 12%);
 
   /* ── Text ── */
   --text:  var(--palette-text,   #f0ede8);
-  --muted: var(--palette-muted,  rgba(240, 237, 232, 0.45));
-  --muted2:var(--palette-muted-2,rgba(240, 237, 232, 0.25));
+  --muted: var(--palette-muted,  rgb(240 237 232 / 45%));
+  --muted2:var(--palette-muted-2,rgb(240 237 232 / 25%));
 
   /* ── Radius — rounder, matching staff ── */
   --r-xxs: 4px;
@@ -45,9 +45,9 @@
   --r-xl:  28px;
 
   /* ── Shadows ── */
-  --shadow-card:   0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 var(--b-top);
-  --shadow-island: 0 16px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
-  --shadow-modal:  0 24px 64px rgba(0,0,0,0.65);
+  --shadow-card:   0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 var(--b-top);
+  --shadow-island: 0 16px 48px rgb(0 0 0 / 55%), inset 0 1px 0 rgb(255 255 255 / 8%);
+  --shadow-modal:  0 24px 64px rgb(0 0 0 / 65%);
 
   /* ── Layout ── */
   --rail-w:   52px;
@@ -62,10 +62,10 @@
   --glass-lg: 20px;
 
   /* ── Corner glows ── */
-  --glow-purple: rgba(139, 111, 255, 0.18);
-  --glow-green:  rgba(52,  217, 139, 0.15);
-  --glow-amber:  rgba(245, 166,  35, 0.15);
-  --glow-blue:   rgba(96,  165, 250, 0.15);
+  --glow-purple: rgb(139 111 255 / 18%);
+  --glow-green:  rgb(52  217 139 / 15%);
+  --glow-amber:  rgb(245 166  35 / 15%);
+  --glow-blue:   rgb(96  165 250 / 15%);
 
   /* ── Legacy aliases ── */
   --surface:    var(--s1);
@@ -78,9 +78,9 @@
 
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 800px 600px at 10% 30%, rgba(139, 111, 255, 0.09) 0%, transparent 60%),
-    radial-gradient(ellipse 700px 500px at 92% 85%, rgba(91, 156, 245, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 500px 400px at 55% 105%, rgba(139, 111, 255, 0.04) 0%, transparent 55%);
+    radial-gradient(ellipse 800px 600px at 10% 30%, rgb(139 111 255 / 9%) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 500px at 92% 85%, rgb(91 156 245 / 6%) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 400px at 55% 105%, rgb(139 111 255 / 4%) 0%, transparent 55%);
   color: var(--text);
   height: 100vh;
   overflow: hidden;
@@ -147,7 +147,6 @@
   width: var(--rail-w);
   background: var(--s2);
   backdrop-filter: blur(var(--glass-md));
-  -webkit-backdrop-filter: blur(var(--glass-md));
   position: fixed;
   left: 16px;
   top: 16px;
@@ -159,7 +158,7 @@
   padding: 14px 0;
   gap: 2px;
   border-radius: var(--r-lg);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 38%), inset 0 1px 0 rgb(255 255 255 / 6%);
   overflow: visible;
 }
 
@@ -167,7 +166,7 @@
   content: "";
   position: absolute;
   top: 0; left: 10px; right: 10px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(139, 111, 255, 0.22), transparent);
+  background: linear-gradient(90deg, transparent, rgb(139 111 255 / 22%), transparent);
   pointer-events: none;
 }
 
@@ -176,7 +175,7 @@
   height: 28px;
   border-radius: 8px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  box-shadow: 0 2px 8px rgba(139, 111, 255, 0.45);
+  box-shadow: 0 2px 8px rgb(139 111 255 / 45%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,10 +197,9 @@
   cursor: pointer;
   border: none !important;
   outline: none !important;
-  -webkit-appearance: none;
   appearance: none;
   box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgb(255 255 255 / 45%);
   transition: background 140ms ease, color 140ms ease;
   position: relative;
   flex-shrink: 0;
@@ -216,20 +214,20 @@
 }
 
 .railSectionIcon:hover {
-  background: rgba(139, 111, 255, 0.14);
-  color: rgba(255, 255, 255, 0.85);
+  background: rgb(139 111 255 / 14%);
+  color: rgb(255 255 255 / 85%);
 }
 
 .railSectionActive {
-  background: linear-gradient(135deg, rgba(139, 111, 255, 0.35), rgba(139, 111, 255, 0.2)) !important;
+  background: linear-gradient(135deg, rgb(139 111 255 / 35%), rgb(139 111 255 / 20%)) !important;
   color: var(--accent2) !important;
-  box-shadow: 0 4px 12px rgba(139, 111, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgb(139 111 255 / 20%) !important;
 }
 
 .railDivider {
   width: 16px;
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   margin: 4px 0;
   flex-shrink: 0;
 }
@@ -257,7 +255,6 @@
   cursor: pointer;
   border: none;
   outline: none;
-  -webkit-appearance: none;
   appearance: none;
   box-shadow: none;
 }
@@ -267,10 +264,9 @@
   left: calc(var(--rail-w) + 12px);
   top: 50%;
   transform: translateY(-50%) translateX(-8px);
-  background: rgba(6, 4, 16, 0.92);
+  background: rgb(6 4 16 / 92%);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(139, 111, 255, 0.28);
+  border: 1px solid rgb(139 111 255 / 28%);
   border-left: 2px solid var(--accent);
   color: var(--text);
   font-size: 10px;
@@ -284,7 +280,7 @@
   opacity: 0;
   transition: opacity 160ms ease, transform 160ms ease;
   z-index: 200;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.60), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 60%), inset 0 1px 0 rgb(255 255 255 / 7%);
 }
 
 .railTooltip::before {
@@ -297,7 +293,7 @@
   height: 0;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-right: 5px solid rgba(139, 111, 255, 0.28);
+  border-right: 5px solid rgb(139 111 255 / 28%);
 }
 
 .railSectionIcon:focus,
@@ -320,8 +316,7 @@
   width: var(--flyout-w);
   background: var(--s2);
   backdrop-filter: blur(var(--glass-md));
-  -webkit-backdrop-filter: blur(var(--glass-md));
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(255 255 255 / 6%);
   position: fixed;
   left: calc(16px + var(--rail-w) + 8px);
   top: 16px;
@@ -344,7 +339,7 @@
   content: "";
   position: absolute;
   top: 0; left: 14px; right: 14px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(139, 111, 255, 0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgb(139 111 255 / 18%), transparent);
   pointer-events: none;
   flex-shrink: 0;
 }
@@ -359,7 +354,7 @@
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(139, 111, 255, 0.5);
+  color: rgb(139 111 255 / 50%);
   padding: 10px 10px 4px;
   font-family: var(--font-dm-mono), monospace;
 }
@@ -379,17 +374,17 @@
   font-family: var(--font-syne), sans-serif;
   font-size: 12px;
   font-weight: 500;
-  color: rgba(240, 237, 232, 0.5);
+  color: rgb(240 237 232 / 50%);
   transition: background 120ms ease, color 120ms ease;
 }
 
 .flyoutItem:hover {
-  background: rgba(139, 111, 255, 0.08);
-  color: rgba(240, 237, 232, 0.9);
+  background: rgb(139 111 255 / 8%);
+  color: rgb(240 237 232 / 90%);
 }
 
 .flyoutItemActive {
-  background: rgba(139, 111, 255, 0.18);
+  background: rgb(139 111 255 / 18%);
   color: var(--accent2);
   font-weight: 600;
 }
@@ -398,7 +393,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgb(255 255 255 / 15%);
   flex-shrink: 0;
 }
 
@@ -419,13 +414,13 @@
   font-family: var(--font-dm-mono), monospace;
   padding: 1px 5px;
   border-radius: 10px;
-  background: rgba(245, 166, 35, 0.18);
+  background: rgb(245 166 35 / 18%);
   color: var(--amber);
   flex-shrink: 0;
 }
 
 .flyoutBadgeRed {
-  background: rgba(255, 95, 95, 0.18);
+  background: rgb(255 95 95 / 18%);
   color: var(--red);
 }
 
@@ -550,7 +545,7 @@
 
 .navAllPagesPanel {
   margin: 8px 16px 0;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: color-mix(in oklab, var(--surface2) 75%, transparent);
   padding: 8px 0 12px;
@@ -592,7 +587,7 @@
 
 .navItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 .navItemActive {
@@ -603,7 +598,7 @@
 .navIcon {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
+  stroke: currentcolor;
   fill: none;
   stroke-width: 1.5;
   stroke-linecap: round;
@@ -688,10 +683,7 @@
 
 .main {
   position: fixed;
-  top: calc(16px + var(--topbar-h) + 8px);
-  left: calc(16px + var(--rail-w) + 8px);
-  right: 16px;
-  bottom: 16px;
+  inset: calc(16px + var(--topbar-h) + 8px) 16px 16px calc(16px + var(--rail-w) + 8px);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -720,10 +712,9 @@
   padding: 0 16px;
   background: var(--s2);
   backdrop-filter: blur(var(--glass-lg));
-  -webkit-backdrop-filter: blur(var(--glass-lg));
   border-top: 2px solid var(--accent);
   border-radius: var(--r-md);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 6%);
   overflow: hidden;
   transition: left 200ms cubic-bezier(0.32, 0, 0.15, 1);
 }
@@ -732,7 +723,7 @@
   content: "";
   position: absolute;
   top: 0; left: 20px; right: 20px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(139, 111, 255, 0.20), transparent);
+  background: linear-gradient(90deg, transparent, rgb(139 111 255 / 20%), transparent);
   pointer-events: none;
 }
 
@@ -746,11 +737,11 @@
 }
 
 .topbarBcSection {
-  color: rgba(255, 255, 255, 0.3);
+  color: rgb(255 255 255 / 30%);
 }
 
 .topbarBcSep {
-  color: rgba(255, 255, 255, 0.18);
+  color: rgb(255 255 255 / 18%);
 }
 
 .topbarBcPage {
@@ -761,7 +752,7 @@
 .topbarDivider {
   width: 1px;
   height: 16px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   margin: 0 10px;
   flex-shrink: 0;
 }
@@ -792,8 +783,8 @@
 }
 
 .topbarPillGreen {
-  background: rgba(52, 217, 139, 0.08);
-  color: rgba(52, 217, 139, 0.8);
+  background: rgb(52 217 139 / 8%);
+  color: rgb(52 217 139 / 80%);
 }
 
 .topbarPillGreen .topbarPillPip {
@@ -801,8 +792,8 @@
 }
 
 .topbarPillAmber {
-  background: rgba(245, 166, 35, 0.08);
-  color: rgba(245, 166, 35, 0.8);
+  background: rgb(245 166 35 / 8%);
+  color: rgb(245 166 35 / 80%);
 }
 
 .topbarPillAmber .topbarPillPip {
@@ -810,8 +801,8 @@
 }
 
 .topbarPillRed {
-  background: rgba(255, 95, 95, 0.08);
-  color: rgba(255, 95, 95, 0.8);
+  background: rgb(255 95 95 / 8%);
+  color: rgb(255 95 95 / 80%);
 }
 
 .topbarPillRed .topbarPillPip {
@@ -826,11 +817,11 @@
   height: 22px;
   padding: 0 8px;
   border-radius: 4px;
-  background: rgba(52, 217, 139, 0.08);
-  border: 1px solid rgba(52, 217, 139, 0.15);
+  background: rgb(52 217 139 / 8%);
+  border: 1px solid rgb(52 217 139 / 15%);
   font-size: 9px;
   font-family: var(--font-dm-mono), monospace;
-  color: rgba(52, 217, 139, 0.85);
+  color: rgb(52 217 139 / 85%);
   letter-spacing: 0.04em;
   white-space: nowrap;
   flex-shrink: 0;
@@ -859,7 +850,7 @@
   padding: 0 10px;
   border-radius: 6px;
   background: var(--accent-d);
-  border: 1px solid rgba(139, 111, 255, 0.2);
+  border: 1px solid rgb(139 111 255 / 20%);
   font-size: 10px;
   font-family: var(--font-dm-mono), monospace;
   color: var(--accent2);
@@ -890,7 +881,7 @@
   align-items: center;
   gap: 8px;
   width: 280px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--bg);
   padding: 8px 14px;
@@ -923,7 +914,7 @@
   height: 36px;
   border: none;
   border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   color: var(--muted);
   display: inline-flex;
   align-items: center;
@@ -933,19 +924,18 @@
   line-height: 0;
   position: relative;
   appearance: none;
-  -webkit-appearance: none;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .iconBtn:hover {
-  background: rgba(139, 111, 255, 0.12);
+  background: rgb(139 111 255 / 12%);
   color: var(--text);
 }
 
 .topbarIcon {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
+  stroke: currentcolor;
   fill: none;
   stroke-width: 1.5;
   stroke-linecap: round;
@@ -965,7 +955,7 @@
   height: 36px;
   border: none;
   border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   color: var(--text);
   display: flex;
   align-items: center;
@@ -975,7 +965,7 @@
 }
 
 .topbarUserBtn:hover {
-  background: rgba(139, 111, 255, 0.12);
+  background: rgb(139 111 255 / 12%);
 }
 
 .topbarUserAvatar {
@@ -1004,10 +994,9 @@
   min-width: 200px;
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
-  background: rgba(13, 13, 20, 0.85);
+  background: rgb(13 13 20 / 85%);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 38%);
   z-index: 20;
   padding: 8px;
 }
@@ -1022,7 +1011,7 @@
 .topbarUserItem {
   width: 100%;
   text-align: left;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-xs);
   background: transparent;
   color: var(--text);
@@ -1035,7 +1024,7 @@
 }
 
 .topbarUserItem:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 .dot {
@@ -1076,7 +1065,7 @@
 
 .btnGhost {
   background: transparent;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   color: var(--text) !important;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -1084,19 +1073,19 @@
 
 .btnGhost:hover {
   border-color: var(--border2);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .btnDestructive {
-  background: rgba(255, 95, 95, 0.12);
-  border: 1px solid rgba(255, 95, 95, 0.3);
+  background: rgb(255 95 95 / 12%);
+  border: 1px solid rgb(255 95 95 / 30%);
   border-radius: var(--r-sm);
   color: var(--red) !important;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .btnDestructive:hover {
-  background: rgba(255, 95, 95, 0.2);
+  background: rgb(255 95 95 / 20%);
   border-color: var(--red);
 }
 
@@ -1110,7 +1099,7 @@
   line-height: 1;
   min-height: 34px;
   padding: 0 14px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   cursor: pointer;
   transition: filter 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
@@ -1217,17 +1206,16 @@
 }
 
 .statCard {
-  background: rgba(19, 19, 30, 0.75);
+  background: rgb(19 19 30 / 75%);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.12);
+  border: 1px solid rgb(139 111 255 / 12%);
   border-top: 2px solid var(--accent);
   border-radius: var(--r-sm);
   padding: 14px 16px;
   position: relative;
   min-width: 0;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 45%), 0 0 0 1px rgb(255 255 255 / 3%) inset;
 }
 
 .statCard::after {
@@ -1379,19 +1367,18 @@
 }
 
 .card {
-  background: rgba(19, 19, 30, 0.75);
+  background: rgb(19 19 30 / 75%);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.12);
+  border: 1px solid rgb(139 111 255 / 12%);
   border-radius: var(--r-md);
   overflow: clip;
   min-width: 0;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 45%), 0 0 0 1px rgb(255 255 255 / 3%) inset;
   transition: border-color 0.15s ease;
 }
 
 .card:hover {
-  border-color: rgba(139, 111, 255, 0.24);
+  border-color: rgb(139 111 255 / 24%);
 }
 
 .cardHd {
@@ -1621,7 +1608,7 @@
 
 .badgeBlue::before { background: var(--accent); }
 
-.badgeMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.badgeMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .badgeMuted::before { background: var(--muted2); }
 
@@ -1726,8 +1713,8 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(139 111 255 / 10%);
+  background: rgb(255 255 255 / 2%);
   display: grid;
   place-items: center;
 }
@@ -1764,14 +1751,14 @@
 
 .listRow {
   padding: 12px 14px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .listRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-color: var(--border2);
 }
 
@@ -1793,7 +1780,7 @@
   text-transform: uppercase;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   color: var(--muted);
 }
 
@@ -1817,7 +1804,7 @@
 .summaryPreview {
   padding: 12px;
   background: color-mix(in oklab, var(--s2) 92%, #000 8%);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.75rem;
@@ -1868,7 +1855,7 @@
 .selectInput,
 .formInput,
 .formTextarea {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s3);
   color: var(--text);
@@ -2028,7 +2015,7 @@
   gap: 8px;
   padding: 8px;
   margin: 0 0 12px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   background: transparent;
   flex-wrap: wrap;
@@ -2044,11 +2031,12 @@
   flex: 0 0 auto;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .filterRow {
     gap: 6px;
     padding: 6px;
   }
+
   .filterSelect {
     min-width: 0;
     flex: 1 1 calc(50% - 6px);
@@ -2058,9 +2046,8 @@
 }
 
 .filterSelect {
-  -webkit-appearance: none;
   appearance: none;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(240,237,232,0.45)' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
   color: var(--text);
@@ -2094,7 +2081,7 @@
 
 .tag {
   display: inline-block;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-xs);
   padding: 3px 10px;
   font-family: var(--font-dm-mono), monospace;
@@ -2117,11 +2104,10 @@
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 0;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
-  background: rgba(19, 19, 30, 0.75);
+  background: rgb(19 19 30 / 75%);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   min-height: 520px;
   overflow: hidden;
 }
@@ -2152,7 +2138,7 @@
 }
 
 .leadsStageItem {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   padding: 12px;
@@ -2208,7 +2194,7 @@
 }
 
 .messagesListPanel {
-  border-right: 1px solid rgba(139, 111, 255, 0.1);
+  border-right: 1px solid rgb(139 111 255 / 10%);
   overflow-y: auto;
 }
 
@@ -2350,7 +2336,7 @@
 
 .chatBubble {
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 12px 16px;
   font-size: 0.83rem;
@@ -2378,7 +2364,7 @@
 .msgInput {
   flex: 1;
   background: var(--s3);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
@@ -2424,7 +2410,7 @@
   width: 40px;
   height: 22px;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   position: relative;
   flex-shrink: 0;
 }
@@ -2463,14 +2449,13 @@
 .toast {
   border: 1px solid var(--border2);
   border-radius: var(--r-sm);
-  background: rgba(13, 13, 20, 0.92);
+  background: rgb(13 13 20 / 92%);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   color: var(--text);
   padding: 12px 14px;
   font-size: 0.78rem;
   line-height: 1.4;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
 }
 
 .toastSuccess {
@@ -2499,7 +2484,7 @@
   white-space: pre-wrap;
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .statsRowCols4,
   .statsRowCols3,
   .twoCol,
@@ -2540,7 +2525,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (width <= 700px) {
   .statsRowTight {
     grid-template-columns: 1fr;
   }
@@ -2555,7 +2540,7 @@
 
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .sidebar {
     display: none;
   }
@@ -2591,7 +2576,7 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--text);
@@ -2603,16 +2588,16 @@
 }
 
 .hamburger:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .hamburger {
     display: flex;
   }
 }
 
-@media (min-width: 769px) {
+@media (width >= 769px) {
   .hamburger {
     display: none;
   }
@@ -2620,22 +2605,23 @@
 
 /* ─── Topbar text labels — hidden at very small screens ─────────── */
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .topbarLabel {
     display: none;
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .pageTitle {
     font-size: 1.3rem;
   }
+
   .statValue {
     font-size: 1.6rem;
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .statValue {
     font-size: 1.25rem;
     overflow: hidden;
@@ -2644,22 +2630,24 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .pageTitle {
     font-size: 1.05rem;
   }
+
   .statValue {
     font-size: 1.1rem;
   }
 }
 
 /* ─── Topbar secondary button mobile-hide selectors ─────────────── */
+
 /* Defined here (after iconBtn) so display:none wins the source-order cascade */
 
-.topbarAppsBtn {}
-.topbarHelpBtn {}
+.topbarAppsBtn 
+.topbarHelpBtn 
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .topbarAppsBtn { display: none; }
   .topbarHelpBtn { display: none; }
   .topbarActions { gap: 4px; }
@@ -2667,7 +2655,7 @@
 
 /* ─── Sidebar mobile positioning ────────────────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .sidebar {
     display: flex;
     position: fixed;
@@ -2687,7 +2675,7 @@
   .sidebarOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgb(0 0 0 / 50%);
     z-index: 199;
     cursor: pointer;
   }
@@ -2695,13 +2683,13 @@
 
 /* ─── KPI / stat grids — responsive collapse ────────────────────── */
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .topCardsStack {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .topCardsStack,
   .statsRowCols4,
   .statsRowCols3,
@@ -2712,21 +2700,21 @@
 
 /* ─── Page header + action buttons — responsive wrap ────────────── */
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .pageHeader               { flex-wrap: wrap; gap: 12px; }
   .pageHeader > :last-child { width: 100%; }
   .pageActions              { width: 100%; justify-content: flex-start; }
   .pageTitle                { font-size: 1.3rem; }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .pageActions { flex-wrap: wrap; gap: 6px; }
   .pageTitle   { font-size: 1.05rem; }
 }
 
 /* ─── Tables — horizontal scroll on mobile ──────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .projTable,
   .invTable {
     display: block;
@@ -2737,7 +2725,7 @@
 
 /* ─── Modals — full screen at small screens ─────────────────────── */
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .modal,
   .modalBox,
   .modalContent,
@@ -2754,7 +2742,7 @@
 
 /* ─── Forms — single column on mobile ───────────────────────────── */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .formGrid,
   .createClientGrid {
     grid-template-columns: 1fr !important;
@@ -2775,7 +2763,7 @@
   left: 0;
   right: 0;
   height: 80%;
-  background: radial-gradient(ellipse 120% 80% at 20% 0%, rgba(139,111,255,0.1), transparent);
+  background: radial-gradient(ellipse 120% 80% at 20% 0%, rgb(139 111 255 / 10%), transparent);
   pointer-events: none;
 }
 
@@ -2787,7 +2775,7 @@
   font-size: 0.58rem;
   font-weight: 600;
   color: #34d98b;
-  background: rgba(52, 217, 139, 0.1);
+  background: rgb(52 217 139 / 10%);
   padding: 2px 5px;
   border-radius: 3px;
 }
@@ -2800,14 +2788,14 @@
   font-size: 0.58rem;
   font-weight: 600;
   color: #ff5f5f;
-  background: rgba(255, 95, 95, 0.1);
+  background: rgb(255 95 95 / 10%);
   padding: 2px 5px;
   border-radius: 3px;
 }
 
 .exdAlertStripElevated {
   border-left: 3px solid #ff5f5f;
-  background: rgba(255, 95, 95, 0.06);
+  background: rgb(255 95 95 / 6%);
   border-radius: var(--r-sm);
   padding: 10px 14px;
   display: flex;
@@ -2820,7 +2808,7 @@
 
 /* ─── Skeleton loading ────────────────────────────────────── */
 @keyframes adminSkeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-.skeletonBlock { background: rgba(255,255,255,0.06); border-radius: 4px; animation: adminSkeletonPulse 1.5s ease-in-out infinite; }
+.skeletonBlock { background: rgb(255 255 255 / 6%); border-radius: 4px; animation: adminSkeletonPulse 1.5s ease-in-out infinite; }
 .skeletonCard  { animation: adminSkeletonPulse 1.5s ease-in-out infinite; }
 
 /* ─── Alert banners ──────────────────────────────────────── */
@@ -2833,9 +2821,9 @@
   align-items: center;
   margin-bottom: 8px;
 }
-.alertBannerInfo     { background: rgba(139, 111, 255, 0.08); border-color: var(--accent); }
-.alertBannerWarning  { background: rgba(251, 191, 36, 0.06);  border-color: var(--amber); }
-.alertBannerCritical { background: rgba(239, 68, 68, 0.06);   border-color: var(--red); }
+.alertBannerInfo     { background: rgb(139 111 255 / 8%); border-color: var(--accent); }
+.alertBannerWarning  { background: rgb(251 191 36 / 6%);  border-color: var(--amber); }
+.alertBannerCritical { background: rgb(239 68 68 / 6%);   border-color: var(--red); }
 
 /* ─── Health bars ────────────────────────────────────────── */
 .healthBarBg   { flex: 1; background: var(--b1); border-radius: 3px; height: 4px; }
@@ -2858,7 +2846,7 @@
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgb(255 255 255 / 25%);
   font-family: var(--font-syne), sans-serif;
   white-space: nowrap;
   flex-shrink: 0;
@@ -2867,7 +2855,7 @@
 .sectionHeaderRule {
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 /* ─── Entity row ─────────────────────────────────────────── */
@@ -2882,14 +2870,14 @@
 }
 
 .entityRow:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .entityLogo {
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  background: rgba(139, 111, 255, 0.15);
+  background: rgb(139 111 255 / 15%);
   flex-shrink: 0;
 }
 
@@ -2909,7 +2897,7 @@
 
 .entityProgress {
   height: 3px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   border-radius: 2px;
   margin-top: 4px;
   overflow: hidden;
@@ -2937,21 +2925,21 @@
 .dataTableHead {
   display: grid;
   padding: 6px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
 }
 
 .dataTableHeadCell {
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgb(255 255 255 / 30%);
   font-family: var(--font-syne), sans-serif;
 }
 
 .dataTableRow {
   display: grid;
   padding: 7px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgb(255 255 255 / 3%);
   transition: background 80ms ease;
 }
 
@@ -2960,7 +2948,7 @@
 }
 
 .dataTableRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* ─── Empty state sub-text helpers (base .emptyState defined at line 1544) ─── */
@@ -2981,7 +2969,7 @@
 .welcomeModalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgb(0 0 0 / 55%);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;

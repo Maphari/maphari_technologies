@@ -31,7 +31,7 @@
 }
 
 .stepperDone {
-  color: rgba(200, 241, 53, 0.6);
+  color: rgb(200 241 53 / 60%);
 }
 
 .stepperNum {
@@ -141,7 +141,7 @@
 }
 
 .serviceCardSelected {
-  border-color: rgba(200, 241, 53, 0.3);
+  border-color: rgb(200 241 53 / 30%);
   background: var(--lime-d);
 }
 
@@ -230,7 +230,7 @@
 }
 
 .featureCardSelected {
-  border-color: rgba(200, 241, 53, 0.3);
+  border-color: rgb(200 241 53 / 30%);
   background: var(--lime-d);
   color: var(--accent);
 }
@@ -276,15 +276,15 @@
 }
 
 .pillSelected {
-  border-color: rgba(200, 241, 53, 0.35);
+  border-color: rgb(200 241 53 / 35%);
   color: var(--accent);
   background: var(--lime-d);
 }
 
 /* ── Disclosure box ─────────────────────────────────────────── */
 .disclosure {
-  background: rgba(245, 166, 35, 0.07);
-  border: 1px solid rgba(245, 166, 35, 0.22);
+  background: rgb(245 166 35 / 7%);
+  border: 1px solid rgb(245 166 35 / 22%);
   border-radius: var(--r-md);
   padding: 20px;
 }
@@ -351,9 +351,9 @@
 /* ── Validation warnings ─────────────────────────────────────── */
 .warnBox {
   padding: 12px 14px;
-  border: 1px solid rgba(245, 166, 35, 0.28);
+  border: 1px solid rgb(245 166 35 / 28%);
   border-radius: var(--r-sm);
-  background: rgba(245, 166, 35, 0.07);
+  background: rgb(245 166 35 / 7%);
   color: var(--amber);
   font-size: 0.72rem;
   display: grid;
@@ -392,7 +392,7 @@
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 1100px) {
+@media (width <= 1100px) {
   .serviceGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -402,7 +402,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .serviceGrid,
   .formGrid2,
   .formGrid3,

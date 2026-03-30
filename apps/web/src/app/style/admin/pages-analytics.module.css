@@ -1,4 +1,5 @@
 /* === Admin Analytics Dashboard Styles === */
+
 /* ═══════════════════════════════════════════════════════════════════
    Admin Dashboard — Missing CSS Class Definitions
    Generated for: analytics, automation, integrations, reports, settings
@@ -69,7 +70,6 @@
 .dotPurple {
   background: var(--purple);
 }
-
 
 /* ─── Automation Page ──────────────────────────────────────────────── */
 
@@ -170,7 +170,7 @@
 /* Status chip tone: draft/muted */
 .autoStatusMuted {
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-color: var(--border);
 }
 
@@ -182,13 +182,12 @@
   border: none;
   border-radius: 3px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .autoFailTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -267,7 +266,7 @@
 /* Simulation result output box */
 .autoResultBox {
   padding: 14px 16px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: var(--bg);
   border-radius: var(--r-sm);
   font-family: var(--font-dm-mono), monospace;
@@ -308,14 +307,13 @@
 .autoInsetNote {
   margin-top: 14px;
   padding: 12px 14px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: var(--bg);
   border-radius: var(--r-sm);
   font-size: 0.6875rem;
   color: var(--muted);
   line-height: 1.55;
 }
-
 
 /* ─── Integrations Page ────────────────────────────────────────────── */
 
@@ -377,29 +375,34 @@
   background:   color-mix(in oklab, var(--accent) 10%, transparent);
   color: var(--accent);
 }
+
 .integrationsToneTag.toneBlue {
   border-color: color-mix(in oklab, var(--blue) 25%, transparent);
   background:   color-mix(in oklab, var(--blue) 10%, transparent);
   color: var(--blue);
 }
+
 .integrationsToneTag.toneAmber {
   border-color: color-mix(in oklab, var(--amber) 25%, transparent);
   background:   color-mix(in oklab, var(--amber) 10%, transparent);
   color: var(--amber);
 }
+
 .integrationsToneTag.toneRed {
   border-color: color-mix(in oklab, var(--red) 25%, transparent);
   background:   color-mix(in oklab, var(--red) 10%, transparent);
   color: var(--red);
 }
+
 .integrationsToneTag.tonePurple {
   border-color: color-mix(in oklab, var(--purple) 25%, transparent);
   background:   color-mix(in oklab, var(--purple) 10%, transparent);
   color: var(--purple);
 }
+
 .integrationsToneTag.toneMuted {
   border-color: var(--border2);
-  background:   rgba(255,255,255,0.04);
+  background:   rgb(255 255 255 / 4%);
   color: var(--muted);
 }
 
@@ -413,7 +416,6 @@
 .integrationsLine17 {
   line-height: 1.6;
 }
-
 
 /* ─── Reports Page ─────────────────────────────────────────────────── */
 
@@ -452,7 +454,6 @@
   line-height: 1.6;
 }
 
-
 /* ─── Settings Page ────────────────────────────────────────────────── */
 
 /* Row in the settings change monitor log */
@@ -468,7 +469,6 @@
 .settingsLogRow:last-child {
   border-bottom: none;
 }
-
 
 /* ─── CLV Analytics Page ───────────────────────────────────────────── */
 
@@ -499,18 +499,17 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .clvKpiGrid {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .clvKpiGrid {
     grid-template-columns: 1fr;
   }
 }
-
 
 /* ─── Section A: Date range tab filter ─────────────────────────────── */
 
@@ -844,7 +843,7 @@
 
 /* ─── Responsive ───────────────────────────────────────────────────── */
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .autoSplitHealth {
     grid-template-columns: 1fr;
   }
@@ -864,7 +863,7 @@
   }
 }
 
-@media (max-width: 880px) {
+@media (width <= 880px) {
   .analyticsBarsWrap {
     height: auto;
     min-height: 100px;
@@ -944,7 +943,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .analyticsHealthGrid {
     grid-template-columns: 1fr;
   }

@@ -19,23 +19,23 @@
 /* ── Variant backgrounds ── */
 
 .variantWarning {
-  background: rgba(245, 158, 11, 0.07);
-  border-color: rgba(245, 158, 11, 0.28);
+  background: rgb(245 158 11 / 7%);
+  border-color: rgb(245 158 11 / 28%);
 }
 
 .variantError {
-  background: rgba(239, 68, 68, 0.07);
-  border-color: rgba(239, 68, 68, 0.28);
+  background: rgb(239 68 68 / 7%);
+  border-color: rgb(239 68 68 / 28%);
 }
 
 .variantInfo {
-  background: rgba(139, 111, 255, 0.07);
-  border-color: rgba(139, 111, 255, 0.25);
+  background: rgb(139 111 255 / 7%);
+  border-color: rgb(139 111 255 / 25%);
 }
 
 .variantSuccess {
-  background: rgba(52, 211, 153, 0.07);
-  border-color: rgba(52, 211, 153, 0.25);
+  background: rgb(52 211 153 / 7%);
+  border-color: rgb(52 211 153 / 25%);
 }
 
 /* ── Icon circle ── */
@@ -50,10 +50,10 @@
   border-radius: 50%;
 }
 
-.iconWarning { background: rgba(245, 158, 11, 0.14); color: rgb(245, 158, 11); }
-.iconError   { background: rgba(239, 68, 68, 0.14);  color: rgb(239, 68, 68); }
-.iconInfo    { background: rgba(139, 111, 255, 0.14); color: rgb(139, 111, 255); }
-.iconSuccess { background: rgba(52, 211, 153, 0.14);  color: rgb(52, 211, 153); }
+.iconWarning { background: rgb(245 158 11 / 14%); color: rgb(245 158 11); }
+.iconError   { background: rgb(239 68 68 / 14%);  color: rgb(239 68 68); }
+.iconInfo    { background: rgb(139 111 255 / 14%); color: rgb(139 111 255); }
+.iconSuccess { background: rgb(52 211 153 / 14%);  color: rgb(52 211 153); }
 
 /* ── Body text ── */
 
@@ -106,43 +106,43 @@
 }
 
 .btnWarning {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.32);
-  color: rgb(245, 158, 11);
+  background: rgb(245 158 11 / 10%);
+  border-color: rgb(245 158 11 / 32%);
+  color: rgb(245 158 11);
 }
 
 .btnWarning:hover:not(:disabled) {
-  background: rgba(245, 158, 11, 0.18);
+  background: rgb(245 158 11 / 18%);
 }
 
 .btnError {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.32);
-  color: rgb(239, 68, 68);
+  background: rgb(239 68 68 / 10%);
+  border-color: rgb(239 68 68 / 32%);
+  color: rgb(239 68 68);
 }
 
 .btnError:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.18);
+  background: rgb(239 68 68 / 18%);
 }
 
 .btnInfo {
-  background: rgba(139, 111, 255, 0.1);
-  border-color: rgba(139, 111, 255, 0.32);
-  color: rgb(139, 111, 255);
+  background: rgb(139 111 255 / 10%);
+  border-color: rgb(139 111 255 / 32%);
+  color: rgb(139 111 255);
 }
 
 .btnInfo:hover:not(:disabled) {
-  background: rgba(139, 111, 255, 0.2);
+  background: rgb(139 111 255 / 20%);
 }
 
 .btnSuccess {
-  background: rgba(52, 211, 153, 0.1);
-  border-color: rgba(52, 211, 153, 0.3);
-  color: rgb(52, 211, 153);
+  background: rgb(52 211 153 / 10%);
+  border-color: rgb(52 211 153 / 30%);
+  color: rgb(52 211 153);
 }
 
 .btnSuccess:hover:not(:disabled) {
-  background: rgba(52, 211, 153, 0.18);
+  background: rgb(52 211 153 / 18%);
 }
 
 .btnGhost {
@@ -154,7 +154,7 @@
 }
 
 .btnGhost:hover:not(:disabled) {
-  background: var(--s2, rgba(255, 255, 255, 0.05));
+  background: var(--s2, rgb(255 255 255 / 5%));
   color: var(--text);
 }
 
@@ -164,7 +164,7 @@
   display: inline-block;
   width: 10px;
   height: 10px;
-  border: 1.5px solid currentColor;
+  border: 1.5px solid currentcolor;
   border-top-color: transparent;
   border-radius: 50%;
   animation: abSpin 0.6s linear infinite;
@@ -177,7 +177,7 @@
 
 /* ── Responsive: stack actions below body on narrow screens ── */
 
-@media (max-width: 680px) {
+@media (width <= 680px) {
   .automationBanner {
     flex-wrap: wrap;
     gap: 10px;
@@ -197,7 +197,7 @@
   }
 }
 
-@media (max-width: 400px) {
+@media (width <= 400px) {
   /* On very small screens let buttons wrap too */
   .actions {
     flex-wrap: wrap;

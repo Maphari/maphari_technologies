@@ -1,19 +1,20 @@
 .loginRoot {
   --bg: #030309;
-  --surface: rgba(255, 255, 255, 0.04);
-  --border: rgba(255, 255, 255, 0.07);
-  --border2: rgba(255, 255, 255, 0.14);
+  --surface: rgb(255 255 255 / 4%);
+  --border: rgb(255 255 255 / 7%);
+  --border2: rgb(255 255 255 / 14%);
   --client: #c8f135;
-  --client-d: rgba(200, 241, 53, 0.10);
+  --client-d: rgb(200 241 53 / 10%);
   --staff: #f97316;
-  --staff-d: rgba(249, 115, 22, 0.10);
+  --staff-d: rgb(249 115 22 / 10%);
   --admin: #a78bfa;
-  --admin-d: rgba(167, 139, 250, 0.10);
+  --admin-d: rgb(167 139 250 / 10%);
   --active: var(--client);
   --active-d: var(--client-d);
   --text: #f0ede8;
-  --muted: rgba(240, 237, 232, 0.45);
-  --muted2: rgba(240, 237, 232, 0.22);
+  --muted: rgb(240 237 232 / 45%);
+  --muted2: rgb(240 237 232 / 22%);
+
   background: var(--bg);
   background-image:
     radial-gradient(ellipse 900px 700px at 18% 28%, color-mix(in oklab, var(--active) 9%, transparent) 0%, transparent 60%),
@@ -48,7 +49,7 @@
 .cursorRing {
   width: 36px;
   height: 36px;
-  border: 1px solid rgba(200, 241, 53, 0.35);
+  border: 1px solid rgb(200 241 53 / 35%);
   border-radius: 50%;
   position: fixed;
   top: 0;
@@ -75,16 +76,15 @@
 .left {
   position: relative;
   overflow: hidden;
-  background: rgba(8, 6, 20, 0.60);
+  background: rgb(8 6 20 / 60%);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgb(255 255 255 / 7%);
   border-radius: 24px;
   display: flex;
   flex-direction: column;
   padding: 52px 48px;
   height: calc(100vh - 48px);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 50%), inset 0 1px 0 rgb(255 255 255 / 8%);
 }
 
 .mesh {
@@ -106,9 +106,11 @@
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   33% {
     transform: translate(20px, -20px) scale(1.05);
   }
+
   66% {
     transform: translate(-15px, 15px) scale(0.98);
   }
@@ -118,8 +120,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-image: linear-gradient(rgb(255 255 255 / 2.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 2.5%) 1px, transparent 1px);
   background-size: 60px 60px;
   z-index: 1;
 }
@@ -267,7 +269,7 @@
   width: 36px;
   height: 36px;
   background: var(--active-d);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -296,13 +298,12 @@
   align-items: center;
   padding: 52px 48px;
   position: relative;
-  background: rgba(8, 6, 20, 0.72);
+  background: rgb(8 6 20 / 72%);
   backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 24px;
   height: calc(100vh - 48px);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 55%), inset 0 1px 0 rgb(255 255 255 / 9%);
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -334,6 +335,7 @@
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -342,8 +344,8 @@
 
 .roleSelector {
   display: flex;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid rgb(255 255 255 / 7%);
   border-radius: 14px;
   padding: 4px;
   margin-bottom: 32px;
@@ -371,22 +373,22 @@
 }
 
 .roleButton:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 .activeClient {
   background: var(--client-d);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 30%);
 }
 
 .activeStaff {
   background: var(--staff-d);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 30%);
 }
 
 .activeAdmin {
   background: var(--admin-d);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 30%);
 }
 
 .roleIcon {
@@ -401,15 +403,15 @@
 }
 
 .roleIconClient {
-  background: rgba(200, 241, 53, 0.12);
+  background: rgb(200 241 53 / 12%);
 }
 
 .roleIconStaff {
-  background: rgba(249, 115, 22, 0.12);
+  background: rgb(249 115 22 / 12%);
 }
 
 .roleIconAdmin {
-  background: rgba(167, 139, 250, 0.12);
+  background: rgb(167 139 250 / 12%);
 }
 
 .roleLabel {
@@ -490,8 +492,8 @@
 
 .fieldInput {
   width: 100%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid rgb(255 255 255 / 9%);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
   font-size: 0.88rem;
@@ -506,7 +508,7 @@
 .fieldInput:focus,
 .fieldInput:focus-visible {
   border-color: color-mix(in oklab, var(--active) 55%, transparent);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--active) 10%, transparent);
   outline: none;
 }
@@ -516,7 +518,7 @@
 .fieldInput:-webkit-autofill:hover,
 .fieldInput:-webkit-autofill:focus,
 .fieldInput:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px #0d0b1c inset !important;
+  box-shadow: 0 0 0 1000px #0d0b1c inset !important;
   -webkit-text-fill-color: var(--text) !important;
   caret-color: var(--text);
   border-color: var(--border) !important;
@@ -529,7 +531,7 @@
 
 .fieldInputError {
   border-color: #ff5f5f;
-  box-shadow: 0 0 0 3px rgba(255, 95, 95, 0.12);
+  box-shadow: 0 0 0 3px rgb(255 95 95 / 12%);
 }
 
 .fieldIcon {
@@ -541,7 +543,6 @@
   font-size: 0.9rem;
   cursor: pointer;
   transition: color 0.18s ease;
-  -webkit-user-select: none;
   user-select: none;
   background: none;
   border: none;
@@ -630,7 +631,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgb(255 255 255 / 12%);
   transform: translateX(-100%);
   transition: transform 0.45s ease;
 }
@@ -695,6 +696,7 @@
   100% {
     transform: translateY(0);
   }
+
   30% {
     transform: translateY(-5px);
   }
@@ -724,9 +726,9 @@
 .ssoButton {
   width: 100%;
   padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 8%);
   font-family: var(--font-syne), sans-serif;
   font-weight: 600;
   font-size: 0.8rem;
@@ -743,8 +745,8 @@
 }
 
 .ssoButton:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.07);
+  border-color: rgb(255 255 255 / 14%);
+  background: rgb(255 255 255 / 7%);
 }
 
 .formFooter {
@@ -819,6 +821,7 @@
     transform: scale(0.5);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -975,8 +978,8 @@
 
 .resetSuccess {
   display: block;
-  background: var(--green-d, rgba(52, 217, 139, 0.1));
-  border: 1px solid rgba(52, 217, 139, 0.2);
+  background: var(--green-d, rgb(52 217 139 / 10%));
+  border: 1px solid rgb(52 217 139 / 20%);
   border-radius: 8px;
   padding: 12px 14px;
   margin-bottom: 16px;
@@ -1017,7 +1020,7 @@
 .roleTab:hover {
   border-color: var(--border2);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 /* Active tab states reuse existing role active classes */
@@ -1033,13 +1036,15 @@
   color: var(--admin);
 }
 
-@media (max-width: 800px) {
+@media (width <= 800px) {
   .shell {
     grid-template-columns: 1fr;
   }
+
   .left {
     display: none;
   }
+
   .right {
     padding: 40px 24px 48px;
     overflow-y: auto;
@@ -1047,12 +1052,13 @@
     justify-content: flex-start;
     align-items: stretch;
   }
+
   .formWrap {
     max-width: 100%;
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .roleSelector { grid-template-columns: 1fr 1fr; }
   .right { padding: 24px 16px; }
   .formTitle { font-size: 1.4rem; }
@@ -1061,6 +1067,7 @@
 /* Custom cursor only applies on pointer (mouse) devices — never on touch */
 @media (hover: hover) and (pointer: fine) {
   .loginRoot { cursor: none; }
+
   .roleButton,
   .fieldLink,
   .fieldIcon,
@@ -1079,13 +1086,15 @@
   gap: 4px 10px;
   margin-top: 6px;
 }
+
 .pwReqItem {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.575rem;
   letter-spacing: 0.06em;
-  color: rgba(240, 237, 232, 0.3);
+  color: rgb(240 237 232 / 30%);
   transition: color 0.2s;
 }
+
 .pwReqMet {
   color: #34d98b;
 }
@@ -1105,7 +1114,6 @@
   font-size: 0.68rem;
   letter-spacing: 0.05em;
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid;
   z-index: 9999;
   animation: toastIn 0.25s ease forwards;
@@ -1113,20 +1121,24 @@
   white-space: normal;
   line-height: 1.5;
 }
+
 .authToastSuccess {
-  background: rgba(52, 217, 139, 0.12);
-  border-color: rgba(52, 217, 139, 0.3);
+  background: rgb(52 217 139 / 12%);
+  border-color: rgb(52 217 139 / 30%);
   color: #34d98b;
 }
+
 .authToastError {
-  background: rgba(255, 95, 95, 0.12);
-  border-color: rgba(255, 95, 95, 0.3);
+  background: rgb(255 95 95 / 12%);
+  border-color: rgb(255 95 95 / 30%);
   color: #ff5f5f;
 }
+
 .authToastIcon {
   font-size: 0.85rem;
   flex-shrink: 0;
 }
+
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(-50%) translateY(10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -1147,7 +1159,7 @@
 }
 
 /* ── Mobile responsive ── */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .shell {
     grid-template-columns: 1fr;
     padding: 16px;
