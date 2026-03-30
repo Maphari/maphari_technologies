@@ -64,6 +64,8 @@ export function decryptField(
   const iv         = Buffer.from(payload.iv, "base64");
   const ciphertext = Buffer.from(payload.ciphertext, "base64");
   const tag        = Buffer.from(payload.tag, "base64");
+  if (iv.length !== 12) throw new Error("decryptField: invalid IV length (expected 12 bytes)");
+  if (tag.length !== 16) throw new Error("decryptField: invalid tag length (expected 16 bytes)");
   const decipher   = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAAD(Buffer.from(aad, "utf8"));
   decipher.setAuthTag(tag);

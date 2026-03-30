@@ -71,10 +71,13 @@ describe("decryptField", () => {
 
   it("does not include plaintext in thrown error message", () => {
     const enc = encryptField("super-secret-value", VALID_KEY, AAD);
+    let threw = false;
     try {
       decryptField(enc, WRONG_KEY, AAD);
     } catch (e) {
+      threw = true;
       expect(String(e)).not.toContain("super-secret-value");
     }
+    expect(threw).toBe(true);
   });
 });
