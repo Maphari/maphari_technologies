@@ -71,7 +71,6 @@ async function backfillConnectionMetadata(): Promise<void> {
     const secretFields = METADATA_SECRET_FIELDS[conn.providerKey] ?? [];
     if (secretFields.length === 0) { skipped++; continue; }
 
-    processed++;
     let meta: Record<string, unknown>;
     try {
       meta = conn.metadata as Record<string, unknown>;
@@ -82,6 +81,8 @@ async function backfillConnectionMetadata(): Promise<void> {
       continue;
     }
 
+    processed++;
+    const originalMetaJson = JSON.stringify(conn.metadata);
     const updatedMeta = { ...meta };
     let anyEncrypted = false;
 
@@ -103,16 +104,14 @@ async function backfillConnectionMetadata(): Promise<void> {
     if (!anyEncrypted) { skipped++; continue; }
 
     try {
-      const result = await prisma.clientIntegrationConnection.updateMany({
-        where: {
-          id: conn.id,
-          metadata: conn.metadata, // optimistic concurrency snapshot compare
-        },
-        data: {
-          metadata: updatedMeta,
-        },
-      });
-      if (result.count === 0) {
+      // Strict byte-level JSON text compare for optimistic concurrency — avoids Prisma's
+      // JSON containment semantics which don't guarantee exact-value conflict detection.
+      const result = await prisma.$executeRaw`
+        UPDATE "client_integration_connections"
+        SET metadata = ${JSON.stringify(updatedMeta)}::jsonb
+        WHERE id = ${conn.id} AND metadata::text = ${originalMetaJson}
+      `;
+      if (result === 0) {
         console.warn({ event: "backfill_conflict_skip", entityId: conn.id });
         conflicts++;
       } else {
