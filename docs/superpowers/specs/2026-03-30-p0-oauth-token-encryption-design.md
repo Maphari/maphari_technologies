@@ -36,7 +36,9 @@ The `v1:` prefix:
 - Distinguishes encrypted values from plaintext during live migration (values without the prefix are treated as legacy plaintext during the migration window).
 - Acts as a version discriminator for future key-rotation schemes. Future formats would use `v2:` etc. with new derivation strategies. Mixed `v1:`/`v2:` data would be simultaneously decryptable during a rotation window. Key rotation is out of scope for P0-4.
 
-**Key:** `INTEGRATION_ENCRYPTION_KEY` — a 32-byte random value base64-encoded, stored in environment secrets. Required at service startup (fail-fast via `validateRequiredEnv`, which checks presence only). Both `encryptField` and `decryptField` validate that the decoded key is exactly 32 bytes and throw `Error("INTEGRATION_ENCRYPTION_KEY must decode to 32 bytes")` immediately if not — so a misconfigured key is caught at the first encrypt/decrypt call rather than silently producing bad output.
+**Key:** `INTEGRATION_ENCRYPTION_KEY` — a 32-byte random value base64-encoded, stored in environment secrets. Required at service startup: `validateRequiredEnv(["INTEGRATION_ENCRYPTION_KEY"])` checks for presence (non-empty string) only. The 32-byte length is validated inside `encryptField` and `decryptField` — a misconfigured key that passes the presence check is caught at the first crypto call and throws `Error("INTEGRATION_ENCRYPTION_KEY must decode to 32 bytes")`. This means a wrong-length key will fail on the first request that touches a secret field, not at startup. This is the chosen trade-off: presence-only startup guard + function-level validation is sufficient for P0-4.
+
+**Key compromise:** If `INTEGRATION_ENCRYPTION_KEY` is leaked, all encrypted secrets must be re-encrypted with a new key using a `v2:` envelope in a follow-up release. Until then, maintain strict access controls on the key in production secrets management (e.g., AWS Secrets Manager / Doppler). Key rotation tooling is out of scope for P0-4.
 
 **IV generation:** Uses Node.js `crypto.randomBytes(12)` for all random IV generation. Each call produces a fresh 96-bit IV.
 
@@ -161,7 +163,7 @@ The `v1:` prefix is applied by `encryptField` and stripped/validated by `decrypt
   - If key absent from stored metadata: omit from output (field was never set).
   - If value starts with `v1:`: decrypt. On success, **return `null` in the API response**. Secret field values are never returned to callers even when decrypted — they are only consumed internally (e.g., to issue API calls to the provider). The `null` signals "a credential is connected here" without exposing the value.
   - If value starts with `v1:` and decrypt fails: log `{ event: "decrypt_failure", entityType: "clientIntegrationConnection", entityId: connection.id, fieldName }` at `error` level. Set the field value to `"CREDENTIAL_UNAVAILABLE"` in the internal result and **omit it from the API response**. Do not return HTTP 500 for metadata reads — other non-secret fields on the connection record remain usable.
-  - If value does NOT start with `v1:` (migration window): use as-is internally, emit `log.warn({ event: "plaintext_secret_read", entityType: "clientIntegrationConnection", entityId: connection.id, fieldName })`.
+  - If value does NOT start with `v1:` (migration window): use as-is internally, emit `log.warn({ event: "plaintext_secret_read", entityType: "clientIntegrationConnection", entityId: connection.id, fieldName })`, and **return `null` in the API response** (same as the encrypted-OK path, for consistency).
 
 **Summary of metadata API response behaviour:**
 
@@ -173,7 +175,11 @@ The `v1:` prefix is applied by `encryptField` and stripped/validated by `decrypt
 | Plaintext (migration window) | plaintext (used internally) | `null` |
 | Non-secret field (any state) | raw JSON value | raw JSON value |
 
-**Error surface (metadata):** Decrypt failure does not fail the entire request. Only the affected secret field is unavailable; a `decrypt_failure` event is logged. If the calling code requires the secret to complete its operation (e.g., issuing an API call to the provider), it must check for `"CREDENTIAL_UNAVAILABLE"` and return an appropriate error to its caller.
+**Error surface (metadata) — intentional asymmetry with UserPreference:**
+
+`UserPreference` decrypt failure is **fatal** (HTTP 500) because the entire purpose of the read is to obtain the credential; without it the caller cannot proceed at all.
+
+`ClientIntegrationConnection.metadata` decrypt failure is **non-fatal** at the record level because a metadata object may contain both secret and non-secret fields. Failing the entire response for one bad secret field would prevent callers from reading the non-secret connection state (status, lastSyncedAt, etc.) that they may need independently. Instead: only the failed secret field is marked `CREDENTIAL_UNAVAILABLE` internally and omitted from the API response. If the calling code requires the secret to complete its operation (e.g., issuing a provider API call), it checks for `"CREDENTIAL_UNAVAILABLE"` and returns its own appropriate error.
 
 ### 6.3 ClientIntegrationConnection.configurationSummary
 
@@ -230,7 +236,13 @@ ClientIntegrationConnection.metadata backfill:
 Print summary: { processed, encrypted, skipped, errors }
 ```
 
-Each row is updated in its own `prisma.model.update` call (no cross-row transaction). A concurrent write during encryption is safe: the next write will re-encrypt any field the application writes, and the backfill skipping `v1:`-prefixed values prevents double-encryption.
+Each row is updated in its own `prisma.model.update` call (no cross-row transaction).
+
+**Concurrent write safety:** If the application writes a new encrypted value to a row while the backfill is in flight:
+- If the app write completes before the backfill's SELECT for that row: the backfill reads a `v1:`-prefixed value and skips it. Safe.
+- If the backfill SELECT completes before the app write: the backfill will encrypt the stale plaintext and write it. The result is still a valid `v1:`-prefixed value. On re-run, the backfill skips it. No data loss — the application will overwrite with a fresh encryption on the next OAuth callback.
+
+**Idempotency:** Re-running the backfill on an already-encrypted row skips it (starts with `v1:`), so no double-encryption occurs. If re-run on a plaintext row that was not yet processed, a new IV is generated and a different ciphertext is written — but decryption still yields the same plaintext. The idempotency guarantee is: **same plaintext decrypted, not byte-for-byte identical ciphertext**.
 
 ---
 
@@ -284,11 +296,11 @@ Each row is updated in its own `prisma.model.update` call (no cross-row transact
 
 - [ ] `INTEGRATION_ENCRYPTION_KEY` missing → core service refuses to start.
 - [ ] `gcal_access_token` and `gcal_refresh_token` stored with `v1:` prefix after write.
-- [ ] Decrypt with wrong key returns HTTP 500 and logs `{ event: "decrypt_failure" }` with no secret data in log.
+- [ ] Decrypt with wrong key returns HTTP 500 and logs `{ event: "decrypt_failure", entityType, entityId, fieldName }` — log entry contains none of: `value`, `plaintext`, `ciphertext`, `key`, `iv`, `tag`.
 - [ ] Different AAD (wrong entity/field) causes `decryptField` to throw.
 - [ ] `metadata` secret fields (per registry) encrypted; non-secret metadata fields plaintext.
 - [ ] Secret metadata fields return `null` in API responses; non-secret fields return their values.
 - [ ] `configurationSummary` write rejected with 422 if unknown key present; response includes `unknownKeys` and `allowedKeys`.
-- [ ] Backfill script is idempotent (rows starting with `v1:` are skipped; running twice produces no change).
+- [ ] Backfill script is idempotent: rows already starting with `v1:` are skipped on re-run; running the script twice decrypts to the same plaintext (ciphertext may differ due to new IV, but plaintext is identical).
 - [ ] `encryptField` / `decryptField` throw on malformed envelope, wrong key length, missing fields, IV length error.
 - [ ] All unit and integration tests pass.
