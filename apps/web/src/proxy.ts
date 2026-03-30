@@ -17,10 +17,33 @@
 //   'both' shows staff + admin tabs simultaneously (development convenience)
 // ════════════════════════════════════════════════════════════════════════════
 
+import { randomBytes } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { resolveAuthRedirect } from "./lib/auth/route-guard";
 import { AUTH_ROLE_COOKIE, isRole } from "./lib/auth/routing";
+
+export function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV !== "production";
+  const scriptSrc = isDev
+    ? `'self' 'nonce-${nonce}' 'unsafe-eval'`
+    : `'self' 'nonce-${nonce}' 'strict-dynamic'`;
+  const connectSrc = isDev
+    ? `'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* https://*.livekit.cloud wss://*.livekit.cloud https://cloud.livekit.io`
+    : `'self' https://*.livekit.cloud wss://*.livekit.cloud https://cloud.livekit.io`;
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    `connect-src ${connectSrc}`,
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self' https://sandbox.payfast.co.za https://www.payfast.co.za",
+  ].join("; ");
+}
 
 export type AppType = "client" | "staff" | "admin" | "public" | "both";
 
