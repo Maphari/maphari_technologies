@@ -13,6 +13,7 @@ import { EventTopics } from "@maphari/platform";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { prisma } from "../lib/prisma.js";
 import { eventBus } from "../lib/infrastructure.js";
+import { encryptField, decryptField } from "../lib/integration-crypto.js";
 
 type ProviderKind = "oauth" | "assisted" | "coming_soon";
 type ProviderAvailabilityStatus = "active" | "beta" | "hidden" | "coming_soon" | "deprecated";
@@ -61,6 +62,35 @@ const GC_ACCESS_TOKEN_KEY  = "gcal_access_token";
 const GC_REFRESH_TOKEN_KEY = "gcal_refresh_token";
 const GC_EMAIL_KEY         = "gcal_email";
 const GC_EXPIRY_KEY        = "gcal_token_expiry";
+
+// ── Helpers: UserPreference token encryption ──────────────────────────────
+function prefAad(userId: string, prefKey: string): string {
+  return `userPreference/${userId}:${prefKey}/${prefKey}/v1`;
+}
+
+function encryptPref(userId: string, prefKey: string, value: string): string {
+  return encryptField(value, process.env.INTEGRATION_ENCRYPTION_KEY!, prefAad(userId, prefKey));
+}
+
+function decryptPref(
+  userId: string,
+  prefKey: string,
+  stored: string,
+  log: { warn: (obj: object) => void; error: (obj: object) => void },
+  prefId: string,
+): string {
+  if (stored.startsWith("v1:")) {
+    try {
+      return decryptField(stored, process.env.INTEGRATION_ENCRYPTION_KEY!, prefAad(userId, prefKey));
+    } catch {
+      log.error({ event: "decrypt_failure", entityType: "userPreference", entityId: prefId, fieldName: prefKey });
+      throw new Error("CREDENTIAL_DECRYPT_FAILED");
+    }
+  }
+  // Migration window: plaintext
+  log.warn({ event: "plaintext_secret_read", entityType: "userPreference", entityId: prefId, fieldName: prefKey });
+  return stored;
+}
 
 interface GcalTokens {
   access_token:  string;
@@ -243,7 +273,10 @@ async function refreshGcalAccessToken(refreshToken: string): Promise<{ access_to
 }
 
 // ── Get a valid access token (refreshing if necessary) ────────────────────
-async function getValidAccessToken(userId: string): Promise<string | null> {
+async function getValidAccessToken(
+  userId: string,
+  log: { warn: (obj: object) => void; error: (obj: object) => void },
+): Promise<string | null> {
   const [tokenPref, expiryPref, refreshPref] = await Promise.all([
     prisma.userPreference.findUnique({ where: { userId_key: { userId, key: GC_ACCESS_TOKEN_KEY } } }),
     prisma.userPreference.findUnique({ where: { userId_key: { userId, key: GC_EXPIRY_KEY } } }),
@@ -255,17 +288,22 @@ async function getValidAccessToken(userId: string): Promise<string | null> {
   const expiryDate = expiryPref ? Number(expiryPref.value) : 0;
   const isExpired  = expiryDate < Date.now() + 60_000; // refresh if < 1 min left
 
-  if (!isExpired) return tokenPref.value;
+  // Non-expired path: decrypt the stored access token
+  if (!isExpired) {
+    return decryptPref(userId, GC_ACCESS_TOKEN_KEY, tokenPref.value, log, tokenPref.id);
+  }
 
+  // Expired path: load and decrypt refresh token, then issue new access token
   if (!refreshPref) return null;
+  const refreshToken = decryptPref(userId, GC_REFRESH_TOKEN_KEY, refreshPref.value, log, refreshPref.id);
 
-  const refreshed = await refreshGcalAccessToken(refreshPref.value);
+  const refreshed = await refreshGcalAccessToken(refreshToken);
   if (!refreshed) return null;
 
   await prisma.userPreference.upsert({
     where:  { userId_key: { userId, key: GC_ACCESS_TOKEN_KEY } },
-    update: { value: refreshed.access_token },
-    create: { userId, key: GC_ACCESS_TOKEN_KEY, value: refreshed.access_token },
+    update: { value: encryptPref(userId, GC_ACCESS_TOKEN_KEY, refreshed.access_token) },
+    create: { userId, key: GC_ACCESS_TOKEN_KEY, value: encryptPref(userId, GC_ACCESS_TOKEN_KEY, refreshed.access_token) },
   });
   await prisma.userPreference.upsert({
     where:  { userId_key: { userId, key: GC_EXPIRY_KEY } },
@@ -1752,8 +1790,8 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
       const upserts: Promise<unknown>[] = [
         prisma.userPreference.upsert({
           where:  { userId_key: { userId, key: GC_ACCESS_TOKEN_KEY } },
-          update: { value: tokens.access_token },
-          create: { userId, key: GC_ACCESS_TOKEN_KEY, value: tokens.access_token },
+          update: { value: encryptPref(userId, GC_ACCESS_TOKEN_KEY, tokens.access_token) },
+          create: { userId, key: GC_ACCESS_TOKEN_KEY, value: encryptPref(userId, GC_ACCESS_TOKEN_KEY, tokens.access_token) },
         }),
         prisma.userPreference.upsert({
           where:  { userId_key: { userId, key: GC_EXPIRY_KEY } },
@@ -1766,8 +1804,8 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
         upserts.push(
           prisma.userPreference.upsert({
             where:  { userId_key: { userId, key: GC_REFRESH_TOKEN_KEY } },
-            update: { value: tokens.refresh_token },
-            create: { userId, key: GC_REFRESH_TOKEN_KEY, value: tokens.refresh_token },
+            update: { value: encryptPref(userId, GC_REFRESH_TOKEN_KEY, tokens.refresh_token) },
+            create: { userId, key: GC_REFRESH_TOKEN_KEY, value: encryptPref(userId, GC_REFRESH_TOKEN_KEY, tokens.refresh_token) },
           })
         );
       }
@@ -1852,7 +1890,18 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
     }
 
     // Get a valid access token (auto-refresh if expired)
-    const accessToken = await getValidAccessToken(scope.userId);
+    let accessToken: string | null;
+    try {
+      accessToken = await getValidAccessToken(scope.userId, request.log);
+    } catch (err) {
+      if (err instanceof Error && err.message === "CREDENTIAL_DECRYPT_FAILED") {
+        return reply.status(500).send({
+          success: false,
+          error: { code: "CREDENTIAL_UNAVAILABLE", message: "Could not decrypt stored credentials." },
+        } as ApiResponse);
+      }
+      throw err;
+    }
     if (!accessToken) {
       return reply.status(403).send({ success: false, error: { code: "GCAL_NOT_CONNECTED", message: "Google Calendar is not connected. Please connect first." } } as ApiResponse);
     }
