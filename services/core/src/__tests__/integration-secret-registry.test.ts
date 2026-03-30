@@ -64,9 +64,7 @@ describe("decryptMetadataSecrets", () => {
 
 describe("validateConfigSummary", () => {
   it("passes when all keys are allowlisted", () => {
-    expect(() =>
-      validateConfigSummary("gcal", { calendar_id: "abc", sync_enabled: true })
-    ).not.toThrow();
+    expect(validateConfigSummary("gcal", { calendar_id: "abc", sync_enabled: true })).toBeNull();
   });
 
   it("returns 422-shaped error when unknown key present", () => {
