@@ -45,7 +45,7 @@ export async function verifyPublicApiRequest(
 
   const redis = getRedis();
   const nonceKey = `replay:${keyId}:${nonce}`;
-  const stored = await redis.set(nonceKey, "1", "NX", "EX", NONCE_TTL_SECONDS);
+  const stored = await redis.set(nonceKey, "1", "EX", NONCE_TTL_SECONDS, "NX");
   if (stored === null) {
     return { ok: false, errorCode: "REPLAY_DETECTED", errorMessage: "Nonce has already been used" };
   }

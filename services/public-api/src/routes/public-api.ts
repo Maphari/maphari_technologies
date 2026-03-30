@@ -3,14 +3,14 @@ import {
   publicApiProjectCreateSchema,
   type ApiResponse
 } from "@maphari/contracts";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { verifyPublicApiRequest } from "../lib/auth.js";
 import {
   createApiKey,
-  createPartnerProject,
   listApiKeys,
-  listPartnerProjects
-} from "../lib/store.js";
+  listProjects,
+  revokeApiKey,
+} from "../lib/key-store.js";
 import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 
 // ── Upstream proxy helper ─────────────────────────────────────────────────────
@@ -43,6 +43,22 @@ type MetricsApp = FastifyInstance & {
   };
 };
 
+function assertTenantMatch(
+  authedClientId: string,
+  requestedClientId: string | undefined,
+  reply: FastifyReply
+): boolean {
+  if (requestedClientId && requestedClientId !== authedClientId) {
+    reply.status(403).send({
+      ok: false,
+      errorCode: "FORBIDDEN",
+      errorMessage: "Requested resource does not belong to the authenticated client",
+    });
+    return false;
+  }
+  return true;
+}
+
 export async function registerPublicApiRoutes(app: FastifyInstance): Promise<void> {
   const metrics = (app as MetricsApp).serviceMetrics;
 
@@ -74,7 +90,15 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
       } as ApiResponse;
     }
 
-    const key = createApiKey(clientId, parsedBody.data.label);
+    const encryptionKey = process.env.API_KEY_ENCRYPTION_KEY as string;
+    const projectId = (parsedBody.data as Record<string, unknown>).projectId as string | undefined ?? "default";
+    const key = await createApiKey({
+      clientId,
+      projectId,
+      label: parsedBody.data.label,
+      encryptionKey,
+      createdBy: scope.userId ?? undefined,
+    });
     return {
       success: true,
       data: key,
@@ -85,7 +109,7 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
   app.get("/public-api/keys", async (request) => {
     const scope = readScopeHeaders(request);
     const clientId = resolveClientFilter(scope.role, scope.clientId);
-    const keys = listApiKeys(clientId);
+    const keys = await listApiKeys(clientId ?? undefined);
 
     return {
       success: true,
@@ -95,18 +119,25 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
   });
 
   app.post("/public-api/projects", async (request, reply) => {
-    const authResult = verifyPublicApiRequest(request);
-    if (!authResult.ok || !authResult.clientId) {
+    const encryptionKey = process.env.API_KEY_ENCRYPTION_KEY as string;
+    const auth = await verifyPublicApiRequest(request, encryptionKey);
+    if (!auth.ok || !auth.clientId) {
       metrics?.inc("public_api_auth_failures_total", { service: "public-api" });
       reply.status(401);
       return {
         success: false,
         error: {
-          code: authResult.errorCode ?? "UNAUTHORIZED",
-          message: authResult.errorMessage ?? "Public API request is not authorized"
+          code: auth.errorCode ?? "UNAUTHORIZED",
+          message: auth.errorMessage ?? "Public API request is not authorized"
         }
       } as ApiResponse;
     }
+
+    const requestedClientId =
+      (request.params as Record<string, string>)?.clientId ??
+      (request.body as Record<string, string>)?.clientId;
+
+    if (!assertTenantMatch(auth.clientId, requestedClientId, reply)) return;
 
     const parsedBody = publicApiProjectCreateSchema.safeParse(request.body);
     if (!parsedBody.success) {
@@ -122,7 +153,7 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
     }
 
     // Partner write operations are pinned to the clientId represented by the API key.
-    const project = createPartnerProject(authResult.clientId, parsedBody.data.name, parsedBody.data.description);
+    const project = { clientId: auth.clientId, ...parsedBody.data };
     metrics?.inc("public_api_requests_total", { service: "public-api", operation: "project.create" });
 
     return {
@@ -132,20 +163,27 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
   });
 
   app.get("/public-api/projects", async (request, reply) => {
-    const authResult = verifyPublicApiRequest(request);
-    if (!authResult.ok || !authResult.clientId) {
+    const encryptionKey = process.env.API_KEY_ENCRYPTION_KEY as string;
+    const auth = await verifyPublicApiRequest(request, encryptionKey);
+    if (!auth.ok || !auth.clientId) {
       metrics?.inc("public_api_auth_failures_total", { service: "public-api" });
       reply.status(401);
       return {
         success: false,
         error: {
-          code: authResult.errorCode ?? "UNAUTHORIZED",
-          message: authResult.errorMessage ?? "Public API request is not authorized"
+          code: auth.errorCode ?? "UNAUTHORIZED",
+          message: auth.errorMessage ?? "Public API request is not authorized"
         }
       } as ApiResponse;
     }
 
-    const projects = listPartnerProjects(authResult.clientId);
+    const requestedClientId =
+      (request.params as Record<string, string>)?.clientId ??
+      (request.body as Record<string, string>)?.clientId;
+
+    if (!assertTenantMatch(auth.clientId, requestedClientId, reply)) return;
+
+    const projects = await listProjects(auth.clientId);
     metrics?.inc("public_api_requests_total", { service: "public-api", operation: "project.list" });
 
     return {
@@ -158,21 +196,28 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
   // Partner-facing: returns the current status and key details of the client
   // associated with the caller's API key. Proxies to the core service.
   app.get("/public-api/client/status", async (request, reply) => {
-    const authResult = verifyPublicApiRequest(request);
-    if (!authResult.ok || !authResult.clientId) {
+    const encryptionKey = process.env.API_KEY_ENCRYPTION_KEY as string;
+    const auth = await verifyPublicApiRequest(request, encryptionKey);
+    if (!auth.ok || !auth.clientId) {
       metrics?.inc("public_api_auth_failures_total", { service: "public-api" });
       reply.status(401);
       return {
         success: false,
         error: {
-          code: authResult.errorCode ?? "UNAUTHORIZED",
-          message: authResult.errorMessage ?? "Public API request is not authorized"
+          code: auth.errorCode ?? "UNAUTHORIZED",
+          message: auth.errorMessage ?? "Public API request is not authorized"
         }
       } as ApiResponse;
     }
 
+    const requestedClientId =
+      (request.params as Record<string, string>)?.clientId ??
+      (request.body as Record<string, string>)?.clientId;
+
+    if (!assertTenantMatch(auth.clientId, requestedClientId, reply)) return;
+
     const coreUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
-    const upstream = await proxyUpstream(`${coreUrl}/clients/${authResult.clientId}`);
+    const upstream = await proxyUpstream(`${coreUrl}/clients/${auth.clientId}`);
     metrics?.inc("public_api_requests_total", { service: "public-api", operation: "client.status" });
 
     if (!upstream.success) {
@@ -201,21 +246,28 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
   // Partner-facing: returns invoices scoped to the caller's client ID.
   // Proxies to the billing service.
   app.get("/public-api/invoices", async (request, reply) => {
-    const authResult = verifyPublicApiRequest(request);
-    if (!authResult.ok || !authResult.clientId) {
+    const encryptionKey = process.env.API_KEY_ENCRYPTION_KEY as string;
+    const auth = await verifyPublicApiRequest(request, encryptionKey);
+    if (!auth.ok || !auth.clientId) {
       metrics?.inc("public_api_auth_failures_total", { service: "public-api" });
       reply.status(401);
       return {
         success: false,
         error: {
-          code: authResult.errorCode ?? "UNAUTHORIZED",
-          message: authResult.errorMessage ?? "Public API request is not authorized"
+          code: auth.errorCode ?? "UNAUTHORIZED",
+          message: auth.errorMessage ?? "Public API request is not authorized"
         }
       } as ApiResponse;
     }
 
+    const requestedClientId =
+      (request.params as Record<string, string>)?.clientId ??
+      (request.body as Record<string, string>)?.clientId;
+
+    if (!assertTenantMatch(auth.clientId, requestedClientId, reply)) return;
+
     const billingUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4003";
-    const upstream = await proxyUpstream(`${billingUrl}/billing/invoices?clientId=${encodeURIComponent(authResult.clientId)}`);
+    const upstream = await proxyUpstream(`${billingUrl}/billing/invoices?clientId=${encodeURIComponent(auth.clientId)}`);
     metrics?.inc("public_api_requests_total", { service: "public-api", operation: "invoice.list" });
 
     if (!upstream.success) {
@@ -242,24 +294,31 @@ export async function registerPublicApiRoutes(app: FastifyInstance): Promise<voi
 
   // ── GET /public-api/projects/live ─────────────────────────────────────────
   // Partner-facing: returns live projects from the core service for this client.
-  // (distinct from the in-memory partner projects created via the partner API)
+  // (distinct from the DB partner projects created via the partner API)
   app.get("/public-api/projects/live", async (request, reply) => {
-    const authResult = verifyPublicApiRequest(request);
-    if (!authResult.ok || !authResult.clientId) {
+    const encryptionKey = process.env.API_KEY_ENCRYPTION_KEY as string;
+    const auth = await verifyPublicApiRequest(request, encryptionKey);
+    if (!auth.ok || !auth.clientId) {
       metrics?.inc("public_api_auth_failures_total", { service: "public-api" });
       reply.status(401);
       return {
         success: false,
         error: {
-          code: authResult.errorCode ?? "UNAUTHORIZED",
-          message: authResult.errorMessage ?? "Public API request is not authorized"
+          code: auth.errorCode ?? "UNAUTHORIZED",
+          message: auth.errorMessage ?? "Public API request is not authorized"
         }
       } as ApiResponse;
     }
 
+    const requestedClientId =
+      (request.params as Record<string, string>)?.clientId ??
+      (request.body as Record<string, string>)?.clientId;
+
+    if (!assertTenantMatch(auth.clientId, requestedClientId, reply)) return;
+
     const coreUrl = process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
     const upstream = await proxyUpstream(
-      `${coreUrl}/projects?clientId=${encodeURIComponent(authResult.clientId)}`
+      `${coreUrl}/projects?clientId=${encodeURIComponent(auth.clientId)}`
     );
     metrics?.inc("public_api_requests_total", { service: "public-api", operation: "project.list.live" });
 
