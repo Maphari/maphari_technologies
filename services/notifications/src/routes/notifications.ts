@@ -279,7 +279,7 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
 
   app.post("/notifications/provider-callback", async (request, reply) => {
     const signature = request.headers["x-provider-signature"] as string | undefined;
-    const callbackSecret = process.env.NOTIFICATION_CALLBACK_SECRET ?? "dev-notification-callback-secret";
+    const callbackSecret = process.env.NOTIFICATION_CALLBACK_SECRET as string;
     const rawBody = JSON.stringify(request.body ?? {});
 
     const callbackLimit = Number(process.env.NOTIFICATION_CALLBACK_RATE_LIMIT_MAX ?? 30);
