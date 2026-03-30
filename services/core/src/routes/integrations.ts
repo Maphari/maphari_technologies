@@ -1535,7 +1535,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
       );
       await prisma.clientIntegrationConnection.update({
         where: { id: connection.id },
-        data: { metadata: encrypted as unknown as Record<string, string> },
+        data: { metadata: encrypted } as Record<string, unknown>,
       });
       metaApiView = decryptMetadataSecrets(
         providerKey, encrypted, process.env.INTEGRATION_ENCRYPTION_KEY!, connection.id, request.log
