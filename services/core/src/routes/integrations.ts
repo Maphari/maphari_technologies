@@ -14,7 +14,10 @@ import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { prisma } from "../lib/prisma.js";
 import { eventBus } from "../lib/infrastructure.js";
 import { encryptField, decryptField } from "../lib/integration-crypto.js";
-import { encryptMetadataSecrets, decryptMetadataSecrets } from "../lib/integration-secret-registry.js";
+import { encryptMetadataSecrets, decryptMetadataSecrets, validateConfigSummary } from "../lib/integration-secret-registry.js";
+
+const enforceConfigSummaryAllowlist =
+  process.env.ENFORCE_CONFIG_SUMMARY_ALLOWLIST !== "false";
 
 type ProviderKind = "oauth" | "assisted" | "coming_soon";
 type ProviderAvailabilityStatus = "active" | "beta" | "hidden" | "coming_soon" | "deprecated";
@@ -1487,6 +1490,31 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
       } as ApiResponse);
     }
 
+    if (body.configurationSummary != null && typeof body.configurationSummary === "object" && !Array.isArray(body.configurationSummary)) {
+      const validationError = validateConfigSummary(
+        providerKey,
+        body.configurationSummary as Record<string, unknown>
+      );
+      if (validationError) {
+        request.log.warn({
+          event: enforceConfigSummaryAllowlist ? "config_summary_rejected" : "config_summary_unknown_provider_warn",
+          providerKey,
+          unknownKeys: validationError.unknownKeys,
+        });
+        if (enforceConfigSummaryAllowlist) {
+          return reply.status(422).send({
+            success: false,
+            error: {
+              code: "INVALID_CONFIGURATION_SUMMARY",
+              message: "configurationSummary contains disallowed keys",
+              unknownKeys: validationError.unknownKeys,
+              allowedKeys: validationError.allowedKeys,
+            },
+          });
+        }
+      }
+    }
+
     // Extract rawMetadata before upsert — connection.id is needed for AAD
     const rawMetadata = body.metadata != null && typeof body.metadata === "object"
       ? (body.metadata as Record<string, unknown>)
@@ -1587,6 +1615,32 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
     }
 
     const body = (request.body ?? {}) as Record<string, unknown>;
+
+    if (body.configurationSummary !== undefined && body.configurationSummary !== null && typeof body.configurationSummary === "object" && !Array.isArray(body.configurationSummary)) {
+      const validationError = validateConfigSummary(
+        existing.providerKey,
+        body.configurationSummary as Record<string, unknown>
+      );
+      if (validationError) {
+        request.log.warn({
+          event: enforceConfigSummaryAllowlist ? "config_summary_rejected" : "config_summary_unknown_provider_warn",
+          providerKey: existing.providerKey,
+          unknownKeys: validationError.unknownKeys,
+        });
+        if (enforceConfigSummaryAllowlist) {
+          return reply.status(422).send({
+            success: false,
+            error: {
+              code: "INVALID_CONFIGURATION_SUMMARY",
+              message: "configurationSummary contains disallowed keys",
+              unknownKeys: validationError.unknownKeys,
+              allowedKeys: validationError.allowedKeys,
+            },
+          });
+        }
+      }
+    }
+
     const data: Record<string, unknown> = {};
 
     const setStr = (key: string) => {
