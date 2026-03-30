@@ -40,7 +40,7 @@ Items are grouped into 4 parallel workstreams. Groups 1, 3, and 4 are fully inde
 
 **Startup validation pattern:**
 
-Each affected service gets a `validateRequiredEnv()` call at its **entry point**, before the server starts listening. For NestJS (gateway, auth), this means calling it in `main.ts` before `NestFactory.create()` is awaited. For Fastify services (files, notifications, public-api), this means calling it at the top of `index.ts` before `createXxxApp()` is invoked. This ensures failure is deterministic at startup regardless of import order.
+Each affected service gets a `validateRequiredEnv()` call at its **entry point**, before the server starts listening. For the gateway (NestJS), this means calling it in `apps/gateway/src/main.ts` before `await createGatewayApp()`. For all Fastify services (auth, files, notifications, public-api), this means calling it at the top of `index.ts` before `createXxxApp()` is invoked. This ensures failure is deterministic at startup regardless of import order.
 
 ```ts
 function validateRequiredEnv(required: string[]): void {
@@ -134,7 +134,7 @@ The `public-api` service currently has no Prisma client. Before any persistence 
 4. In `services/public-api/src/index.ts`, call `validateRequiredEnv(["DATABASE_URL", "REDIS_URL", "API_KEY_ENCRYPTION_KEY"])` and verify both connections before binding the port.
 
 **Prisma schema additions — two locations:**
-The `PublicApiProject` and `PublicApiKey` models must be added to **both** `services/core/prisma/schema.prisma` (so migrations are managed centrally from the core service) **and** `services/public-api/prisma/schema.prisma` (for the local generated client). The migration is always run from `services/core`. Run `pnpm --filter @maphari/core prisma:migrate-deploy` (or `prisma migrate deploy`) as part of the Group 2 deploy pipeline step, before starting the public-api service.
+The `PublicApiProject` and `PublicApiKey` models must be added to **both** `services/core/prisma/schema.prisma` (so migrations are managed centrally from the core service) **and** `services/public-api/prisma/schema.prisma` (for the local generated client). The migration is always run from `services/core`. Run `pnpm --filter @maphari/core prisma:deploy` (or `prisma migrate deploy`) as part of the Group 2 deploy pipeline step, before starting the public-api service.
 
 **Prisma relation name disambiguation:**
 Both `PublicApiProject` and `PublicApiKey` reference the `Client` model. Prisma requires explicit `@relation(name: "...")` disambiguators when multiple relations exist between the same two models. Add named relations and the corresponding inverse fields on `Client`:
@@ -248,7 +248,7 @@ Migration strategy: For 30 days post-deploy, accept both new format (with `x-tim
 - [ ] `PublicApiProject` and `PublicApiKey` models added to both `services/core/prisma/schema.prisma` and `services/public-api/prisma/schema.prisma`
 - [ ] Named `@relation` disambiguators on both models; inverse relation arrays added to `Client` model
 - [ ] `prisma generate` runs without errors in both `services/core` and `services/public-api`
-- [ ] Migration run via `pnpm --filter @maphari/core prisma:migrate-deploy` before public-api service starts
+- [ ] Migration run via `pnpm --filter @maphari/core prisma:deploy` before public-api service starts
 - [ ] `public-api` has its own `prisma/schema.prisma` with `output = "../src/generated/prisma"`; does NOT import from `services/core/src/generated/prisma`
 - [ ] Key secrets encrypted with AES-256-GCM at rest; raw secret returned only at creation
 - [ ] `keyId` lookup enforces `status=ACTIVE`, expiry check; `clientId` derived from key record
@@ -299,24 +299,36 @@ response.headers.set('Content-Security-Policy', buildCsp(nonce));
 
 **CSP string assembly:**
 
-Production (`process.env.NODE_ENV === 'production'`):
-```
-default-src 'self';
-script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
-style-src 'self' 'unsafe-inline';
-img-src 'self' data: blob: https:;
-font-src 'self' data:;
-connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* https://*.livekit.cloud wss://*.livekit.cloud https://cloud.livekit.io;
-frame-src 'none';
-object-src 'none';
-base-uri 'self';
-form-action 'self' https://sandbox.payfast.co.za https://www.payfast.co.za
+The `buildCsp(nonce, isProd)` function must be structured as a `NODE_ENV !== 'production'` guard (not `=== 'production'` with an else) so the CI regex can reliably verify that `unsafe-eval` only appears inside the dev branch. Example structure:
+
+```ts
+function buildCsp(nonce: string): string {
+  const isProd = process.env.NODE_ENV === 'production';
+  const scriptSrc = isProd
+    ? `'self' 'nonce-${nonce}' 'strict-dynamic'`
+    : `'self' 'nonce-${nonce}' 'unsafe-eval'`;
+  const connectSrc = isProd
+    ? `'self' https://*.livekit.cloud wss://*.livekit.cloud https://cloud.livekit.io`
+    : `'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* https://*.livekit.cloud wss://*.livekit.cloud https://cloud.livekit.io`;
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    `connect-src ${connectSrc}`,
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self' https://sandbox.payfast.co.za https://www.payfast.co.za",
+  ].join('; ');
+}
 ```
 
-Development (`NODE_ENV !== 'production'`):
-```
-script-src 'self' 'nonce-${nonce}' 'unsafe-eval'
-```
+Production `script-src`: `'self' 'nonce-${nonce}' 'strict-dynamic'` — no `unsafe-eval`, no `unsafe-inline`.
+Production `connect-src`: no `localhost:*` entries (dev-only). The `localhost:*` origins are included in the dev branch only.
+Dev `script-src`: adds `'unsafe-eval'` for Next.js HMR/fast-refresh.
+Dev `connect-src`: includes `localhost:*` for local API and WebSocket connections.
 (`unsafe-eval` required for Next.js HMR/fast-refresh in dev — never in production branch.)
 
 Note on `style-src 'unsafe-inline'`: Next.js injects inline styles for font optimization and CSS-in-JS. This is an accepted limitation. `style-src` with nonces is not currently feasible without significant refactoring and is out of scope for this group. The XSS risk from `unsafe-inline` on styles is lower than on scripts.
