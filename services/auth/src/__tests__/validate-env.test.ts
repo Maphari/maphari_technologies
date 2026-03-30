@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { validateRequiredEnv } from "../lib/validate-env.js";
 import { readAuthConfig } from "../lib/config.js";
 
@@ -63,5 +63,17 @@ describe("readAuthConfig — no fallback secrets", () => {
     const config = readAuthConfig(process.env);
     expect(config.accessTokenSecret).toBeUndefined();
     if (saved !== undefined) process.env.JWT_ACCESS_SECRET = saved;
+  });
+});
+
+describe("auth route — OTP log redaction", () => {
+  it("auth.ts does not contain console.log with otp variable reference", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync(
+      new URL("../routes/auth.ts", import.meta.url),
+      "utf8"
+    );
+    expect(src).not.toMatch(/console\.log\([^)]*otp[^)]*\)/);
+    expect(src).not.toMatch(/console\.log\([^)]*plainPin[^)]*\)/);
   });
 });
