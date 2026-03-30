@@ -25,7 +25,11 @@ async function proxyUpstream<T = unknown>(url: string): Promise<ApiResponse<T>> 
       headers: {
         "content-type": "application/json",
         "x-internal-source": "public-api",
-        "x-user-role": "ADMIN"   // minimal scope header for internal service access
+        // Pre-existing (before Group 2): internal service-to-service calls use ADMIN role
+        // so that downstream scope guards (readScopeHeaders) grant full read access.
+        // This header never reaches external callers — proxyUpstream is only called
+        // from routes that have already verified a valid partner API key.
+        "x-user-role": "ADMIN"
       }
     });
     return (await res.json()) as ApiResponse<T>;
