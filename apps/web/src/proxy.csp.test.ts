@@ -10,11 +10,11 @@ beforeEach(async () => {
 
 describe("buildCsp — production mode", () => {
   beforeEach(() => {
-    process.env.NODE_ENV = "production";
+    (process.env as Record<string, string>).NODE_ENV = "production";
   });
 
   afterEach(() => {
-    delete process.env.NODE_ENV;
+    delete (process.env as Record<string, string | undefined>).NODE_ENV;
   });
 
   it("includes nonce in script-src", () => {
@@ -49,11 +49,11 @@ describe("buildCsp — production mode", () => {
 
 describe("buildCsp — development mode", () => {
   beforeEach(() => {
-    process.env.NODE_ENV = "development";
+    (process.env as Record<string, string>).NODE_ENV = "development";
   });
 
   afterEach(() => {
-    delete process.env.NODE_ENV;
+    delete (process.env as Record<string, string | undefined>).NODE_ENV;
   });
 
   it("includes unsafe-eval in development", () => {

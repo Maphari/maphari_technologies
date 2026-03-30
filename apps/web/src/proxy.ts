@@ -138,12 +138,6 @@ export function proxy(request: NextRequest): NextResponse {
 
 export const config = {
   matcher: [
-    "/client/:path*",
-    "/portal/:path*",
-    "/admin/:path*",
-    "/staff/:path*",
-    "/login",
-    "/internal/:path*",
-    "/internal-login"
-  ]
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff|woff2|ttf|otf|eot|ico)$).*)",
+  ],
 };
