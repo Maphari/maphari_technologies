@@ -1,6 +1,9 @@
 import { createFilesApp } from "./app.js";
 import { cache, eventBus } from "./lib/infrastructure.js";
 import { prisma } from "./lib/prisma.js";
+import { validateRequiredEnv } from "./lib/validate-env.js";
+
+validateRequiredEnv(["UPLOAD_TOKEN_SECRET"]);
 
 const app = await createFilesApp();
 const port = Number(process.env.PORT ?? 4005);

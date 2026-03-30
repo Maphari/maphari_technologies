@@ -116,9 +116,9 @@ export async function registerUploadFlowRoutes(app: FastifyInstance): Promise<vo
       clientId,
       storageKey,
       ttlSeconds: Number(process.env.UPLOAD_TOKEN_TTL_SECONDS ?? 900),
-      secret: process.env.UPLOAD_TOKEN_SECRET ?? "maphari-upload-secret"
+      secret: process.env.UPLOAD_TOKEN_SECRET!
     });
-    const tokenPayload = verifyUploadToken(uploadToken, process.env.UPLOAD_TOKEN_SECRET ?? "maphari-upload-secret");
+    const tokenPayload = verifyUploadToken(uploadToken, process.env.UPLOAD_TOKEN_SECRET!);
     if (!tokenPayload) {
       reply.status(500);
       return {
@@ -178,7 +178,7 @@ export async function registerUploadFlowRoutes(app: FastifyInstance): Promise<vo
       } as ApiResponse;
     }
 
-    const tokenPayload = verifyUploadToken(token, process.env.UPLOAD_TOKEN_SECRET ?? "maphari-upload-secret");
+    const tokenPayload = verifyUploadToken(token, process.env.UPLOAD_TOKEN_SECRET!);
     if (!tokenPayload || tokenPayload.storageKey !== storageKey) {
       reply.status(403);
       return {
@@ -237,7 +237,7 @@ export async function registerUploadFlowRoutes(app: FastifyInstance): Promise<vo
       } as ApiResponse;
     }
 
-    const tokenPayload = verifyUploadToken(parsedBody.data.uploadToken, process.env.UPLOAD_TOKEN_SECRET ?? "maphari-upload-secret");
+    const tokenPayload = verifyUploadToken(parsedBody.data.uploadToken, process.env.UPLOAD_TOKEN_SECRET!);
     if (!tokenPayload || tokenPayload.storageKey !== parsedBody.data.storageKey || tokenPayload.clientId !== clientId) {
       reply.status(403);
       return {
