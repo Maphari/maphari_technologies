@@ -1,6 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 // analytics.ts — Billing analytics routes
-// Routes : GET /analytics/clv  (ADMIN only — CLV + churn risk per client)
+// Routes : GET /analytics/clv        (ADMIN only — CLV + churn risk per client)
+//          GET /analytics/mrr-history (ADMIN only — monthly revenue last N months)
 // ════════════════════════════════════════════════════════════════════════════
 
 import type { ApiResponse } from "@maphari/contracts";
@@ -121,6 +122,56 @@ export async function registerBillingAnalyticsRoutes(app: FastifyInstance): Prom
       return {
         success: false,
         error: { code: "CLV_FETCH_FAILED", message: "Unable to compute CLV analytics" }
+      } as ApiResponse;
+    }
+  });
+
+  // ── GET /analytics/mrr-history ────────────────────────────────────────────
+  app.get("/analytics/mrr-history", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+
+    if (scope.role !== "ADMIN") {
+      reply.status(403);
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "Admin access required" }
+      } as ApiResponse;
+    }
+
+    const query = request.query as Record<string, string | undefined>;
+    const months = Math.min(24, Math.max(1, parseInt(query.months ?? "6") || 6));
+
+    try {
+      const results: { month: string; total: number }[] = [];
+
+      for (let i = months - 1; i >= 0; i--) {
+        const start = new Date();
+        start.setDate(1);
+        start.setMonth(start.getMonth() - i);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setMonth(end.getMonth() + 1);
+
+        // Sum all paid invoices where paidAt falls within this month
+        const invoices = await prisma.invoice.findMany({
+          where: {
+            status: "PAID",
+            paidAt: { gte: start, lt: end },
+          },
+          select: { amountCents: true },
+        });
+
+        const total = invoices.reduce((sum, inv) => sum + Number(inv.amountCents), 0);
+        results.push({ month: start.toISOString().slice(0, 7), total });
+      }
+
+      return { success: true, data: results } as ApiResponse<typeof results>;
+    } catch (error) {
+      request.log.error(error);
+      return {
+        success: false,
+        error: { code: "MRR_HISTORY_FAILED", message: "Unable to load MRR history" }
       } as ApiResponse;
     }
   });

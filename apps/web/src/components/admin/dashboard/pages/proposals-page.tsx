@@ -6,8 +6,9 @@
 // ════════════════════════════════════════════════════════════════════════════
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -365,21 +366,126 @@ export function ProposalsPage({ session }: { session: AuthSession | null }) {
   const subtotalCents = proposalTotal(createItems);
   const subtotalDisplay = `R ${centsToZar(subtotalCents)}`;
 
+  // ── Widget data ─────────────────────────────────────────────────────────────
+  const totalValue = useMemo(() => proposals.reduce((s, p) => s + p.amountCents, 0), [proposals]);
+  const acceptedCount   = proposals.filter((p) => p.status === "ACCEPTED").length;
+  const pendingCount    = proposals.filter((p) => p.status === "PENDING").length;
+  const draftCount      = proposals.filter((p) => p.status === "DRAFT").length;
+  const declinedCount   = proposals.filter((p) => p.status === "DECLINED").length;
+  const winRate = (acceptedCount + declinedCount) > 0
+    ? Math.round((acceptedCount / (acceptedCount + declinedCount)) * 100)
+    : 0;
+
+  const statusChartData = [
+    { label: "Draft",    value: draftCount    },
+    { label: "Pending",  value: pendingCount  },
+    { label: "Accepted", value: acceptedCount },
+    { label: "Declined", value: declinedCount },
+  ];
+
+  const pipelineStages = [
+    { label: "Draft",    count: draftCount,    total: Math.max(proposals.length, 1), color: "#888888" },
+    { label: "Pending",  count: pendingCount,  total: Math.max(proposals.length, 1), color: "#f5a623" },
+    { label: "Accepted", count: acceptedCount, total: Math.max(proposals.length, 1), color: "#34d98b" },
+    { label: "Declined", count: declinedCount, total: Math.max(proposals.length, 1), color: "#ff5f5f" },
+  ].filter((s) => s.count > 0);
+
+  const tableRows = proposals.slice(0, 20).map((p) => {
+    const client = clients.find((c) => c.id === p.clientId);
+    return {
+      title:  p.title,
+      client: client?.name ?? p.clientId.slice(0, 8).toUpperCase(),
+      amount: `R ${centsToZar(p.amountCents)}`,
+      status: p.status,
+      date:   new Date(p.createdAt).toLocaleDateString("en-ZA", { month: "short", day: "numeric", year: "2-digit" }),
+    };
+  }) as Record<string, unknown>[];
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className={cx("propPage")}>
+    <div className={styles.pageBody}>
 
       {/* Header */}
-      <div className={cx("propHeader")}>
-        <span className={cx("propTitle")}>Proposals</span>
+      <div className={styles.pageHeader}>
+        <div>
+          <div className={styles.pageEyebrow}>BUSINESS DEVELOPMENT / PROPOSALS</div>
+          <h1 className={styles.pageTitle}>Proposals</h1>
+          <div className={styles.pageSub}>Active proposals, status tracking, and client sign-off</div>
+        </div>
         <button
-          className={cx("btnSm")}
+          className={cx("btnSm", "btnAccent")}
           onClick={openCreate}
           type="button"
         >
           + New Proposal
         </button>
       </div>
+
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Pipeline Value"
+          value={`R ${centsToZar(totalValue)}`}
+          sub={`${proposals.length} proposals`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Win Rate"
+          value={`${winRate}%`}
+          sub={`${acceptedCount} accepted vs ${declinedCount} declined`}
+          tone={winRate >= 60 ? "green" : winRate >= 40 ? "amber" : "red"}
+          progressValue={winRate}
+        />
+        <StatWidget
+          label="Awaiting Response"
+          value={pendingCount}
+          sub="Sent to clients"
+          tone={pendingCount > 0 ? "amber" : "default"}
+        />
+        <StatWidget
+          label="In Draft"
+          value={draftCount}
+          sub="Not yet sent"
+          tone="default"
+        />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Proposals by Status"
+          data={statusChartData}
+          dataKey="value"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Proposal Funnel"
+          stages={pipelineStages.length > 0 ? pipelineStages : [{ label: "No proposals", count: 0, total: 1 }]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Proposals table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Proposals"
+          rows={tableRows}
+          rowKey="title"
+          emptyMessage={loading ? "Loading proposals…" : "No proposals yet."}
+          columns={[
+            { key: "title",  header: "Title",  align: "left" },
+            { key: "client", header: "Client", align: "left" },
+            { key: "amount", header: "Amount", align: "right" },
+            { key: "status", header: "Status", align: "left", render: (val) => {
+              const raw = String(val);
+              const cls = raw === "ACCEPTED" ? "badgeGreen" : raw === "DECLINED" ? "badgeRed" : raw === "PENDING" ? "badgeAmber" : "badgeMuted";
+              return <span className={cx(cls)}>{statusLabel(raw)}</span>;
+            }},
+            { key: "date",   header: "Created", align: "right" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* Error */}
       {error ? <div className={cx("propError")}>{error}</div> : null}

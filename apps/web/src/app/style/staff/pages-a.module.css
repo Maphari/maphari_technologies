@@ -3,7 +3,6 @@
             Task Dependencies, Notifications, Approval Queue
    ─────────────────────────────────────────────────────────────── */
 
-
 .pageHeaderBar {
   display: flex;
   flex-direction: column;
@@ -396,6 +395,7 @@
 
 .tasksComposerCard { margin-bottom: 12px; }
 .tasksComposerGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
 .tasksComposerField {
   border-radius: var(--r-md);
 }
@@ -404,11 +404,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, rgb(255 255 255 / 2%), rgb(255 255 255 / 1%));
   border: 1px solid var(--b2);
   border-radius: var(--r-md);
   padding: 8px 10px;
 }
+
 .tasksTableCard {
   border: 1px solid var(--b2);
   border-radius: var(--r-md);
@@ -436,40 +437,53 @@
 
 .tasksTable td:nth-child(2),
 .tasksTable th:nth-child(2) { text-align: left; }
+
 .tasksTable td:nth-child(3),
 .tasksTable th:nth-child(3) { text-align: left; }
+
 .tasksTable td:nth-child(4),
 .tasksTable th:nth-child(4) { text-align: left; }
+
 .tasksTable td:nth-child(5),
 .tasksTable th:nth-child(5) { text-align: left; }
+
 .tasksTable td:nth-child(6),
 .tasksTable th:nth-child(6) { text-align: right; }
+
 .tasksTable td:nth-child(7),
 .tasksTable th:nth-child(7) { text-align: right; }
+
 .tasksTable td:nth-child(8),
 .tasksTable th:nth-child(8) { text-align: left; }
+
 .tasksTable td:nth-child(9),
 .tasksTable th:nth-child(9) { text-align: center; }
+
 .tasksTable td:nth-child(10),
 .tasksTable th:nth-child(10) { text-align: center; }
 .tasksEmptyState { text-align: center; color: var(--muted); padding: 24px; }
 .tasksEmptyCell { text-align: center; padding: 8px 0; }
 .tasksStatusBadge { border-radius: var(--r-sm); }
 .tasksProjectBadge { border-radius: var(--r-sm); }
-.tasksDueLabel { }
-.tasksPriorityDot { }
+
+.tasksDueLabel {}
+.tasksPriorityDot {}
+
 .tasksActionBtn {
   min-width: 92px;
   border-radius: var(--r-sm);
 }
+
 .tasksAssigneeSub {
   margin-top: 3px;
 }
+
 .tasksLinkEditor {
   border-bottom: 1px solid var(--b2);
   padding: 12px;
   background: color-mix(in oklab, var(--s2) 70%, var(--s1));
 }
+
 .tasksLinkEditorHeader {
   display: flex;
   align-items: center;
@@ -477,41 +491,49 @@
   gap: 8px;
   margin-bottom: 10px;
 }
+
 .tasksLinkEditorTitle {
   font-size: 12px;
   font-weight: 700;
   color: var(--text);
 }
+
 .tasksLinkEditorGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
+
 .tasksLinkEditorActions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
 }
+
 .tasksLinksCell {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
+
 .tasksLinkRow {
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
 .tasksLinkAnchor {
   font-size: 11px;
   color: var(--accent);
   text-decoration: none;
   font-family: var(--font-dm-mono), monospace;
 }
+
 .tasksLinkAnchor:hover {
   text-decoration: underline;
 }
+
 .tasksLinkRemoveBtn {
   width: 18px;
   height: 18px;
@@ -523,36 +545,44 @@
   line-height: 1;
   cursor: pointer;
 }
+
 .tasksLinkRemoveBtn:hover {
   color: var(--red);
   border-color: color-mix(in oklab, var(--red) 40%, var(--b2));
 }
+
 .tasksLinkManageBtn {
   width: fit-content;
 }
+
 .tasksActionStack {
   display: flex;
   justify-content: center;
 }
+
 .tasksSyncLog {
   margin-top: 10px;
   border-top: 1px solid var(--b2);
   padding-top: 10px;
 }
+
 .tasksSyncLogTitle {
   font-size: 11px;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 8px;
 }
+
 .tasksSyncLogEmpty {
   font-size: 11px;
   color: var(--muted2);
 }
+
 .tasksSyncLogList {
   display: grid;
   gap: 7px;
 }
+
 .tasksSyncLogItem {
   border: 1px solid var(--b2);
   border-radius: var(--r-sm);
@@ -562,12 +592,14 @@
   flex-direction: column;
   gap: 6px;
 }
+
 .tasksSyncLogItemTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
+
 .tasksSyncLogProvider {
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -575,6 +607,7 @@
   color: var(--muted2);
   font-family: var(--font-dm-mono), monospace;
 }
+
 .tasksSyncLogMeta {
   display: flex;
   align-items: center;
@@ -583,6 +616,7 @@
   color: var(--muted2);
   font-family: var(--font-dm-mono), monospace;
 }
+
 .tasksSyncLogMessage {
   font-size: 11px;
   color: var(--muted);
@@ -603,10 +637,11 @@
 }
 .tskComposerClose:hover { color: var(--text); background: var(--s2); }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .tasksStatsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
   .tasksLinkEditorGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -614,9 +649,9 @@
 
 /* ── Kanban Board ───────────────────────────────────────────────── */
 
-.kanbanPage { }
+.kanbanPage {}
 
-.kbHeader { }
+.kbHeader {}
 .kbHeaderActions { display: flex; align-items: center; gap: 8px; }
 
 /* Alert buttons */
@@ -635,8 +670,8 @@
   color: var(--muted);
 }
 
-.kbAlertBtnRed   { color: var(--red);   border-color: rgba(255,95,95,0.3); background: var(--red-d); }
-.kbAlertBtnAmber { color: var(--amber); border-color: rgba(245,166,35,0.3); background: var(--amber-d); }
+.kbAlertBtnRed   { color: var(--red);   border-color: rgb(255 95 95 / 30%); background: var(--red-d); }
+.kbAlertBtnAmber { color: var(--amber); border-color: rgb(245 166 35 / 30%); background: var(--amber-d); }
 
 .kbAddTaskBtn {
   display: inline-flex;
@@ -671,8 +706,8 @@
   gap: 3px;
 }
 
-.kbMetricCellBreached { border-color: rgba(255,95,95,0.3); background: var(--red-d); }
-.kbMetricCellAlert    { border-color: rgba(245,166,35,0.3); background: var(--amber-d); }
+.kbMetricCellBreached { border-color: rgb(255 95 95 / 30%); background: var(--red-d); }
+.kbMetricCellAlert    { border-color: rgb(245 166 35 / 30%); background: var(--amber-d); }
 
 .kbMetricLabel {
   font-size: 10px;
@@ -780,7 +815,7 @@
 /* Block panel */
 .kbBlockPanelV3 {
   background: var(--red-d);
-  border: 1px solid rgba(255,95,95,0.3);
+  border: 1px solid rgb(255 95 95 / 30%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -790,7 +825,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-bottom: 1px solid rgba(255,95,95,0.2);
+  border-bottom: 1px solid rgb(255 95 95 / 20%);
 }
 
 .kbBlockPanelTitle {
@@ -1052,6 +1087,7 @@
   align-items: center;
   gap: 6px;
 }
+
 .kbCardProgressSpacer {
   height: 12px;
 }
@@ -1155,7 +1191,7 @@
 
 /* ── Focus Mode ──────────────────────────────────────────────────── */
 
-.fmHeaderBar { }
+.fmHeaderBar {}
 
 .fmLayout {
   display: grid;
@@ -1164,9 +1200,6 @@
   flex: 1;
 }
 
-@media (max-width: 900px) {
-  .fmLayout { grid-template-columns: 1fr; }
-}
 
 .fmMainPane { display: flex; flex-direction: column; align-items: center; gap: 24px; }
 .fmSidePane { display: flex; flex-direction: column; gap: 16px; }
@@ -1202,7 +1235,8 @@
 }
 
 .fmTaskRow:hover { border-color: var(--b3); background: var(--s2); }
-.fmTaskOption { }
+
+.fmTaskOption {}
 .fmTaskOptionSelected { border-color: var(--accent); }
 .fmTaskSelAccent  { border-color: var(--accent); background: var(--accent-g) !important; }
 .fmTaskSelPurple  { border-color: var(--purple); background: var(--purple-d) !important; }
@@ -1242,7 +1276,8 @@
 .fmToneOrange  { color: var(--accent); }
 
 /* Duration pills */
-.fmDurBtn { }
+.fmDurBtn {}
+
 .fmDurPill {
   height: 30px;
   padding: 0 12px;
@@ -1274,8 +1309,9 @@
 }
 
 .fmTextarea:focus { outline: none; border-color: var(--accent); }
-.fmNoteBox { }
-.inputBase { }
+
+.fmNoteBox {}
+.inputBase {}
 
 /* Buttons */
 .fmCtrlBtn {
@@ -1294,8 +1330,9 @@
 
 .fmPrimaryBtn { background: var(--accent); color: #fff; }
 .fmPrimaryBtn:hover { opacity: 0.88; }
-.fmStartBtn { }
-.fmControlBtn { }
+
+.fmStartBtn {}
+.fmControlBtn {}
 .fmBreakBtn { background: var(--blue); color: #fff; }
 .fmBreakBtn:hover { opacity: 0.88; }
 
@@ -1309,7 +1346,8 @@
   cursor: pointer;
   color: var(--muted);
 }
-.fmGhostBtn { }
+
+.fmGhostBtn {}
 .fmAbandonBtn:hover { border-color: var(--b3); color: var(--text); }
 
 /* Ring */
@@ -1332,7 +1370,8 @@
 .fmRingSvg { display: block; }
 .fmRingTrack { stroke: var(--s3); }
 .fmRingProgress { transition: stroke-dasharray 1s linear; }
-.fmRingProgressRunning { }
+
+.fmRingProgressRunning {}
 
 .fmRingCenter {
   position: absolute;
@@ -1376,7 +1415,7 @@
 }
 
 /* Linear progress */
-.fmLinearProgress { }
+.fmLinearProgress {}
 
 /* Progress tones */
 .fmProgressAccent::-webkit-progress-value { background: var(--accent); }
@@ -1642,7 +1681,7 @@
   cursor: pointer;
 }
 
-.tlv2StopBtn:hover { color: var(--red); border-color: rgba(255,95,95,0.3); }
+.tlv2StopBtn:hover { color: var(--red); border-color: rgb(255 95 95 / 30%); }
 
 .tlv2BtnIco { display: flex; align-items: center; }
 
@@ -1705,12 +1744,14 @@
   cursor: pointer;
   transition: all 120ms;
 }
+
 .tlv2SubmitWeekBtnIdle {
   background: var(--accent-d);
   border: 1px solid var(--accent);
   color: var(--accent);
 }
 .tlv2SubmitWeekBtnIdle:hover:not(:disabled) { opacity: 0.88; }
+
 .tlv2SubmitWeekBtnDone {
   background: var(--s2);
   border: 1px solid var(--b2);
@@ -1730,10 +1771,6 @@
 .tlv2MainCol { display: flex; flex-direction: column; gap: 16px; }
 .tlv2SideCol { display: flex; flex-direction: column; gap: 16px; }
 
-@media (max-width: 900px) {
-  .tlv2ContentGrid { grid-template-columns: 1fr; }
-  .tlv2Strip       { grid-template-columns: auto 1fr auto; gap: 12px; }
-}
 
 /* Week chart */
 .tlv2WeekTotal {
@@ -1743,8 +1780,8 @@
   color: var(--accent);
 }
 
-.tlv2ChartCard { }  /* uses .card — no additional styles needed */
-.tlv2ChartHead { }  /* uses .cardHeader — no additional styles needed */
+.tlv2ChartCard   /* uses .card — no additional styles needed */
+.tlv2ChartHead   /* uses .cardHeader — no additional styles needed */
 
 .tlv2WeekBadge {
   font-size: 11px;
@@ -1756,7 +1793,7 @@
   padding: 2px 8px;
 }
 
-.tlv2EntriesCard { } /* uses .card */
+.tlv2EntriesCard  /* uses .card */
 
 .tlv2ChartArea {
   display: flex;
@@ -1800,7 +1837,7 @@
 }
 
 .tlv2BarToday { background: var(--accent); }
-.tlv2BarBase  { background: rgba(255, 255, 255, 0.09); }
+.tlv2BarBase  { background: rgb(255 255 255 / 9%); }
 
 .tlv2BarLabel { font-size: 9px; font-family: var(--font-dm-mono), monospace; }
 .tlv2BarLabelToday { color: var(--accent); font-weight: 700; }
@@ -1882,7 +1919,7 @@
   color: var(--muted);
 }
 
-.tlv2FilterPillActive { background: var(--accent-d); color: var(--accent); border-color: rgba(249,115,22,0.28); }
+.tlv2FilterPillActive { background: var(--accent-d); color: var(--accent); border-color: rgb(249 115 22 / 28%); }
 .tlv2FilterPillIdle:hover { background: var(--s2); }
 
 .tlv2SearchWrap {
@@ -1913,8 +1950,8 @@
 .tlv2SearchInput:focus { outline: none; border-color: var(--accent); }
 
 /* ── Week Progress Card ── */
-.tlv2WeekCard  { }  /* uses .card */
-.tlv2WeekCardHead { }  /* uses .cardHeader */
+.tlv2WeekCard    /* uses .card */
+.tlv2WeekCardHead   /* uses .cardHeader */
 
 .tlv2WeekProgress {
   padding: 14px 16px;
@@ -1962,7 +1999,7 @@
 }
 
 .tlv2WeekDay      { font-size: 10px; color: var(--muted2); }
-.tlv2WeekDayDone  { color: rgba(249, 115, 22, 0.55); }
+.tlv2WeekDayDone  { color: rgb(249 115 22 / 55%); }
 .tlv2WeekDayToday { color: var(--accent); font-weight: 600; }
 
 .tlv2WeekStats {
@@ -1990,8 +2027,8 @@
 
 /* ── Recurring Tasks ─────────────────────────────────────────────── */
 
-.rtHeaderBar  { }
-.rtHeaderTop  { }
+.rtHeaderBar {}
+.rtHeaderTop {}
 .rtHeaderActions { display: flex; align-items: center; gap: 12px; }
 
 .rtAddMainBtn {
@@ -2007,20 +2044,20 @@
   transition: opacity 150ms;
 }
 .rtAddMainBtn:hover { opacity: 0.88; }
-.rtPrimaryBtn { }
+
+.rtPrimaryBtn {}
 
 /* Layout */
 .rtLayout { display: flex; flex-direction: column; gap: 12px; }
 .rtLayoutWithForm { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
 .rtListPane { display: flex; flex-direction: column; gap: 12px; }
-.rtListPaneWithForm { }
 
-@media (max-width: 900px) {
-  .rtLayoutWithForm { grid-template-columns: 1fr; }
-}
+.rtListPaneWithForm {}
+
 
 /* Frequency groups */
-.rtFreqGroup { }
+.rtFreqGroup {}
+
 .rtFreqHeader {
   display: flex;
   align-items: center;
@@ -2057,10 +2094,10 @@
 .rtFreqDot.rtFreqBiWeekly { background: var(--purple); }
 .rtFreqDot.rtFreqMonthly  { background: var(--amber); }
 
-.rtFreqLine.rtFreqDaily   { background: rgba(249,115,22,0.2); }
-.rtFreqLine.rtFreqWeekly  { background: rgba(91,156,245,0.2); }
-.rtFreqLine.rtFreqBiWeekly { background: rgba(167,139,250,0.2); }
-.rtFreqLine.rtFreqMonthly  { background: rgba(245,166,35,0.2); }
+.rtFreqLine.rtFreqDaily   { background: rgb(249 115 22 / 20%); }
+.rtFreqLine.rtFreqWeekly  { background: rgb(91 156 245 / 20%); }
+.rtFreqLine.rtFreqBiWeekly { background: rgb(167 139 250 / 20%); }
+.rtFreqLine.rtFreqMonthly  { background: rgb(245 166 35 / 20%); }
 
 /* Task rows */
 .rtTaskRow {
@@ -2079,10 +2116,11 @@
 
 .rtTaskCard:hover { border-color: var(--b2); }
 .rtTaskPaused { opacity: 0.55; }
-.rtTaskDueSoon { border-color: rgba(245,166,35,0.3); background: var(--amber-d); }
+.rtTaskDueSoon { border-color: rgb(245 166 35 / 30%); background: var(--amber-d); }
 
 /* Done button */
-.rtDoneBtn { }
+.rtDoneBtn {}
+
 .rtDoneCircle {
   width: 22px;
   height: 22px;
@@ -2136,9 +2174,10 @@
 .rtDueSoonText { color: var(--amber); }
 
 /* Hover actions */
-.rtTaskHoverActions { }
+.rtTaskHoverActions {}
 
 .rtToggleBtn { cursor: pointer; }
+
 .rtTogglePill {
   height: 22px;
   padding: 0 8px;
@@ -2149,8 +2188,8 @@
   transition: all 120ms;
 }
 
-.rtTogglePause  { color: var(--amber); border-color: rgba(245,166,35,0.3); }
-.rtToggleResume { color: var(--green); border-color: rgba(52,217,139,0.3); }
+.rtTogglePause  { color: var(--amber); border-color: rgb(245 166 35 / 30%); }
+.rtToggleResume { color: var(--green); border-color: rgb(52 217 139 / 30%); }
 
 .rtDeleteBtn {
   width: 22px;
@@ -2167,9 +2206,10 @@
   line-height: 1;
 }
 
-.rtDeleteBtn:hover { color: var(--red); border-color: rgba(255,95,95,0.3); }
+.rtDeleteBtn:hover { color: var(--red); border-color: rgb(255 95 95 / 30%); }
 
-.rtFilterBtn { }
+.rtFilterBtn {}
+
 .rtCancelBtn {
   height: 30px;
   padding: 0 12px;
@@ -2247,11 +2287,12 @@
 }
 
 .rtSaveBtn:disabled { opacity: 0.4; cursor: not-allowed; }
-.rtPrimaryBtnSm { }
+
+.rtPrimaryBtnSm {}
 
 /* ── Task Dependencies ───────────────────────────────────────────── */
 
-.tdHeaderBar  { }
+.tdHeaderBar {}
 .tdHeaderTop  { display: flex; align-items: flex-start; justify-content: space-between; }
 
 .tdTopStats {
@@ -2266,11 +2307,9 @@
 .tdLayout { display: flex; flex-direction: column; gap: 16px; }
 .tdLayoutWithPanel { display: grid; grid-template-columns: 1fr 280px; gap: 16px; }
 .tdGraphPane { overflow-x: auto; }
-.tdGraphPaneWithPanel { }
 
-@media (max-width: 900px) {
-  .tdLayoutWithPanel { grid-template-columns: 1fr; }
-}
+.tdGraphPaneWithPanel {}
+
 
 /* Client row */
 .tdClientHead {
@@ -2330,7 +2369,7 @@
 .tdTaskCard:hover { border-color: var(--b3); }
 .tdTaskCardSelected { border-color: var(--accent); background: var(--accent-g); }
 .tdTaskCardDirect { border-color: var(--blue); }
-.tdTaskCardBlocked { border-color: rgba(255,95,95,0.4); background: var(--red-d); }
+.tdTaskCardBlocked { border-color: rgb(255 95 95 / 40%); background: var(--red-d); }
 .tdTaskCardDimmed { opacity: 0.4; }
 
 .tdTaskTitle { font-size: 12px; color: var(--text); font-weight: 500; }
@@ -2354,7 +2393,7 @@
 
 .tdBlockedPanel {
   background: var(--red-d);
-  border: 1px solid rgba(255,95,95,0.3);
+  border: 1px solid rgb(255 95 95 / 30%);
   border-radius: var(--r-sm);
   padding: 10px 12px;
 }
@@ -2372,7 +2411,8 @@
 }
 
 .tdArrowColMulti { align-self: stretch; }
-.tdArrowColSingle { }
+
+.tdArrowColSingle {}
 
 .tdArrowLine {
   flex: 1;
@@ -2420,7 +2460,8 @@
 }
 
 .tdMiniTask:hover { border-color: var(--b2); }
-.tdMiniStatus { }
+
+.tdMiniStatus {}
 
 .tdCloseBtn {
   height: 28px;
@@ -2442,7 +2483,8 @@
   padding-top: 8px;
   padding-bottom: 14px;
 }
-.snHeader { }
+
+.snHeader {}
 .snHeaderActions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .snHeaderBtns { display: inline-flex; align-items: center; }
 
@@ -2474,16 +2516,16 @@
 
 .snIconBtn:hover { color: var(--text); border-color: var(--b3); }
 
-.snPrefsBtn { }
+.snPrefsBtn {}
 .snPrefsBtnActive { background: var(--s3); color: var(--text); }
 
-.snMarkAllBtn { }
+.snMarkAllBtn {}
 
 /* Filter wrap */
 .snFilterWrap {
   margin-bottom: 10px;
   padding: 8px 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, rgb(255 255 255 / 2%), rgb(255 255 255 / 1%));
   border: 1px solid var(--b2);
   border-radius: var(--r-md);
 }
@@ -2560,8 +2602,9 @@
 
 .snTypeMenuBtnActive { color: var(--text); border-color: var(--b3); }
 
-.snTypeMenuLabel { }
+.snTypeMenuLabel {}
 .snTypeMenuCaret { font-size: 8px; }
+
 .snTypeMenuCaretIcon {
   display: block;
   transition: transform 140ms ease;
@@ -2581,7 +2624,7 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 50%);
 }
 
 .snTypeMenuItem {
@@ -2598,7 +2641,7 @@
 }
 
 .snTypeMenuItemActive { background: var(--accent-d); color: var(--accent); }
-.snTypeMenuItemIdle:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.snTypeMenuItemIdle:hover { background: rgb(255 255 255 / 5%); color: var(--text); }
 
 /* Mark all */
 .snMarkAllWrap { margin-left: auto; }
@@ -2683,9 +2726,6 @@
 .snLayout { display: flex; flex-direction: column; gap: 0; width: 100%; min-width: 0; overflow: hidden; }
 .snLayoutWithDetail { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
 
-@media (max-width: 900px) {
-  .snLayoutWithDetail { grid-template-columns: 1fr; }
-}
 
 .snListPane {
   display: flex;
@@ -2738,9 +2778,10 @@
 .snGroupList { display: flex; flex-direction: column; gap: 3px; }
 
 /* Notif rows */
-.snNotifRow { }
+.snNotifRow {}
+
 .staffListRow.snNotifRow {
-  padding: 14px 14px;
+  padding: 14px;
   border-bottom: none;
   align-items: flex-start;
   gap: 12px;
@@ -2761,7 +2802,9 @@
 .snRowCard:hover { border-color: var(--b2); background: color-mix(in srgb, var(--s2) 84%, transparent); }
 .snRowSelected { border-color: var(--accent); background: var(--accent-g); }
 .snRowUnread { border-left: 2px solid var(--accent); }
-.snRowRead { }
+
+.snRowRead {}
+
 /* Shared unread-row state used by notifications-page + communication-history-page */
 .staffNotifUnread {
   border-left: 2px solid var(--accent);
@@ -2851,6 +2894,7 @@
 .snRowTitle { font-size: 13px; font-weight: 500; }
 .snRowTitleUnread { color: var(--text); font-weight: 600; }
 .snRowTitleRead   { color: var(--muted); }
+
 .snRowBody {
   font-size: 12px;
   color: var(--muted2);
@@ -2991,7 +3035,8 @@
 
 .snDetailActionBtn:hover { background: var(--s2); }
 .snDetailActionBtnPinned { color: var(--amber); }
-.snDismissBtn { }
+
+.snDismissBtn {}
 
 /* ── Approval Queue ───────────────────────────────────────────────── */
 
@@ -3002,12 +3047,6 @@
   gap: 10px;
 }
 
-@media (max-width: 900px) {
-  .aqStatGrid     { grid-template-columns: repeat(2, 1fr); }
-  .kbMissionStrip { grid-template-columns: repeat(2, 1fr); }
-  .kbBoard        { flex-direction: column; }
-  .kbColV3        { min-width: unset; max-width: unset; }
-}
 
 /* Filter row */
 .aqFilterRow {
@@ -3065,7 +3104,7 @@
   padding: 0 8px;
   background: var(--green-d);
   color: var(--green);
-  border: 1px solid rgba(52,217,139,0.3);
+  border: 1px solid rgb(52 217 139 / 30%);
   border-radius: var(--r-sm);
   font-size: 11px;
   font-weight: 600;
@@ -3084,7 +3123,7 @@
   padding: 0 8px;
   background: var(--red-d);
   color: var(--red);
-  border: 1px solid rgba(255,95,95,0.3);
+  border: 1px solid rgb(255 95 95 / 30%);
   border-radius: var(--r-sm);
   font-size: 11px;
   cursor: pointer;
@@ -3102,7 +3141,7 @@
   padding: 0 8px;
   background: var(--amber-d);
   color: var(--amber);
-  border: 1px solid rgba(245,166,35,0.3);
+  border: 1px solid rgb(245 166 35 / 30%);
   border-radius: var(--r-sm);
   font-size: 11px;
   cursor: pointer;
@@ -3128,16 +3167,18 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
 .avatarMd {
   width: 28px;
   height: 28px;
   border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
+
 .lh15 {
   line-height: 1.5;
 }
@@ -3147,6 +3188,7 @@
 .text36 { font-size: 2.25rem; }
 .pt8 { padding-top: 8px; }
 .pb10 { padding-bottom: 10px; }
+
 .btnXxs {
   font-family: var(--font-syne), sans-serif;
   font-weight: 600;
@@ -3158,16 +3200,13 @@
   line-height: 1;
   border-radius: var(--r-sm);
 }
+
 .kbListPane {
   border-right: 1px solid var(--b2);
   padding: 20px 12px;
   overflow-y: auto;
 }
-  .kbListPane {
-    border-right: none;
-    border-bottom: 1px solid var(--b2);
-    max-height: 360px;
-  }
+
 .hidden { display: none; }
 .itemsStart { align-items: flex-start; }
 .pl12 { padding-left: 12px; }
@@ -3180,12 +3219,13 @@
 .itemsEnd { align-items: flex-end; }
 .gap3 { gap: 3px; }
 .lh14 { line-height: 1.4; }
-.mt3 { margin-top: 3px; }
+
 .emptyStateText {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text);
 }
+
 .filterTabCount {
   display: inline-flex;
   align-items: center;
@@ -3201,28 +3241,29 @@
   color: var(--muted);
   line-height: 1;
 }
-.high {
-}
+
+.high {}
+
 .fieldSelect {
   appearance: none;
 }
-.mb5 { margin-bottom: 5px; }
 .dotBgAccent  { background: var(--accent);  }
 .dotBgRed     { background: var(--red);     }
 .staffTableRow { transition: background 0.12s; }
 .staffTableRow:hover { background: var(--s2); }
+
 /* ── New shared staff primitives (added during refactor, CSS was missing) ──── */
 
 /* KPI strip primitives */
 .staffKpiStrip { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
 .staffKpiStripFour { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.staffKpiCell { background: var(--glass-card); backdrop-filter: blur(var(--glass-sm)); -webkit-backdrop-filter: blur(var(--glass-sm)); border: 1px solid var(--b2); border-top-color: rgba(255,255,255,0.12); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04); }
+.staffKpiCell { background: var(--glass-card); backdrop-filter: blur(var(--glass-sm));  border: 1px solid var(--b2); border-top-color: rgb(255 255 255 / 12%); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; box-shadow: 0 4px 16px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 4%); }
 .staffKpiLabel { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
 .staffKpiValue { font-family: var(--font-syne), sans-serif; font-size: 1.5rem; font-weight: 800; line-height: 1; color: var(--text); }
 .staffKpiSub { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 2px; }
 
 /* Card primitive */
-.staffCard { background: var(--glass-card); backdrop-filter: blur(var(--glass-sm)); -webkit-backdrop-filter: blur(var(--glass-sm)); border: 1px solid var(--b2); border-top-color: rgba(255,255,255,0.12); border-radius: var(--r-md); padding: 20px; box-shadow: 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04); }
+.staffCard { background: var(--glass-card); backdrop-filter: blur(var(--glass-sm));  border: 1px solid var(--b2); border-top-color: rgb(255 255 255 / 12%); border-radius: var(--r-md); padding: 20px; box-shadow: 0 4px 16px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 4%); }
 .staffCardMetricGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .staffCardMetricCell { display: flex; flex-direction: column; gap: 4px; }
 .staffCardMetricLabel { font-size: 0.5625rem; letter-spacing: 0.10em; text-transform: uppercase; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
@@ -3234,7 +3275,7 @@
 .staffChipAmber  { background: var(--amber-d); color: var(--amber); border-color: transparent; }
 .staffChipGreen  { background: var(--green-d); color: var(--green); border-color: transparent; }
 .staffChipMuted  { background: var(--s2); color: var(--muted); border-color: transparent; }
-.staffChipPurple { background: rgba(139,111,255,.12); color: var(--purple); border-color: transparent; }
+.staffChipPurple { background: rgb(139 111 255 / 12%); color: var(--purple); border-color: transparent; }
 .staffChipRed    { background: var(--red-d); color: var(--red); border-color: transparent; }
 
 /* Bar primitives */
@@ -3250,6 +3291,7 @@
 /* Button primitives */
 .staffBtnSm { padding: 6px 14px; border-radius: var(--r-sm); font-size: 0.6875rem; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); background: var(--s2); color: var(--text); transition: all 0.12s; }
 .staffBtnSm:hover { background: var(--s3); border-color: var(--b3); }
+
 .staffBtnPrimary {
   display: inline-flex;
   align-items: center;
@@ -3276,7 +3318,7 @@
 /* Segmented control */
 .staffSegControl { display: flex; background: var(--s2); border-radius: var(--r-sm); padding: 2px; border: 1px solid var(--b1); }
 .staffSegBtn { padding: 5px 12px; border-radius: var(--r-xs); font-size: 0.6875rem; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--muted); transition: all 0.12s; }
-.staffSegBtnActive { background: var(--s1); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.staffSegBtnActive { background: var(--s1); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / 20%); }
 
 /* Section headers */
 .staffSectionHd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -3391,17 +3433,5 @@
 .btnOutline { background: transparent; border: 1px solid var(--b2); color: var(--muted); border-radius: var(--r-sm); padding: 6px 14px; cursor: pointer; font-size: 0.6875rem; transition: border-color 0.12s; }
 .btnOutline:hover { border-color: var(--b3); color: var(--text); }
 .kbColHeadMeta { font-size: 0.6875rem; color: var(--muted2); font-family: var(--font-dm-mono), monospace; }
-.kbColHeadMeta {
-  padding-left: 8px;
-  padding-right: 8px;
-}
 
-@media (max-width: 900px) {
-  .staffKpiStripFour { grid-template-columns: repeat(2, 1fr); }
-  .staffCardMetricGrid { grid-template-columns: repeat(2, 1fr); }
-  .staffSplitShell { grid-template-columns: 1fr; }
-}
-@media (max-width: 480px) {
-  .staffKpiStripFour { grid-template-columns: 1fr; }
-  .staffCardMetricGrid { grid-template-columns: 1fr; }
-}
+

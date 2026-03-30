@@ -11,6 +11,7 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadStaffUsersWithRefresh, loadStaffOnboardingWithRefresh } from "../../../../lib/api/admin";
 import type { StaffAccessUser, StaffOnboardingRecord } from "../../../../lib/api/admin";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type StaffOnboardingPageProps = { session: AuthSession | null; onNotify: (tone: "success" | "error" | "info", message: string) => void };
 type OnboardingStatus = "upcoming" | "active" | "complete";
@@ -190,31 +191,81 @@ export function StaffOnboardingPage({ session, onNotify }: StaffOnboardingPagePr
   const overallPct = allTasks.length > 0 ? Math.round((doneTasks / allTasks.length) * 100) : 0;
   const nextStart = active.find((o) => o.daysUntilStart !== null);
 
+  const avgDays = active.length > 0
+    ? Math.round(active.reduce((s, o) => s + (o.daysUntilStart ?? 0), 0) / active.length)
+    : 0;
+
+  const progressData = [
+    { label: "Done",    count: doneTasks },
+    { label: "Pending", count: allTasks.length - doneTasks },
+  ];
+
+  const tableRows = onboardings.map((o) => ({
+    name:     o.name,
+    role:     o.role,
+    startDate: o.startDate,
+    progress: `${o.checklist.length > 0 ? Math.round((o.checklist.filter(t => t.done).length / o.checklist.length) * 100) : 0}%`,
+    status:   o.status,
+  }));
+
   return (
     <div className={cx(styles.pageBody, styles.onboardRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF ONBOARDING</div>
           <h1 className={styles.pageTitle}>Staff Onboarding</h1>
-          <div className={styles.pageSub}>New hire checklists, pre-start tasks, week 1 welcome, and 30-day check-ins</div>
+          <div className={styles.pageSub}>New hire checklists · Pre-start tasks · 30-day check-ins</div>
         </div>
         <button type="button" className={cx("btnSm", "btnAccent")} onClick={openModal}>+ Start Onboarding</button>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Upcoming Starts", value: active.length.toString(), color: "var(--amber)", sub: active[0] ? `${active[0].name} - ${active[0].startDate}` : "None" },
-          { label: "Overall Progress", value: `${overallPct}%`, color: overallPct >= 60 ? "var(--accent)" : "var(--amber)", sub: `${doneTasks}/${allTasks.length} tasks done` },
-          { label: "Days Until Start", value: nextStart?.daysUntilStart?.toString() ?? "—", color: (nextStart?.daysUntilStart ?? 99) <= 7 ? "var(--red)" : "var(--blue)", sub: nextStart?.name ?? "No upcoming" },
-          { label: "Completed Onboardings", value: complete.length.toString(), color: "var(--accent)", sub: "This FY" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "mb4", styles.onboardToneText, toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Active Onboardings" value={active.length} sub="In progress" tone={active.length > 0 ? "amber" : "default"} />
+        <StatWidget label="Completed" value={complete.length} sub="This FY" tone="green" subTone="up" />
+        <StatWidget label="Avg Days to Start" value={avgDays > 0 ? `${avgDays}d` : "—"} sub="Until first start" tone="default" />
+        <StatWidget label="Stuck / Blocked" value={active.filter(o => (o.daysUntilStart ?? 99) <= 0 && o.checklist.filter(t => !t.done).length > 0).length} sub="Overdue tasks" tone="red" />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Onboarding Progress"
+          data={progressData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Onboarding Status"
+          stages={[
+            { label: "Active",    count: active.length,          total: Math.max(onboardings.length, 1), color: "#f5a623" },
+            { label: "Completed", count: complete.length,         total: Math.max(onboardings.length, 1), color: "#34d98b" },
+            { label: "Upcoming",  count: active.filter(o => (o.daysUntilStart ?? 0) > 0).length, total: Math.max(onboardings.length, 1), color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Onboardings"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name",      header: "Name" },
+            { key: "role",      header: "Role" },
+            { key: "startDate", header: "Start Date" },
+            { key: "progress",  header: "Progress", align: "right" },
+            { key: "status",    header: "Status",   align: "right", render: (v) => {
+              const val = v as OnboardingStatus;
+              const cls = val === "complete" ? cx("badge", "badgeGreen") : val === "active" ? cx("badge", "badgeBlue") : cx("badge", "badgeAmber");
+              return <span className={cls}>{val}</span>;
+            }},
+          ]}
+          emptyMessage="No onboarding records"
+        />
+      </WidgetGrid>
 
       <AdminTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} primaryColor="var(--accent)" mutedColor="var(--muted)" panelColor="var(--surface)" borderColor="var(--border)" />
 

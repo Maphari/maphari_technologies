@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/staff/goals";
 import { saveSession } from "@/lib/auth/session";
 import type { AuthSession } from "@/lib/auth/session";
+import { Alert } from "@/components/shared/ui/alert";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,16 +22,18 @@ type MyGoalsPageProps = {
   session:  AuthSession | null;
 };
 
-type Quarter = "Q1-2026" | "Q2-2026" | "Q3-2026" | "Q4-2026";
+type Quarter = string;
 
-const QUARTERS: Quarter[] = ["Q1-2026", "Q2-2026", "Q3-2026", "Q4-2026"];
+function buildQuarters(year: number): Quarter[] {
+  return ["Q1", "Q2", "Q3", "Q4"].map((q) => `${q}-${year}`);
+}
+
+const QUARTERS: Quarter[] = buildQuarters(new Date().getFullYear());
 
 function currentQuarter(): Quarter {
   const month = new Date().getMonth(); // 0-indexed
   const year  = new Date().getFullYear();
-  const q = Math.floor(month / 3) + 1;
-  const key = `Q${q}-${year}` as Quarter;
-  return QUARTERS.includes(key) ? key : "Q1-2026";
+  return `Q${Math.floor(month / 3) + 1}-${year}`;
 }
 
 // ── Empty form defaults ───────────────────────────────────────────────────────
@@ -88,12 +91,13 @@ function GoalCardSkeleton() {
 type AddGoalModalProps = {
   draft:      CreateGoalInput;
   saving:     boolean;
+  saveError:  string | null;
   onChange:   (patch: Partial<CreateGoalInput>) => void;
   onSave:     () => void;
   onClose:    () => void;
 };
 
-function AddGoalModal({ draft, saving, onChange, onSave, onClose }: AddGoalModalProps) {
+function AddGoalModal({ draft, saving, saveError, onChange, onSave, onClose }: AddGoalModalProps) {
   return (
     <div className={cx("modalOverlay")} onClick={onClose}>
       <div
@@ -134,7 +138,7 @@ function AddGoalModal({ draft, saving, onChange, onSave, onClose }: AddGoalModal
 
           {/* Quarter + Target Date row */}
           <div className={cx("flexRow", "gap12")}>
-            <div className={cx("okrFormField")} style={{ flex: 1 }}>
+            <div className={cx("okrFormField", "okrFormFlexItem")}>
               <label className={cx("okrFormLabel")}>Quarter *</label>
               <select
                 className={cx("input")}
@@ -148,7 +152,7 @@ function AddGoalModal({ draft, saving, onChange, onSave, onClose }: AddGoalModal
               </select>
             </div>
 
-            <div className={cx("okrFormField")} style={{ flex: 1 }}>
+            <div className={cx("okrFormField", "okrFormFlexItem")}>
               <label className={cx("okrFormLabel")}>Target Date *</label>
               <input
                 className={cx("input")}
@@ -161,6 +165,9 @@ function AddGoalModal({ draft, saving, onChange, onSave, onClose }: AddGoalModal
           </div>
         </div>
 
+        {saveError && (
+          <div className={cx("formErrorMsg")}>{saveError}</div>
+        )}
         <div className={cx("okrModalActions")}>
           <button className={cx("btnGhost")} onClick={onClose} disabled={saving}>
             Cancel
@@ -288,6 +295,9 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
   const [draft, setDraft]             = useState<CreateGoalInput>(emptyDraft(currentQuarter()));
   const [saving, setSaving]           = useState(false);
   const [updatingId, setUpdatingId]   = useState<string | null>(null);
+  const [retryCount, setRetryCount]         = useState(0);
+  const [mutationError, setMutationError]   = useState<string | null>(null);
+  const [saveError, setSaveError]           = useState<string | null>(null);
 
   // ── Load goals ──────────────────────────────────────────────────────────────
   const loadGoals = useCallback((sess: AuthSession, q: string) => {
@@ -311,16 +321,20 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     return loadGoals(session, quarter);
-  }, [session?.accessToken, isActive, quarter, loadGoals]);
+  }, [session?.accessToken, isActive, quarter, retryCount, loadGoals]);
 
   // ── Create goal ─────────────────────────────────────────────────────────────
   const handleSaveGoal = useCallback(async () => {
     if (!session) return;
     setSaving(true);
+    setSaveError(null);
     try {
       const result = await createStaffGoalWithRefresh(session, draft);
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.error || !result.data) return;
+      if (result.error || !result.data) {
+        setSaveError(result.error?.message ?? "Failed to create goal. Please try again.");
+        return;
+      }
       setGoals((prev) => [result.data!, ...prev]);
       setShowModal(false);
       setDraft(emptyDraft(quarter));
@@ -333,12 +347,15 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
   const handleUpdateProgress = useCallback(async (id: string, progress: number) => {
     if (!session) return;
     setUpdatingId(id);
+    setMutationError(null);
     try {
       const result = await updateStaffGoalWithRefresh(session, id, { progress });
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) {
-        setGoals((prev) => prev.map((g) => g.id === id ? result.data! : g));
+      if (result.error || !result.data) {
+        setMutationError(result.error?.message ?? "Failed to update progress. Please try again.");
+        return;
       }
+      setGoals((prev) => prev.map((g) => g.id === id ? result.data! : g));
     } finally {
       setUpdatingId(null);
     }
@@ -348,12 +365,15 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
   const handleMarkAchieved = useCallback(async (id: string) => {
     if (!session) return;
     setUpdatingId(id);
+    setMutationError(null);
     try {
       const result = await updateStaffGoalWithRefresh(session, id, { status: "ACHIEVED", progress: 100 });
       if (result.nextSession) saveSession(result.nextSession);
-      if (result.data) {
-        setGoals((prev) => prev.map((g) => g.id === id ? result.data! : g));
+      if (result.error || !result.data) {
+        setMutationError(result.error?.message ?? "Failed to mark goal as achieved. Please try again.");
+        return;
       }
+      setGoals((prev) => prev.map((g) => g.id === id ? result.data! : g));
     } finally {
       setUpdatingId(null);
     }
@@ -363,10 +383,17 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
   const handleCancelGoal = useCallback(async (id: string) => {
     if (!session) return;
     setUpdatingId(id);
+    setMutationError(null);
     try {
       const result = await deleteStaffGoalWithRefresh(session, id);
       if (result.nextSession) saveSession(result.nextSession);
-      // Remove from list (soft-deleted → CANCELLED, filtered by server on next load)
+      // Guard ghost delete: check result.error (API failure) OR result.data === null
+      // (token-refresh failure returns { data: null, error: null }; success returns { data: undefined }).
+      // Strict null check distinguishes unauthorized (null) from success (undefined).
+      if (result.error || result.data === null) {
+        setMutationError(result.error?.message ?? "Failed to cancel goal. Please try again.");
+        return;
+      }
       setGoals((prev) => prev.filter((g) => g.id !== id));
     } finally {
       setUpdatingId(null);
@@ -400,6 +427,12 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
           <div className={cx("errorStateIcon")}>✕</div>
           <div className={cx("errorStateTitle")}>Failed to load</div>
           <div className={cx("errorStateSub")}>{error}</div>
+          <button
+            className={cx("emptyStateAction")}
+            onClick={() => { setError(null); setRetryCount((c) => c + 1); }}
+          >
+            Try again
+          </button>
         </div>
       </section>
     );
@@ -407,6 +440,15 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
 
   return (
     <section className={cx("page", "pageBody", isActive && "pageActive")} id="page-my-goals">
+
+      {/* ── Mutation error banner ─────────────────────────────────────────── */}
+      {mutationError && (
+        <Alert
+          variant="error"
+          message={mutationError}
+          onRetry={() => setMutationError(null)}
+        />
+      )}
 
       {/* ── Page header ───────────────────────────────────────────────────── */}
       <div className={cx("pageHeader")}>
@@ -438,12 +480,12 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
       <div className={cx("staffKpiStrip")}>
         <div className={cx("staffKpiCell")}>
           <div className={cx("staffKpiLabel")}>Active Goals</div>
-          <div className={cx("staffKpiValue", "colorAccent")}>{kpis.active}</div>
+          <div className={cx("staffKpiValue", "colorAccent")} data-testid="kpi-active-value">{kpis.active}</div>
           <div className={cx("staffKpiSub")}>in {quarter}</div>
         </div>
         <div className={cx("staffKpiCell")}>
           <div className={cx("staffKpiLabel")}>Achieved</div>
-          <div className={cx("staffKpiValue", "colorGreen")}>{kpis.achieved}</div>
+          <div className={cx("staffKpiValue", "colorGreen")} data-testid="kpi-achieved-value">{kpis.achieved}</div>
           <div className={cx("staffKpiSub")}>completed goals</div>
         </div>
         <div className={cx("staffKpiCell")}>
@@ -488,9 +530,10 @@ export function MyGoalsPage({ isActive, session }: MyGoalsPageProps) {
         <AddGoalModal
           draft={draft}
           saving={saving}
+          saveError={saveError}
           onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
           onSave={() => void handleSaveGoal()}
-          onClose={() => setShowModal(false)}
+          onClose={() => { setShowModal(false); setSaveError(null); }}
         />
       )}
     </section>

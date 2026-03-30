@@ -8,6 +8,7 @@ import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients"
 import type { AdminSnapshot, LeadPipelineStatus } from "../../../../lib/api/admin";
 import { saveSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 const tabs = ["mrr tracking", "pipeline", "concentration risk", "forecast", "sales velocity"] as const;
 type Tab = (typeof tabs)[number];
@@ -85,9 +86,7 @@ export function RevOpsPage() {
   const prevMRR    = mrrHistory[mrrHistory.length - 2]?.mrr ?? 0;
   const mrrGrowth  = prevMRR > 0 ? (((currentMRR - prevMRR) / prevMRR) * 100).toFixed(1) : "0.0";
   const arr        = currentMRR * 12;
-  const maxMRR     = mrrHistory.length > 0 ? Math.max(...mrrHistory.map((m) => m.mrr)) : 1;
-  const lastEntry  = mrrHistory[mrrHistory.length - 1];
-  const mrrLabel   = lastEntry?.month ?? "Latest";
+  const mrrLabel   = mrrHistory[mrrHistory.length - 1]?.month ?? "Latest";
 
   // ── Avg deal value — proxy via project budgets ────────────────────────────
   const avgDealValueCents = useMemo(() => {
@@ -242,6 +241,28 @@ export function RevOpsPage() {
     });
   }, [mrrHistory]);
 
+  // ── Chart data ─────────────────────────────────────────────────────────────
+  const mrrChartData = mrrHistory.map((m) => ({ label: m.month, mrr: Math.round(m.mrr) }));
+
+  // ── Revenue by source pipeline ─────────────────────────────────────────────
+  const totalPipelineLeads = pipeline.reduce((s, p) => s + p.leads, 0) || 1;
+  const pipelineStages = pipeline.map((p) => ({
+    label: p.stage,
+    count: p.leads,
+    total: totalPipelineLeads,
+    color: p.stage === "Discovery" ? "#8b6fff" : p.stage === "Qualified" ? "#34d98b" : "#f5a623",
+  }));
+
+  // ── Accounts table rows (from concentration data) ──────────────────────────
+  const accountRows = revenueConcentration.map((c) => ({
+    client: c.client,
+    mrr:    `R${(c.mrr / 1000).toFixed(1)}k`,
+    arr:    `R${(c.mrr * 12 / 1000).toFixed(0)}k`,
+    pct:    `${c.pct}%`,
+    status: concentrationRisk.label,
+    statusRaw: concentrationRisk.label,
+  })) as Record<string, unknown>[];
+
   // ── JSX ───────────────────────────────────────────────────────────────────
   if (loadingMrr) {
     return (
@@ -256,423 +277,154 @@ export function RevOpsPage() {
   }
 
   return (
-    <div className={cx(styles.pageBody, "rdStudioPage")}>
+    <div className={cx(styles.pageBody)}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REVENUE OPERATIONS</div>
-          <h1 className={styles.pageTitle}>RevOps Dashboard</h1>
-          <div className={styles.pageSub}>MRR · ARR · Pipeline velocity · Revenue concentration · Forecasting</div>
+          <div className={styles.pageEyebrow}>FINANCE / REVOPS</div>
+          <h1 className={styles.pageTitle}>Revenue Operations</h1>
+          <div className={styles.pageSub}>Revenue health · Pipeline value · Forecast accuracy</div>
         </div>
         <div className={styles.pageActions}>
+          <select
+            title="View"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as Tab)}
+            className={styles.filterSelect}
+          >
+            {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
           <button type="button" className={cx("btnSm", "btnAccent")}>Export RevOps Report</button>
         </div>
       </div>
 
-      {/* KPI row */}
-      <div className={cx("topCardsStack", "gap16", "mb28")}>
-        {[
-          {
-            label: `MRR (${mrrLabel})`,
-            value: `R${(currentMRR / 1000).toFixed(1)}k`,
-            color: "var(--accent)",
-            sub: `${Number(mrrGrowth) > 0 ? "▲" : "▼"} ${Math.abs(Number(mrrGrowth))}% MoM`,
-            subColor: Number(mrrGrowth) > 0 ? "var(--accent)" : "var(--red)",
-          },
-          {
-            label: "ARR (Annualised)",
-            value: `R${(arr / 1000000).toFixed(2)}M`,
-            color: "var(--blue)",
-            sub: `Based on ${mrrLabel} MRR`,
-            subColor: "var(--muted)",
-          },
-          {
-            label: "Pipeline Value",
-            value: `R${(pipelineValue / 1000).toFixed(0)}k`,
-            color: "var(--purple)",
-            sub: `${pipeline.reduce((s, p) => s + p.leads, 0)} active leads`,
-            subColor: "var(--muted)",
-          },
-          {
-            label: "Net MRR Growth",
-            value: `+R${((currentMRR - prevMRR) / 1000).toFixed(1)}k`,
-            color: "var(--accent)",
-            sub: "Expansion + New − Churn",
-            subColor: "var(--muted)",
-          },
-        ].map((s) => (
-          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
-            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : "")}>{s.value}</div>
-            <div className={cx("text11", colorClass(s.subColor ?? "var(--muted)"))}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label={`MRR (${mrrLabel})`}
+          value={`R${(currentMRR / 1000).toFixed(1)}k`}
+          sub={`${Number(mrrGrowth) > 0 ? "▲" : "▼"} ${Math.abs(Number(mrrGrowth))}% MoM`}
+          subTone={Number(mrrGrowth) > 0 ? "up" : "down"}
+          tone="accent"
+          sparkData={mrrHistory.slice(-8).map((m) => Math.round(m.mrr))}
+        />
+        <StatWidget
+          label="ARR (Annualised)"
+          value={`R${(arr / 1_000_000).toFixed(2)}m`}
+          sub={`Based on ${mrrLabel} MRR`}
+        />
+        <StatWidget
+          label="Pipeline Value"
+          value={`R${(pipelineValue / 1000).toFixed(0)}k`}
+          sub={`${pipeline.reduce((s, p) => s + p.leads, 0)} active leads`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Churn Rate"
+          value={`${concentrationRisk.label} risk`}
+          sub={`Top client: ${revenueConcentration[0]?.pct ?? 0}%`}
+          tone={concentrationRisk.label === "High" ? "red" : concentrationRisk.label === "Medium" ? "amber" : "green"}
+        />
+      </WidgetGrid>
 
-      {/* Tab selector */}
-      <div className={styles.filterRow}>
-        <select
-          title="View"
-          value={activeTab}
-          onChange={(e) => setActiveTab(e.target.value as Tab)}
-          className={styles.filterSelect}
-        >
-          {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="MRR Trend"
+          currentValue={`R${(currentMRR / 1000).toFixed(1)}k`}
+          data={mrrChartData.length > 0 ? mrrChartData : [{ label: "No data", mrr: 0 }]}
+          dataKey="mrr"
+          type="area"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Revenue by Pipeline Stage"
+          stages={pipelineStages.length > 0 ? pipelineStages : [
+            { label: "No leads", count: 0, total: 1, color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {/* ── MRR Tracking tab ──────────────────────────────────────────────── */}
-      {activeTab === "mrr tracking" ? (
-        <div className={styles.revopsSplit}>
-          <div className={cx("card", "p24")}>
-            <div className={cx(styles.revopsSecTitle, "rdStudioSection")}>MRR Movement — 7 Months</div>
-            <div className={styles.revopsChartBars}>
-              {mrrHistory.map((m, i) => {
-                const h = (m.mrr / maxMRR) * 120;
-                const isLast = i === mrrHistory.length - 1;
-                return (
-                  <div key={m.month} className={styles.revopsBarCol}>
-                    <div className={cx("text10", "fontMono", isLast ? "colorAccent" : "colorMuted", "mb4")}>
-                      R{(m.mrr / 1000).toFixed(0)}k
-                    </div>
-                    <svg className={styles.revopsBarFill} viewBox="0 0 10 120" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="0" y={120 - h} width="10" height={h} fill={isLast ? "var(--accent)" : "var(--accent-g)"} />
-                    </svg>
-                    <div className={cx("text10", isLast ? "colorAccent" : "colorMuted", "mt4")}>{m.month}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className={styles.revopsTableWrap}>
-              <div className={styles.revopsMrrHead}>
-                {["Month", "MRR", "New", "Expansion", "Churn"].map((h) => <span key={h}>{h}</span>)}
-              </div>
-              {mrrHistory.map((m, i) => (
-                <div key={m.month} className={cx(styles.revopsMrrRow, i < mrrHistory.length - 1 && "borderB", "rdStudioRow")}>
-                  <span className={cx("fontMono", "colorMuted", "rdStudioLabel")}>{m.month}</span>
-                  <span className={cx("fontMono", "fw700", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>R{(m.mrr / 1000).toFixed(0)}k</span>
-                  <span className={cx("fontMono", m.new > 0 ? "colorBlue" : "colorMuted")}>{m.new > 0 ? `+R${(m.new / 1000).toFixed(0)}k` : "-"}</span>
-                  <span className={cx("fontMono", m.expansion > 0 ? "colorPurple" : "colorMuted")}>{m.expansion > 0 ? `+R${(m.expansion / 1000).toFixed(0)}k` : "-"}</span>
-                  <span className={cx("fontMono", m.churn > 0 ? "colorRed" : "colorMuted")}>{m.churn > 0 ? `-R${(m.churn / 1000).toFixed(0)}k` : "-"}</span>
+      {/* ── Row 3: Accounts table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Revenue by Account"
+          rows={accountRows}
+          rowKey="client"
+          emptyMessage="No revenue concentration data available."
+          columns={[
+            { key: "client", header: "Client", align: "left" },
+            { key: "mrr", header: "MRR", align: "right" },
+            { key: "arr", header: "ARR", align: "right" },
+            { key: "pct", header: "Revenue %", align: "right" },
+            {
+              key: "status",
+              header: "Risk",
+              align: "left",
+              render: (val) => {
+                const v = String(val);
+                const badgeClass = v === "High" ? cx("badgeRed") : v === "Medium" ? cx("badgeAmber") : cx("badgeGreen");
+                return <span className={badgeClass}>{v}</span>;
+              },
+            },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Detail tabs ── */}
+      {activeTab === "forecast" && forecastData.length > 0 ? (
+        <div className={cx("card", "p24", "mt16")}>
+          <div className={cx(styles.revopsSecTitle)}>3-Month MRR Forecast</div>
+          <div className={cx("flexCol", "gap20")}>
+            {forecastData.map((f) => (
+              <div key={f.month}>
+                <div className={cx("flexBetween", "mb8")}>
+                  <span className={cx("text14", "fw700")}>{f.month}</span>
+                  <span className={styles.revopsForecastVal}>R{(f.forecast / 1000).toFixed(0)}k</span>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className={styles.revopsSideCol}>
-            {[
-              { label: `New MRR (${mrrLabel})`,       value: `+R${((lastEntry?.new ?? 0) / 1000).toFixed(1)}k`,       color: "var(--blue)",   desc: "New client revenue" },
-              { label: `Expansion MRR (${mrrLabel})`, value: `+R${((lastEntry?.expansion ?? 0) / 1000).toFixed(0)}k`, color: "var(--purple)", desc: "Upsell & tier upgrades" },
-              { label: `Churned MRR (${mrrLabel})`,   value: `R${lastEntry?.churn ?? 0}`,                             color: "var(--accent)", desc: "No churn this month" },
-            ].map((s) => (
-              <div key={s.label} className={styles.statCard}>
-                <div className={styles.statLabel}>{s.label}</div>
-                <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-                <div className={cx("text12", "colorMuted")}>{s.desc}</div>
+                <div className={styles.revopsForecastMeta}>
+                  <span>Low: R{(f.low / 1000).toFixed(0)}k</span>
+                  <span>High: R{(f.high / 1000).toFixed(0)}k</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       ) : null}
 
-      {/* ── Pipeline tab ──────────────────────────────────────────────────── */}
-      {activeTab === "pipeline" ? (
-        <div className={styles.revopsSplit}>
-          <div>
-            <div className={cx("card", "p24", "mb16")}>
-              <div className={styles.revopsSecTitle}>Sales Pipeline</div>
-              {pipeline.every((s) => s.leads === 0) ? (
-                <div className={cx("text12", "colorMuted")}>No active leads in pipeline.</div>
-              ) : (
-                <div className={cx("flexCol", "gap12")}>
-                  {pipeline.map((stage, i) => {
-                    const maxLeads = Math.max(...pipeline.map((p) => p.leads), 1);
-                    const colors = ["var(--accent)", "var(--blue)", "var(--purple)", "var(--amber)"] as const;
-                    return (
-                      <div key={stage.stage}>
-                        <div className={cx("flexBetween", "mb6")}>
-                          <span className={cx("text13", "fw600")}>{stage.stage}</span>
-                          <div className={styles.revopsMetaRow}>
-                            <span className={cx("colorMuted")}>{stage.leads} leads</span>
-                            {stage.value > 0 && <span className={colorClass(colors[i])}>R{(stage.value / 1000).toFixed(0)}k</span>}
-                            {stage.avgDays > 0 && <span className={cx("colorMuted")}>{stage.avgDays}d avg</span>}
-                          </div>
-                        </div>
-                        <div className={styles.revopsTrack28}>
-                          <progress
-                            className={cx(styles.revopsTrackFill, progressToneClass(colors[i]))}
-                            max={maxLeads}
-                            value={stage.leads}
-                            aria-label={`${stage.stage} leads ${stage.leads}`}
-                          />
-                          <span className={styles.revopsLeadNum}>{stage.leads}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className={styles.revopsSideCol}>
-            <div className={cx("card", "p24")}>
-              <div className={styles.revopsSecTitle}>Pipeline Summary</div>
-              <div className={cx("flexCol", "gap12")}>
-                <div>
-                  <div className={cx("text11", "colorMuted", "mb4", "rdStudioLabel")}>Total Pipeline Value</div>
-                  <div className={cx(styles.revopsValue32, "rdStudioMetric", "rdStudioMetricPos")}>R{(pipelineValue / 1000).toFixed(0)}k</div>
-                </div>
-                <div className={styles.revopsHr} />
-                <div className={cx("grid2", "gap12")}>
-                  <div>
-                    <div className={cx("text11", "colorMuted", "mb4")}>Total Leads</div>
-                    <div className={styles.revopsValue22}>{pipeline.reduce((s, p) => s + p.leads, 0)}</div>
-                  </div>
-                  <div>
-                    <div className={cx("text11", "colorMuted", "mb4")}>Win Rate</div>
-                    <div className={cx(styles.revopsValue22, "colorAccent")}>
-                      {salesVelocityMetrics.wonCount + salesVelocityMetrics.lostCount > 0
-                        ? `${Math.round(salesVelocityMetrics.winRate * 100)}%`
-                        : "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className={cx("text11", "colorMuted", "mb4")}>Avg Deal Size</div>
-                    <div className={styles.revopsValue22}>
-                      {avgDealValueCents > 0 ? `R${Math.round(avgDealValueCents / 100 / 1000)}k` : "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className={cx("text11", "colorMuted", "mb4")}>Avg Sales Cycle</div>
-                    <div className={styles.revopsValue22}>{salesVelocityMetrics.avgCycleDays}d</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* ── Concentration Risk tab ────────────────────────────────────────── */}
-      {activeTab === "concentration risk" ? (
-        <div className={cx("grid2", "gap20")}>
-          <div className={cx("card", "p24")}>
-            <div className={styles.revopsSecTitle}>Revenue Concentration</div>
-            <div className={cx("text11", "colorMuted", "mb20")}>
-              Top 2 clients = {revenueConcentration.slice(0, 2).reduce((s, c) => s + c.pct, 0).toFixed(1)}% of billed revenue
-            </div>
-            {revenueConcentration.length === 0 ? (
-              <div className={cx("text12", "colorMuted")}>No invoice data available yet.</div>
-            ) : (
-              <div className={cx("flexCol", "gap14")}>
-                {revenueConcentration.map((c) => (
-                  <div key={c.client}>
-                    <div className={cx("flexBetween", "mb6")}>
-                      <span className={cx("text13", "fw600")}>{c.client}</span>
-                      <div className={styles.revopsMetaRow}>
-                        <span className={colorClass(c.color)}>R{(c.mrr / 1000).toFixed(0)}k</span>
-                        <span className={cx("colorMuted")}>{c.pct}%</span>
-                      </div>
-                    </div>
-                    <div className={styles.revopsTrack8}>
-                      <progress
-                        className={cx(styles.revopsTrackBar, progressToneClass(c.color))}
-                        max={100}
-                        value={c.pct}
-                        aria-label={`${c.client} concentration ${c.pct}%`}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className={styles.revopsSideCol}>
-            <div className={cx("card", "p24")}>
-              <div className={styles.revopsSecTitle}>Concentration Risk Score</div>
-              <div className={cx(styles.revopsRiskWord, colorClass(concentrationRisk.color))}>{concentrationRisk.label}</div>
-              <div className={cx(styles.revopsTrack8, "mb12")}>
-                <div className={styles.revopsRiskFill} />
-              </div>
-              <div className={styles.revopsBodyText}>
-                {revenueConcentration.length > 0
-                  ? `Current highest: ${revenueConcentration[0]?.client ?? "—"} at ${revenueConcentration[0]?.pct ?? 0}%. Target: no single client above 20% of revenue.`
-                  : "No concentration data available. Add clients to see revenue distribution."}
-              </div>
-            </div>
-            <div className={styles.revopsWarnCard}>
-              <div className={styles.revopsWarnTitle}>Concentration Guidance</div>
-              <div className={styles.revopsBodyText}>
-                To reduce risk, target 3–4 new clients at R10k–R20k MRR each. This would dilute top client concentration below 5%.
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* ── Forecast tab ──────────────────────────────────────────────────── */}
-      {activeTab === "forecast" ? (
-        <div className={cx("grid2", "gap20")}>
-          <div className={cx("card", "p24")}>
-            <div className={styles.revopsSecTitle}>3-Month MRR Forecast</div>
-            {forecastData.length === 0 ? (
-              <div className={cx("text12", "colorMuted")}>Insufficient MRR history to generate forecast.</div>
-            ) : (
-              <div className={cx("flexCol", "gap20")}>
-                {forecastData.map((f) => (
-                  <div key={f.month}>
-                    <div className={cx("flexBetween", "mb8")}>
-                      <span className={cx("text14", "fw700")}>{f.month}</span>
-                      <span className={styles.revopsForecastVal}>R{(f.forecast / 1000).toFixed(0)}k</span>
-                    </div>
-                    <div className={styles.revopsForecastTrack}>
-                      <svg className={styles.revopsForecastSvg} viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true">
-                        <rect
-                          className={styles.revopsForecastRangeRect}
-                          x={(f.low / f.high) * 100}
-                          y="0"
-                          width={100 - (f.low / f.high) * 100}
-                          height="12"
-                        />
-                        <rect
-                          className={styles.revopsForecastMarkerRect}
-                          x={(f.forecast / f.high) * 100 - 2}
-                          y="0"
-                          width="4"
-                          height="12"
-                        />
-                      </svg>
-                    </div>
-                    <div className={styles.revopsForecastMeta}>
-                      <span>Low: R{(f.low / 1000).toFixed(0)}k</span>
-                      <span>High: R{(f.high / 1000).toFixed(0)}k</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className={styles.revopsSideCol}>
-            <div className={cx("card", "p24")}>
-              <div className={styles.revopsSecTitle}>Forecast Assumptions</div>
-              {[
-                { assumption: "Zero churn over 3 months",    confidence: "High",   color: "var(--accent)" },
-                { assumption: "2 upsells planned",            confidence: "Medium", color: "var(--amber)" },
-                { assumption: "1 new client at R12k MRR",    confidence: "Medium", color: "var(--amber)" },
-                { assumption: "No rate changes",              confidence: "High",   color: "var(--accent)" },
-              ].map((a, i) => (
-                <div key={a.assumption} className={cx("flexBetween", "py10", i < 3 && "borderB")}>
-                  <span className={cx("text12")}>{a.assumption}</span>
-                  <span className={cx("text10", "fontMono", colorClass(a.color))}>{a.confidence}</span>
-                </div>
-              ))}
-            </div>
-            <div className={cx("card", "p24")}>
-              <div className={styles.revopsSecTitle}>Growth Rate Used</div>
-              <div className={styles.revopsValue36}>
-                {mrrHistory.length >= 2
-                  ? `${prevMRR > 0 ? (((currentMRR - prevMRR) / prevMRR) * 100).toFixed(1) : "0.0"}%`
-                  : "—"}
-              </div>
-              <div className={styles.revopsBodyText}>MoM growth rate applied to 3-month projection.</div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* ── Sales Velocity tab ────────────────────────────────────────────── */}
       {activeTab === "sales velocity" ? (
-        <div className={cx("grid2", "gap20")}>
-          <div className={cx("card", "p24")}>
-            <div className={styles.revopsSecTitle}>Sales Velocity Formula</div>
-            <div className={cx("text11", "colorMuted", "mb24")}>Revenue generated per day from the pipeline</div>
-            <div className={cx("grid2", "gap16", "mb24")}>
-              {[
-                {
-                  label: "# Opportunities",
-                  value: salesVelocityMetrics.opportunities.toString(),
-                  color: "var(--blue)",
-                },
-                {
-                  label: "Avg Deal Value",
-                  value: avgDealValueCents > 0 ? `R${Math.round(avgDealValueCents / 100 / 1000)}k` : "—",
-                  color: "var(--purple)",
-                },
-                {
-                  label: "Win Rate",
-                  value: salesVelocityMetrics.wonCount + salesVelocityMetrics.lostCount > 0
-                    ? `${Math.round(salesVelocityMetrics.winRate * 100)}%`
-                    : "—",
-                  color: "var(--accent)",
-                },
-                {
-                  label: "Sales Cycle (days)",
-                  value: salesVelocityMetrics.avgCycleDays.toString(),
-                  color: "var(--amber)",
-                },
-              ].map((s) => (
-                <div key={s.label} className={styles.revopsMetricTile}>
-                  <div className={cx("text11", "colorMuted", "mb4")}>{s.label}</div>
-                  <div className={cx(styles.revopsMetricTileVal, colorClass(s.color))}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-            <div className={styles.revopsVelocityCard}>
-              <div className={cx("text12", "colorMuted", "mb8")}>Sales Velocity</div>
-              <div className={styles.revopsVelocityVal}>
-                {salesVelocityMetrics.velocity > 0
-                  ? `R${salesVelocityMetrics.velocity.toLocaleString()}`
-                  : "—"}
+        <div className={cx("card", "p24", "mt16")}>
+          <div className={cx(styles.revopsSecTitle)}>Sales Velocity</div>
+          <div className={cx("grid2", "gap16")}>
+            {[
+              { label: "# Opportunities", value: salesVelocityMetrics.opportunities.toString(), color: "var(--blue)" },
+              { label: "Avg Deal Value", value: avgDealValueCents > 0 ? `R${Math.round(avgDealValueCents / 100 / 1000)}k` : "—", color: "var(--purple)" },
+              { label: "Win Rate", value: salesVelocityMetrics.wonCount + salesVelocityMetrics.lostCount > 0 ? `${Math.round(salesVelocityMetrics.winRate * 100)}%` : "—", color: "var(--accent)" },
+              { label: "Sales Cycle", value: `${salesVelocityMetrics.avgCycleDays}d`, color: "var(--amber)" },
+            ].map((s) => (
+              <div key={s.label} className={styles.revopsMetricTile}>
+                <div className={cx("text11", "colorMuted", "mb4")}>{s.label}</div>
+                <div className={cx(styles.revopsMetricTileVal, colorClass(s.color))}>{s.value}</div>
               </div>
-              <div className={cx("text12", "colorMuted")}>per day</div>
-            </div>
+            ))}
           </div>
-          <div className={styles.revopsSideCol}>
-            <div className={cx("card", "p24")}>
-              <div className={styles.revopsSecTitle}>Velocity Trend (MRR÷30)</div>
-              {velocityTrend.length === 0 ? (
-                <div className={cx("text12", "colorMuted")}>Insufficient data.</div>
-              ) : (
-                <div className={cx("flexCol", "gap12")}>
-                  {velocityTrend.map((v) => {
-                    const maxVelocity = Math.max(...velocityTrend.map((x) => x.velocity), 1);
-                    return (
-                      <div key={v.period} className={styles.revopsVelRow}>
-                        <span className={styles.revopsVelPeriod}>{v.period}</span>
-                        <div className={styles.revopsTrack8Flex}>
-                          <progress
-                            className={cx(styles.revopsTrackBar, styles.revopsProgressAccent)}
-                            max={maxVelocity}
-                            value={v.velocity}
-                            aria-label={`${v.period} velocity ${v.velocity}`}
-                          />
-                        </div>
-                        <div className={styles.revopsVelMeta}>
-                          <span className={cx("fontMono", "text12")}>R{v.velocity.toLocaleString()}</span>
-                          {v.change !== 0 ? (
-                            <span className={cx("text11", v.change > 0 ? "colorAccent" : "colorRed")}>
-                              {v.change > 0 ? "▲" : "▼"} {Math.abs(v.change)}%
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className={cx("card", "p24")}>
-              <div className={styles.revopsSecTitle}>How to Improve</div>
-              {[
-                { action: "Reduce sales cycle by 5 days", impact: "+velocity" },
-                { action: "Increase win rate by 10%",     impact: "+pipeline" },
-                { action: "Add 2 more opportunities",     impact: "+revenue" },
-              ].map((item, i) => (
-                <div key={item.action} className={cx("flexBetween", "py10", i < 2 && "borderB")}>
-                  <span className={cx("text12")}>{item.action}</span>
-                  <span className={styles.revopsImpact}>{item.impact}</span>
+          {velocityTrend.length > 0 ? (
+            <div className={cx("mt16")}>
+              <div className={cx(styles.revopsSecTitle, "mb12")}>Velocity Trend</div>
+              {velocityTrend.map((v) => (
+                <div key={v.period} className={styles.revopsVelRow}>
+                  <span className={styles.revopsVelPeriod}>{v.period}</span>
+                  <span className={cx("fontMono", "text12")}>R{v.velocity.toLocaleString()}/day</span>
+                  {v.change !== 0 ? (
+                    <span className={cx("text11", v.change > 0 ? "colorAccent" : "colorRed")}>
+                      {v.change > 0 ? "▲" : "▼"} {Math.abs(v.change)}%
+                    </span>
+                  ) : null}
                 </div>
               ))}
             </div>
-          </div>
+          ) : null}
         </div>
       ) : null}
     </div>

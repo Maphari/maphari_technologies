@@ -53,6 +53,8 @@ model Client {
   slaRecords          SLARecord[]
   supportTickets      SupportTicket[]
   surveyTokens        SurveyToken[]
+  publicApiProjects   PublicApiProject[] @relation("ClientPublicApiProjects")
+  publicApiKeys       PublicApiKey[]     @relation("ClientPublicApiKeys")
 
   @@index([status])
   @@index([priority])
@@ -532,9 +534,9 @@ model IntegrationProvider {
   label                String
   description          String
   category             String
-  kind                 String
+  kind                 String   @default("assisted")
   availabilityStatus   String   @default("active")
-  iconKey              String
+  iconKey              String   @default("")
   isClientVisible      Boolean  @default(true)
   isRequestEnabled     Boolean  @default(false)
   supportsDisconnect   Boolean  @default(false)
@@ -1006,11 +1008,13 @@ model StaffProfile {
   leaveRequests     LeaveRequest[]
   receivedReviews   PeerReview[]            @relation("reviewee")
   givenReviews      PeerReview[]            @relation("reviewer")
-  recurringTasks    RecurringTask[]
-  onboardingRecords StaffOnboardingRecord[]
-  payslips          StaffPayslip[]
-  standupEntries    StandupEntry[]
-  trainingRecords   TrainingRecord[]
+  recurringTasks     RecurringTask[]
+  onboardingRecords  StaffOnboardingRecord[]
+  payslips           StaffPayslip[]
+  standupEntries     StandupEntry[]
+  trainingRecords    TrainingRecord[]
+  learningBudgets    StaffLearningBudget[]
+  skillProficiencies StaffSkillProficiency[]
 
   @@index([isActive])
   @@index([department])
@@ -1506,8 +1510,9 @@ model ClientContract {
   updatedAt    DateTime  @updatedAt
   signedByName String?
   expiresAt    DateTime?
-  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  project      Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  client            Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project           Project?                 @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  renewalProposals  ContractRenewalProposal[]
 
   @@index([clientId, type])
   @@index([clientId, status])
@@ -1954,4 +1959,246 @@ enum EftVerificationStatus {
   PENDING
   VERIFIED
   REJECTED
+}
+
+// ── Webhook Endpoints ─────────────────────────────────────────────────────────
+
+model WebhookEndpoint {
+  id          String    @id @default(uuid())
+  name        String
+  url         String
+  events      String    // comma-separated topic values
+  secret      String?
+  active      Boolean   @default(true)
+  lastFiredAt DateTime?
+  failCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("webhook_endpoints")
+}
+
+// ── Admin Proposed Actions (two-admin approval workflow) ──────────────────────
+
+model AdminProposedAction {
+  id             String    @id @default(uuid())
+  proposedBy     String
+  proposedByName String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  payload        String?   // JSON string
+  reason         String?
+  status         String    @default("PENDING") // PENDING | APPROVED | REJECTED | EXECUTED
+  reviewedBy     String?
+  reviewedByName String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@map("admin_proposed_actions")
+}
+
+// ── Task 26: L&D Budget & Skill Proficiency ───────────────────────────────────
+
+model StaffLearningBudget {
+  id         String      @id @default(cuid())
+  staffId    String
+  fiscalYear Int
+  budgetZAR  Float       @default(0)
+  spentZAR   Float       @default(0)
+  staff      StaffProfile @relation(fields: [staffId], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([staffId, fiscalYear])
+  @@map("staff_learning_budgets")
+}
+
+model StaffSkillProficiency {
+  id          String       @id @default(cuid())
+  staffId     String
+  skill       String
+  level       Int          @default(0)
+  certifiedAt DateTime?
+  staff       StaffProfile @relation(fields: [staffId], references: [id])
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([staffId, skill])
+  @@map("staff_skill_proficiencies")
+}
+
+// ── Task 27: Contract Renewal Proposals ──────────────────────────────────────
+
+model ContractRenewalProposal {
+  id            String         @id @default(cuid())
+  contractId    String
+  sentAt        DateTime       @default(now())
+  sentByAdminId String?
+  proposedTerms Json?
+  status        String         @default("SENT")
+  clientNotes   String?
+  contract      ClientContract @relation(fields: [contractId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("contract_renewal_proposals")
+}
+
+// ── Task 28: Brand Control ────────────────────────────────────────────────────
+
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  workspaceId  String   @default("default")
+  templateKey  String
+  name         String
+  subject      String   @default("")
+  bodyHtml     String   @default("")
+  status       String   @default("active")
+  sentCount    Int      @default(0)
+  lastEditedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([workspaceId, templateKey])
+  @@map("email_templates")
+}
+
+model CustomDomain {
+  id          String    @id @default(cuid())
+  workspaceId String    @default("default")
+  domain      String    @unique
+  domainType  String    @default("Client Portal")
+  status      String    @default("pending")
+  sslActive   Boolean   @default(false)
+  verified    Boolean   @default(false)
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("custom_domains")
+}
+
+// ── Task 29: Crisis Playbooks ─────────────────────────────────────────────────
+
+model CrisisEscalationLevel {
+  id          String   @id @default(cuid())
+  workspaceId String   @default("default")
+  level       Int
+  role        String
+  personLabel String
+  triggerDesc String
+  colorToken  String   @default("var(--accent)")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, level])
+  @@map("crisis_escalation_levels")
+}
+
+model CrisisPlaybook {
+  id          String         @id @default(cuid())
+  workspaceId String         @default("default")
+  name        String
+  steps       PlaybookStep[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("crisis_playbooks")
+}
+
+model PlaybookStep {
+  id         String         @id @default(cuid())
+  playbookId String
+  order      Int
+  action     String
+  playbook   CrisisPlaybook @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+
+  @@map("playbook_steps")
+}
+
+// ── Task 30: Automation Workflow Execution Metrics ────────────────────────────
+
+model AutomationJobMetric {
+  id           String   @id @default(cuid())
+  workflowId   String
+  workspaceId  String   @default("default")
+  runAt        DateTime @default(now())
+  success      Boolean
+  durationMs   Int?
+  errorMessage String?
+  triggeredBy  String?
+
+  @@index([workflowId, runAt])
+  @@map("automation_job_metrics")
+}
+
+// ── Task 31: Cash Flow Scenario Persistence ───────────────────────────────────
+
+model CashFlowScenario {
+  id               String   @id @default(cuid())
+  workspaceId      String   @default("default")
+  name             String
+  description      String?
+  adjustments      Json     @default("[]")
+  isBaseline       Boolean  @default(false)
+  createdByAdminId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("cash_flow_scenarios")
+}
+
+// ── Task 32: Prospecting Campaign Persistence ─────────────────────────────────
+
+model ProspectingCampaign {
+  id               String   @id @default(cuid())
+  workspaceId      String   @default("default")
+  filters          Json     @default("{}")
+  resultsCount     Int      @default(0)
+  status           String   @default("completed")
+  createdByAdminId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("prospecting_campaigns")
+}
+
+// ── Public API Key Storage ────────────────────────────────────────────────────
+
+model PublicApiProject {
+  id          String          @id @default(cuid())
+  clientId    String
+  client      Client          @relation("ClientPublicApiProjects", fields: [clientId], references: [id])
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  keys        PublicApiKey[]
+}
+
+model PublicApiKey {
+  id               String             @id @default(cuid())
+  projectId        String
+  project          PublicApiProject   @relation(fields: [projectId], references: [id])
+  clientId         String
+  client           Client             @relation("ClientPublicApiKeys", fields: [clientId], references: [id])
+  label            String
+  keyId            String             @unique
+  keySecretEnc     String
+  status           PublicApiKeyStatus @default(ACTIVE)
+  expiresAt        DateTime?
+  createdBy        String?
+  revokedAt        DateTime?
+  revokedBy        String?
+  lastUsedAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+enum PublicApiKeyStatus {
+  ACTIVE
+  REVOKED
 }

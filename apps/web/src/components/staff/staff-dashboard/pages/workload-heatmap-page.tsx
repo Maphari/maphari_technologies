@@ -36,13 +36,19 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
   const [rows, setRows]       = useState<StaffWorkloadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [weeks, setWeeks]             = useState<4 | 8 | 12>(4);
+  const [retryCount, setRetryCount]   = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!session || !isActive) { setLoading(false); return; }
     let cancelled = false;
 
     setLoading(true);
-    void getWorkloadHeatmap(session, 4).then((result) => {
+    setLoadError(null);
+    setLastUpdated(null);
+    setRows([]);
+    void getWorkloadHeatmap(session, weeks).then((result) => {
       if (cancelled) return;
       if (result.error || !result.data) {
         setLoadError(result.error?.message ?? "Failed to load workload data. Please try again.");
@@ -50,6 +56,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
       }
       setLoadError(null);
       setRows(result.data.staff);
+      setLastUpdated(new Date());
     }).catch((err: unknown) => {
       if (!cancelled) setLoadError((err as Error)?.message ?? "Failed to load workload data. Please try again.");
     }).finally(() => {
@@ -57,7 +64,7 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
     });
 
     return () => { cancelled = true; };
-  }, [session, isActive]);
+  }, [session?.accessToken, isActive, weeks, retryCount]);
 
   const weekLabels = rows[0]?.weeks.map((w) => w.weekLabel) ?? ["Week 1", "Week 2", "Week 3", "Week 4"];
 
@@ -78,16 +85,37 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
       <div className={cx("pageHeaderBar")}>
         <div className={cx("pageEyebrowText", "mb8")}>Staff Dashboard / Analytics</div>
         <h1 className={cx("pageTitleText")}>Workload Capacity Heatmap</h1>
-        <p className={cx("pageSubtitleText", "mb20")}>Allocated vs. available hours per team member — next 4 weeks</p>
+        <p className={cx("pageSubtitleText", "mb20")}>Allocated vs. available hours per team member — next {weeks} weeks</p>
       </div>
 
       {loadError && (
         <Alert
           variant="error"
           message={loadError}
-          onRetry={() => { setLoadError(null); }}
+          onRetry={() => { setLoadError(null); setRetryCount((c) => c + 1); }}
         />
       )}
+
+      {/* ── Toolbar ──────────────────────────────────────────────────────── */}
+      <div className={cx("wlhToolbar")}>
+        <div className={cx("wlhSegBar")}>
+          {([4, 8, 12] as const).map((w) => (
+            <button
+              key={w}
+              className={cx("wlhSegBtn", weeks === w && "wlhSegBtnActive")}
+              onClick={() => setWeeks(w)}
+              disabled={loading}
+            >
+              {w} weeks
+            </button>
+          ))}
+        </div>
+        {lastUpdated && (
+          <span className={cx("wlhTimestamp")}>
+            Last updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        )}
+      </div>
 
       {/* ── KPI strip ────────────────────────────────────────────────────── */}
       {rows.length > 0 && (() => {
@@ -97,10 +125,10 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
         const overloaded = rows.filter((r) => r.weeks.some((w) => utilPct(w.allocatedHours, w.availableHours) > 90)).length;
         const available  = rows.filter((r) => r.weeks.every((w) => utilPct(w.allocatedHours, w.availableHours) <= 70)).length;
         return (
-          <div className={cx("staffKpiStrip")}>
+          <div className={cx("staffKpiStripFour")}>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>Team Members</div>
-              <div className={cx("staffKpiValue", "colorAccent")}>{totalStaff}</div>
+              <div className={cx("staffKpiValue", "colorAccent")} data-testid="kpi-team-size-value">{totalStaff}</div>
               <div className={cx("staffKpiSub")}>tracked</div>
             </div>
             <div className={cx("staffKpiCell")}>
@@ -110,29 +138,19 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
             </div>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>Overloaded</div>
-              <div className={cx("staffKpiValue", overloaded > 0 ? "colorRed" : "colorGreen")}>{overloaded}</div>
+              <div className={cx("staffKpiValue", overloaded > 0 ? "colorRed" : "colorGreen")} data-testid="kpi-overloaded-value">{overloaded}</div>
               <div className={cx("staffKpiSub")}>{overloaded > 0 ? "above 90%" : "none above 90%"}</div>
             </div>
             <div className={cx("staffKpiCell")}>
               <div className={cx("staffKpiLabel")}>Available</div>
-              <div className={cx("staffKpiValue", available > 0 ? "colorGreen" : "colorAmber")}>{available}</div>
+              <div className={cx("staffKpiValue", available > 0 ? "colorGreen" : "colorAmber")} data-testid="kpi-available-value">{available}</div>
               <div className={cx("staffKpiSub")}>under 70% all weeks</div>
             </div>
           </div>
         );
       })()}
 
-      {/* ── Legend ───────────────────────────────────────────────────────── */}
-      <div className={cx("wlhLegend")}>
-        <span className={cx("wlhLegendDot", "wlhLegendGreen")} />
-        <span className={cx("wlhLegendLabel")}>≤ 70% utilised</span>
-        <span className={cx("wlhLegendDot", "wlhLegendAmber")} />
-        <span className={cx("wlhLegendLabel")}>71 – 90%</span>
-        <span className={cx("wlhLegendDot", "wlhLegendRed")} />
-        <span className={cx("wlhLegendLabel")}>{"> 90%"}</span>
-      </div>
-
-      {/* ── Table ────────────────────────────────────────────────────────── */}
+      {/* ── Empty state / Table ──────────────────────────────────────────── */}
       {(!loading && rows.length === 0) ? (
         <div className={cx("emptyState")}>
           <div className={cx("emptyStateIcon")}>
@@ -146,49 +164,62 @@ export function WorkloadHeatmapPage({ isActive, session }: WorkloadHeatmapPagePr
           <div className={cx("emptyStateSub")}>Workload heatmap will appear once staff profiles and tasks are configured.</div>
         </div>
       ) : (
-        <div className={cx("tableWrap", "wlhTableWrap")}>
-          <table className={cx("wlhTable")}>
-            <thead>
-              <tr>
-                <th scope="col" className={cx("wlhCell", "wlhNameCell", "wlhHeaderCell")}>
-                  Team Member
-                </th>
-                {weekLabels.map((label) => (
-                  <th key={label} scope="col" className={cx("wlhCell", "wlhHeaderCell")}>
-                    {label}
+        <>
+          {/* ── Legend (only when data) ──────────────────────────────────── */}
+          <div className={cx("wlhLegend")}>
+            <span className={cx("wlhLegendDot", "wlhLegendGreen")} />
+            <span className={cx("wlhLegendLabel")}>≤ 70% utilised</span>
+            <span className={cx("wlhLegendDot", "wlhLegendAmber")} />
+            <span className={cx("wlhLegendLabel")}>71 – 90%</span>
+            <span className={cx("wlhLegendDot", "wlhLegendRed")} />
+            <span className={cx("wlhLegendLabel")}>{"> 90%"}</span>
+          </div>
+
+          {/* ── Table ────────────────────────────────────────────────────── */}
+          <div className={cx("tableWrap", "wlhTableWrap")}>
+            <table className={cx("wlhTable")}>
+              <thead>
+                <tr>
+                  <th scope="col" className={cx("wlhCell", "wlhNameCell", "wlhHeaderCell")}>
+                    Team Member
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.staffId} className={cx("staffTableRow")}>
-                  <td className={cx("wlhCell", "wlhNameCell")}>
-                    <span className={cx("wlhStaffName")}>{row.name}</span>
-                    <span className={cx("wlhStaffRole")}>{row.role}</span>
-                  </td>
-                  {row.weeks.map((week) => {
-                    const pct  = utilPct(week.allocatedHours, week.availableHours);
-                    const tone = cellTone(pct);
-                    return (
-                      <td
-                        key={week.weekLabel}
-                        className={cx("wlhCell", tone)}
-                        title={`${week.allocatedHours}h allocated of ${week.availableHours}h available`}
-                      >
-                        <span className={cx("wlhHours")}>
-                          {week.allocatedHours}h / {week.availableHours}h
-                        </span>
-                        <span className={cx("wlhPct")}>{pct}%</span>
-                        <span className={cx("wlhCellTip")}>{pct}% utilised</span>
-                      </td>
-                    );
-                  })}
+                  {weekLabels.map((label) => (
+                    <th key={label} scope="col" className={cx("wlhCell", "wlhHeaderCell")}>
+                      {label}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.staffId} className={cx("staffTableRow")}>
+                    <td className={cx("wlhCell", "wlhNameCell")}>
+                      <span className={cx("wlhStaffName")}>{row.name}</span>
+                      <span className={cx("wlhStaffRole")}>{row.role}</span>
+                    </td>
+                    {row.weeks.map((week) => {
+                      const pct  = utilPct(week.allocatedHours, week.availableHours);
+                      const tone = cellTone(pct);
+                      return (
+                        <td
+                          key={week.weekLabel}
+                          className={cx("wlhCell", tone)}
+                          title={`${week.allocatedHours}h allocated of ${week.availableHours}h available`}
+                        >
+                          <span className={cx("wlhHours")}>
+                            {week.allocatedHours}h / {week.availableHours}h
+                          </span>
+                          <span className={cx("wlhPct")}>{pct}%</span>
+                          <span className={cx("wlhCellTip")}>{pct}% utilised</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </section>
   );

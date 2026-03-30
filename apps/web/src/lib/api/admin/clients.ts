@@ -61,11 +61,21 @@ export async function loadAdminSnapshotWithRefresh(session: AuthSession): Promis
       };
     }
 
+    // TODO: add isTestData flag to Client/Project/User models to replace this name-based filter
+    const testNamePattern = /^(tyest|testing|dasdasdas)/i;
+    const filteredClients = (clients.payload.data ?? []).filter(
+      (c) => !testNamePattern.test(c.name)
+    );
+    const filteredClientIds = new Set(filteredClients.map((c) => c.id));
+    const filteredProjects = (projects.payload.data ?? []).filter(
+      (p) => !testNamePattern.test(p.name) && (!p.clientId || filteredClientIds.has(p.clientId))
+    );
+
     return {
       unauthorized: false,
       data: {
-        clients: clients.payload.data ?? [],
-        projects: projects.payload.data ?? [],
+        clients: filteredClients,
+        projects: filteredProjects,
         leads: leads.payload.data ?? [],
         invoices: invoices.payload.data ?? [],
         payments: payments.payload.data ?? []

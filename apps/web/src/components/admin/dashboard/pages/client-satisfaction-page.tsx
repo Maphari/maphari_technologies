@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAllSatisfactionSurveysWithRefresh, type AdminSatisfactionSurvey } from "../../../../lib/api/admin/client-ops";
@@ -254,181 +255,85 @@ export function ClientSatisfactionPage({ session }: { session: AuthSession | nul
     );
   }
 
+  const trendData = clients.flatMap(c => c.history).reduce((acc, h) => {
+    const existing = acc.find(d => d.label === h.month);
+    if (existing) {
+      existing.nps = ((existing.nps as number) + (h.nps ?? 0)) / 2;
+    } else {
+      acc.push({ label: h.month, nps: h.nps ?? 0, csat: h.csat ?? 0 });
+    }
+    return acc;
+  }, [] as { label: string; nps: number; csat: number | null }[]);
+
+  const tableRows = clients.map(c => ({
+    client: c.name,
+    score: c.nps,
+    sentiment: c.trend,
+    date: c.latestSurvey,
+    comment: c.feedback || "—",
+  }));
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / SATISFACTION</div>
           <h1 className={styles.pageTitle}>Client Satisfaction</h1>
-          <div className={styles.pageSub}>NPS · CSAT · Trends · Survey scheduling</div>
+          <div className={styles.pageSub}>CSAT · NPS · Feedback trends</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnAccent")}>Send Survey Now</button>
         </div>
       </div>
 
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Portfolio NPS",    value: avgNPS,           color: parseFloat(avgNPS)  >= 7 ? "var(--accent)" : "var(--amber)", sub: `${promoters} promoters · ${detractors} detractors` },
-          { label: "Portfolio CSAT",   value: `${avgCSAT}/10`,  color: parseFloat(avgCSAT) >= 8 ? "var(--accent)" : "var(--amber)", sub: "Avg client satisfaction" },
-          { label: "Surveys Due",      value: surveySchedules.filter((s) => s.status !== "upcoming").length.toString(), color: "var(--amber)", sub: "Overdue or due this week" },
-          { label: "Declining Clients",value: clients.filter((c) => c.trend === "declining").length.toString(), color: "var(--red)", sub: "Negative NPS trend" },
-        ].map((s) => (
-          <div key={s.label} className={cx(styles.statCard, toneClass(s.color))}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx("statValue", "csatDynColor")}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Avg CSAT" value={`${avgCSAT}/10`} sub="Portfolio average" tone={parseFloat(avgCSAT) >= 8 ? "green" : "amber"} />
+        <StatWidget label="NPS Score" value={avgNPS} sub={`${promoters} promoters`} subTone="up" tone={parseFloat(avgNPS) >= 7 ? "accent" : "amber"} />
+        <StatWidget label="Responses This Month" value={clients.length} sub="Survey submissions" tone="default" />
+        <StatWidget label="Detractors Count" value={detractors} sub="NPS score ≤ 6" tone={detractors > 0 ? "red" : "default"} />
+      </WidgetGrid>
 
-      <div className={styles.filterRow}>
-        <select
-          title="Select tab"
-          value={activeTab}
-          onChange={e => setActiveTab(e.target.value as Tab)}
-          className={styles.filterSelect}
-        >
-          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="CSAT / NPS Trend"
+          data={trendData.length > 0 ? trendData : [{ label: "No data", nps: 0, csat: 0 }]}
+          dataKey={["nps", "csat"]}
+          type="line"
+          xKey="label"
+          color={["#8b6fff", "#34d98b"]}
+          legend={[{ key: "nps", label: "NPS" }, { key: "csat", label: "CSAT" }]}
+        />
+        <PipelineWidget
+          label="NPS Segments"
+          stages={[
+            { label: "Promoter (9-10)", count: promoters, total: Math.max(clients.length, 1), color: "#34d98b" },
+            { label: "Passive (7-8)", count: clients.filter(c => c.nps >= 7 && c.nps < 9).length, total: Math.max(clients.length, 1), color: "#f5a623" },
+            { label: "Detractor (≤6)", count: detractors, total: Math.max(clients.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
-      <>
-          {activeTab === "satisfaction scores" && (
-            clients.length === 0 ? (
-              <div className={cx("emptyState")}>
-                <div className={cx("emptyStateTitle")}>No survey data yet</div>
-                <p className={cx("emptyStateSub")}>Satisfaction surveys will appear here once clients have completed them.</p>
-              </div>
-            ) : (
-              <div className={cx("flexCol", "gap12")}>
-                {[...clients].sort((a, b) => a.nps - b.nps).map((c) => (
-                  <div key={c.name} className={cx("csatScoreCard", toneClass(c.color), c.nps <= 6 && "csatScoreCardDanger")}>
-                    <div className={styles.csatScoreGrid}>
-                      <div>
-                        <div className={styles.csatClientName}>{c.name}</div>
-                        <div className={cx("text11", "colorMuted")}>{c.am}</div>
-                      </div>
-                      <NPSGauge score={c.nps} />
-                      <div>
-                        <div className={cx("text11", "colorMuted", "mb4")}>CSAT Score</div>
-                        <div className={cx(styles.csatBigScore, toneClass(npsColor(c.csat)))}>{c.csat}</div>
-                        <div className={cx("text10", "colorMuted")}>out of 10</div>
-                      </div>
-                      <div>
-                        <div className={cx("text10", "colorMuted", "mb8")}>NPS Trend (5 months)</div>
-                        <MiniChart history={c.history} />
-                      </div>
-                      <div className={cx("flexRow", "gap6")}>
-                        <span className={styles.csatTrendIcon}>
-                          {c.trend === "improving" ? "\u25B2" : c.trend === "declining" ? "\u25BC" : "\u2192"}
-                        </span>
-                        <span className={cx(styles.csatTrendLabel, toneClass(trendColor(c.trend)))}>{c.trend}</span>
-                      </div>
-                      <div className={cx("text11", "fontMono", "colorMuted")}>Survey: {c.latestSurvey}</div>
-                      <div className={cx("flexCol", "gap6")}>
-                        <button type="button" className={cx("btnSm", "btnGhost")}>View</button>
-                        {c.surveysDue ? <button type="button" className={cx("btnSm", "btnAccent")}>Send</button> : null}
-                      </div>
-                    </div>
-                    {c.feedback ? (
-                      <div className={styles.csatFeedbackQuote}>&ldquo;{c.feedback}&rdquo;</div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-
-          {activeTab === "survey schedule" && (
-            surveySchedules.length === 0 ? (
-              <div className={cx("emptyState")}>
-                <div className={cx("emptyStateTitle")}>No surveys scheduled</div>
-                <p className={cx("emptyStateSub")}>Pending survey schedules will appear here.</p>
-              </div>
-            ) : (
-              <div className={cx("flexCol", "gap10")}>
-                {surveySchedules.map((s, idx) => (
-                  <div key={`${s.client}-${idx}`} className={cx("csatSurveyRow", toneClass(s.color), s.status === "overdue" && "csatScoreCardDanger")}>
-                    <div className={styles.csatClientName}>{s.client}</div>
-                    <div className={cx("text12", "colorMuted")}>{s.type}</div>
-                    <div className={cx("fontMono", "text12", "csatDynColor", toneClass(surveyStatusColor(s.status)))}>{s.due}</div>
-                    <span className={cx("badge", s.status === "overdue" ? "badgeRed" : s.status === "due" ? "badgeAmber" : "badgeMuted")}>{s.status}</span>
-                    <button type="button" className={cx("btnSm", s.status !== "upcoming" ? "btnAccent" : "btnGhost")}>
-                      {s.status !== "upcoming" ? "Send Now" : "Schedule"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-
-          {activeTab === "feedback log" && (
-            clients.filter((c) => c.feedback).length === 0 ? (
-              <div className={cx("emptyState")}>
-                <div className={cx("emptyStateTitle")}>No feedback collected</div>
-                <p className={cx("emptyStateSub")}>Qualitative feedback from surveys will appear here once submitted.</p>
-              </div>
-            ) : (
-              <div className={cx("flexCol", "gap10")}>
-                {clients
-                  .filter((c) => c.feedback)
-                  .map((c) => (
-                    <article key={c.name} className={cx("card", "p24", toneClass(c.color))}>
-                      <div className={cx("flexBetween", "mb12")}>
-                        <div className={cx("flexRow", "gap12")}>
-                          <div className={styles.csatClientName}>{c.name}</div>
-                          <span className={cx("fontMono", "text12", "csatDynColor", toneClass(npsColor(c.nps)))}>NPS {c.nps}</span>
-                          <span className={cx("fontMono", "text12", "colorMuted")}>CSAT {c.csat}</span>
-                        </div>
-                        <span className={cx("text11", "colorMuted", "fontMono")}>{c.latestSurvey}</span>
-                      </div>
-                      <div className={styles.csatFeedbackQuote}>&ldquo;{c.feedback}&rdquo;</div>
-                    </article>
-                  ))}
-              </div>
-            )
-          )}
-
-          {activeTab === "trends" && (
-            clients.length === 0 ? (
-              <div className={cx("emptyState")}>
-                <div className={cx("emptyStateTitle")}>No trend data</div>
-                <p className={cx("emptyStateSub")}>NPS trends will appear once clients have completed multiple surveys.</p>
-              </div>
-            ) : (
-              <div className={styles.grid2}>
-                {clients.map((c) => (
-                  <div key={c.name} className={cx("card", "p24", "csatTrendCard", toneClass(c.color))}>
-                    <div className={cx("flexBetween", "mb20")}>
-                      <div>
-                        <div className={styles.csatClientName}>{c.name}</div>
-                        <div className={cx(styles.csatTrendLabel, toneClass(trendColor(c.trend)))}>
-                          {c.trend === "improving" ? "\u25B2 Improving" : c.trend === "declining" ? "\u25BC Declining" : "\u2192 Stable"}
-                        </div>
-                      </div>
-                      <NPSGauge score={c.nps} />
-                    </div>
-                    <div className={styles.csatTrendGrid}>
-                      {c.history.map((h, i) => (
-                        <div key={i} className={cx("textCenter", toneClass(npsColor(h.nps)))}>
-                          <div className={styles.csatTrendScore}>{h.nps ?? "\u2014"}</div>
-                          <div className={styles.csatTrendMonth}>{h.month}</div>
-                          <progress
-                            className={cx(styles.csatTrendTrack, "mt4")}
-                            max={10}
-                            value={h.nps ?? 0}
-                            aria-label={`${c.name} ${h.month} NPS ${h.nps ?? 0}`}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-        </>
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Feedback Log"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "client", header: "Client" },
+            { key: "score", header: "Score", align: "right" },
+            { key: "sentiment", header: "Sentiment", align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "improving" ? cx("badge", "badgeGreen") : val === "declining" ? cx("badge", "badgeRed") : cx("badge", "badgeMuted");
+              return <span className={cls}>{val}</span>;
+            }},
+            { key: "date", header: "Date", align: "right" },
+            { key: "comment", header: "Comment" },
+          ]}
+          emptyMessage="No feedback data"
+        />
+      </WidgetGrid>
     </div>
   );
 }

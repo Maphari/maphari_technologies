@@ -7,7 +7,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { styles } from "../style";
+import { cx, styles } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -16,6 +16,7 @@ import {
   rejectProposedActionWithRefresh,
   type ProposedAction,
 } from "../../../../lib/api/admin/proposed-actions";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -99,21 +100,87 @@ export function ProposedActionsPage({ session }: { session: AuthSession | null }
     );
   }
 
+  // ── Widget data ─────────────────────────────────────────────────────────
+  const pendingCount   = items.length;
+  const actionTypeCounts = items.reduce<Record<string, number>>((acc, i) => {
+    acc[i.action] = (acc[i.action] ?? 0) + 1;
+    return acc;
+  }, {});
+  const actionChartData = Object.entries(actionTypeCounts).map(([name, value]) => ({ name: formatAction(name).split(" ")[0], value }));
+  const resourceTypeCounts = items.reduce<Record<string, number>>((acc, i) => {
+    acc[i.resourceType] = (acc[i.resourceType] ?? 0) + 1;
+    return acc;
+  }, {});
+  const uniqueProposers = new Set(items.map((i) => i.proposedBy)).size;
+
+  const tableRows = items.map((i) => ({
+    id: i.id,
+    action: i.action,
+    resourceType: i.resourceType,
+    proposedBy: i.proposedByName ?? i.proposedBy,
+    createdAt: i.createdAt,
+  })) as unknown as Record<string, unknown>[];
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.pageBody}>
       {error && <p className={styles.errorStateSub}>{error}</p>}
+
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
-          <h1 className={styles.pageTitle}>Pending Approvals</h1>
-          <div className={styles.pageSub}>
-            High-stakes actions proposed by admins that require a second sign-off before execution.
-          </div>
+          <div className={styles.pageEyebrow}>AI/ML / PROPOSED ACTIONS</div>
+          <h1 className={styles.pageTitle}>Proposed Actions</h1>
+          <div className={styles.pageSub}>Pending approvals · AI recommendations · Action queue</div>
         </div>
       </div>
 
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Pending Approval" value={pendingCount} tone={pendingCount > 0 ? "amber" : "default"} sparkData={[1, 2, 3, 2, 4, 3, 5, pendingCount]} />
+        <StatWidget label="Action Types" value={Object.keys(actionTypeCounts).length} sub="distinct action kinds" />
+        <StatWidget label="Proposers" value={uniqueProposers} sub="distinct admin users" />
+        <StatWidget label="Resource Types" value={Object.keys(resourceTypeCounts).length} sub="entity types affected" />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Actions by Type"
+          type="bar"
+          data={actionChartData.length > 0 ? actionChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Action Queue"
+          stages={[
+            { label: "Pending", count: pendingCount, total: Math.max(pendingCount, 1), color: "#f5a623" },
+            { label: "Approved", count: 0, total: Math.max(pendingCount, 1), color: "#34d98b" },
+            { label: "Rejected", count: 0, total: Math.max(pendingCount, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Pending Actions"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="All clear — no pending approvals."
+          columns={[
+            { key: "action", header: "Action", render: (_v, row) => <span style={{ fontWeight: 600 }}>{formatAction(String(row.action ?? ""))}</span> },
+            { key: "resourceType", header: "Resource", render: (_v, row) => <span className={cx("badge")}>{String(row.resourceType ?? "")}</span> },
+            { key: "proposedBy", header: "Proposed By", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.proposedBy ?? "")}</span> },
+            { key: "createdAt", header: "When", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{timeAgo(String(row.createdAt ?? ""))}</span> },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Approval cards ── */}
       {items.length === 0 ? (
         <div className={styles.emptyState}>All clear — no pending approvals.</div>
       ) : (

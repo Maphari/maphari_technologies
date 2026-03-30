@@ -17,16 +17,16 @@
 
   /* Light mode */
   --mk-bg: #f7f8fa;
-  --mk-surface: #ffffff;
+  --mk-surface: #fff;
   --mk-card: #f1f3f7;
-  --mk-card-strong: #ffffff;
+  --mk-card-strong: #fff;
   --mk-subtle-accent: #e6fffb;
   --mk-text: #1b1f2a;
   --mk-muted: #5c6475;
   --mk-border: #e6e8ee;
   --mk-input-border: #d6d9e0;
   --mk-hover-bg: #e8fffc;
-  --mk-shadow: 0 10px 16px rgba(11, 18, 32, 0.08);
+  --mk-shadow: 0 10px 16px rgb(11 18 32 / 8%);
   --btn-primary-bg: #12d6c5;
   --btn-primary-text: #0b1220;
   --btn-primary-hover: #0fc2b2;
@@ -44,7 +44,6 @@ html[data-theme="dark"] {
   --warning: #f59e0b;
   --error: #ef4444;
   --info: #3b82f6;
-
   --mk-bg: #0b1220;
   --mk-surface: #111827;
   --mk-card: #1b2433;
@@ -55,7 +54,7 @@ html[data-theme="dark"] {
   --mk-border: #253047;
   --mk-input-border: #2c3a52;
   --mk-hover-bg: #0f2f33;
-  --mk-shadow: 0 14px 24px rgba(0, 0, 0, 0.35);
+  --mk-shadow: 0 14px 24px rgb(0 0 0 / 35%);
   --btn-primary-bg: #12d6c5;
   --btn-primary-text: #0b1220;
   --btn-primary-hover: #0fc2b2;

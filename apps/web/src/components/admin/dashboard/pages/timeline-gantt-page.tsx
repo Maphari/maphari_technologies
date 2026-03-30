@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, WidgetGrid } from "../widgets";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import type { AdminSnapshot, AdminProject, AdminClient } from "../../../../lib/api/admin";
 import { saveSession } from "../../../../lib/auth/session";
@@ -213,9 +214,9 @@ export function TimelineGanttPage() {
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / GANTT</div>
           <h1 className={styles.pageTitle}>Timeline &amp; Gantt</h1>
-          <div className={styles.pageSub}>Cross-portfolio project timelines · 90-day view</div>
+          <div className={styles.pageSub}>Project milestones · Schedule health · Delivery velocity</div>
         </div>
         <div className={cx("flexRow", "gap8")}>
           <button
@@ -229,21 +230,33 @@ export function TimelineGanttPage() {
         </div>
       </div>
 
-      {/* KPI cards */}
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Projects On-Track", value: onTrack.toString(), color: "var(--accent)", sub: `of ${projects.length} total` },
-          { label: "At Risk",    value: atRisk.toString(),   color: "var(--amber)", sub: "Review required" },
-          { label: "Off Track",  value: offTrack.toString(), color: "var(--red)",   sub: "Immediate action" },
-          { label: "Deadlines (30d)", value: upcomingDeadlines.length.toString(), color: "var(--blue)", sub: "Across all projects" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — widget KPI header */}
+      <WidgetGrid>
+        <StatWidget
+          label="Active Milestones"
+          value={projects.length}
+          sub={`${onTrack} on track`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Overdue"
+          value={offTrack}
+          sub="Immediate action needed"
+          tone={offTrack > 0 ? "red" : "default"}
+        />
+        <StatWidget
+          label="On Track"
+          value={onTrack}
+          sub={`of ${projects.length} total`}
+          tone={onTrack > 0 ? "green" : "default"}
+        />
+        <StatWidget
+          label="Deadlines (30d)"
+          value={upcomingDeadlines.length}
+          sub="Upcoming due dates"
+          tone={upcomingDeadlines.length > 0 ? "amber" : "default"}
+        />
+      </WidgetGrid>
 
       {/* Empty state */}
       {projects.length === 0 && (

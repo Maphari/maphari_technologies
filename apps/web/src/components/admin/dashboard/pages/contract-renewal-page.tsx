@@ -8,9 +8,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { loadAdminContractsWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
+import { loadAdminContractsWithRefresh, createRenewalProposalWithRefresh, type LegalContract } from "../../../../lib/api/admin/contracts";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
+import { formatStatus } from "@/lib/utils/format-status";
+import { StatWidget, PipelineWidget, TableWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -102,6 +104,7 @@ export function ContractRenewalPage() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
   const [sentIds,   setSentIds]   = useState<Set<string>>(new Set());
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const loadContracts = useCallback(async () => {
     if (!session) { setLoading(false); return; }
@@ -122,10 +125,20 @@ export function ContractRenewalPage() {
     void loadContracts();
   }, [loadContracts]);
 
-  function handleSendProposal(contract: LegalContract) {
-    // Proposal creation API does not yet exist — show placeholder alert
-    window.alert(`Renewal proposal sent for: ${contract.title}`);
-    setSentIds((prev) => new Set([...prev, contract.id]));
+  async function handleSendProposal(contract: LegalContract) {
+    if (!session) return;
+    try {
+      const result = await createRenewalProposalWithRefresh(session, contract.id);
+      if (result.error) {
+        setError(result.error.message ?? "Failed to send renewal proposal.");
+        return;
+      }
+      setSentIds((prev) => new Set([...prev, contract.id]));
+      setSuccessMsg(`Renewal proposal sent for: ${contract.title}`);
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err) {
+      setError((err as Error)?.message ?? "Failed to send renewal proposal.");
+    }
   }
 
   // ── Derived data ─────────────────────────────────────────────────────────
@@ -160,10 +173,11 @@ export function ContractRenewalPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={cx(styles.pageBody, styles.lglRoot)}>
+      {successMsg ? <div className={cx(styles.card, "colorAccent", "text13")} style={{ padding: "8px 12px", marginBottom: 8 }}>{successMsg}</div> : null}
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / CONTRACT RENEWAL TRACKER</div>
           <h1 className={styles.pageTitle}>Contract Renewal Tracker</h1>
           <div className={styles.pageSub}>
             Traffic-light expiry status · Renewal proposals · Sorted by earliest expiry
@@ -176,38 +190,40 @@ export function ContractRenewalPage() {
         </div>
       </div>
 
-      {/* ── KPI strip ─────────────────────────────────────────────────────── */}
-      <div className={cx("topCardsStack", "mb28")}>
-        <div className={cx(styles.statCard, kpis.expiringThisMonth > 0 ? styles.lglStatAlertAmber : "")}>
-          <div className={styles.statLabel}>Expiring This Month</div>
-          <div className={cx(styles.statValue, kpis.expiringThisMonth > 0 ? "colorAmber" : "colorAccent")}>
-            {kpis.expiringThisMonth}
-          </div>
-          <div className={cx("text11", "colorMuted")}>Action required soon</div>
-        </div>
+      {/* ── Widget stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Expiring This Month" value={kpis.expiringThisMonth} sub="Action required soon"                         tone={kpis.expiringThisMonth > 0 ? "amber" : "default"} />
+        <StatWidget label="Expired / Critical"  value={kpis.criticalOrExpired} sub={kpis.criticalOrExpired > 0 ? "Renew immediately" : "No critical contracts"} tone={kpis.criticalOrExpired > 0 ? "red" : "green"} />
+        <StatWidget label="Active & Healthy"    value={kpis.activeHealthy}     sub=">60 days or no expiry"                         tone="green" />
+        <StatWidget label="Total Contracts"     value={kpis.total}             sub="All clients"                                   tone="accent" />
+      </WidgetGrid>
 
-        <div className={cx(styles.statCard, kpis.criticalOrExpired > 0 ? styles.lglStatAlertRed : "")}>
-          <div className={styles.statLabel}>Expired / Critical</div>
-          <div className={cx(styles.statValue, kpis.criticalOrExpired > 0 ? "colorRed" : "colorAccent")}>
-            {kpis.criticalOrExpired}
-          </div>
-          <div className={cx("text11", "colorMuted")}>
-            {kpis.criticalOrExpired > 0 ? "Renew immediately" : "No critical contracts"}
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Active &amp; Healthy</div>
-          <div className={cx(styles.statValue, "colorAccent")}>{kpis.activeHealthy}</div>
-          <div className={cx("text11", "colorMuted")}>&gt;60 days or no expiry</div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>Total Contracts</div>
-          <div className={cx(styles.statValue, "colorText")}>{kpis.total}</div>
-          <div className={cx("text11", "colorMuted")}>All clients</div>
-        </div>
-      </div>
+      <WidgetGrid columns={2}>
+        <PipelineWidget
+          label="Contract Status Breakdown"
+          stages={[
+            { label: "Healthy (>60d)", count: kpis.activeHealthy,      total: kpis.total || 1, color: "#34d98b" },
+            { label: "Due This Month", count: kpis.expiringThisMonth,  total: kpis.total || 1, color: "#f5a623" },
+            { label: "Critical/Expired", count: kpis.criticalOrExpired, total: kpis.total || 1, color: "#ff5f5f" },
+          ]}
+        />
+        <TableWidget
+          label="Soonest Expiring Contracts"
+          columns={[
+            { key: "type",   header: "Type" },
+            { key: "client", header: "Client" },
+            { key: "expiry", header: "Expiry" },
+            { key: "status", header: "Status" },
+          ]}
+          rows={sortByExpiry(contracts).slice(0, 10).filter((c) => c.expiresAt).map((c) => ({
+            type:   c.type,
+            client: c.clientId.slice(0, 8).toUpperCase(),
+            expiry: c.expiresAt ? formatExpiry(c.expiresAt) : "—",
+            status: badgeLabelForLight(trafficLight(c.expiresAt ?? null), c.expiresAt ?? null),
+          }) as Record<string, unknown>)}
+          emptyMessage="No contracts with expiry dates"
+        />
+      </WidgetGrid>
 
       {/* ── Contract list ─────────────────────────────────────────────────── */}
       <div className={styles.lglTableCard}>
@@ -256,13 +272,13 @@ export function ContractRenewalPage() {
                 </span>
                 <span className={cx(styles.lglStatusBadge, badgeCls)}>{badgeLbl}</span>
                 <span className={cx(styles.lglStatusBadge, light === "green" ? styles.lglStatusAccent : light === "amber" ? styles.lglStatusAmber : styles.lglStatusRed)}>
-                  {contract.status}
+                  {formatStatus(contract.status)}
                 </span>
                 <div className={styles.lglActionRow}>
                   <button
                     type="button"
                     className={cx("btnSm", alreadySent ? "btnGhost" : "btnAccent")}
-                    onClick={() => handleSendProposal(contract)}
+                    onClick={() => { void handleSendProposal(contract); }}
                     disabled={alreadySent}
                   >
                     {alreadySent ? "Sent" : "Send Renewal Proposal"}

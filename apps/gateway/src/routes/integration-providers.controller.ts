@@ -125,6 +125,103 @@ export class IntegrationProvidersController {
   }
 
   @Roles("ADMIN", "STAFF")
+  @Get("admin/integrations/connections")
+  async listConnections(
+    @Query() query: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const params = new URLSearchParams();
+    if (query && typeof query === "object") {
+      Object.entries(query as Record<string, unknown>).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) params.set(key, String(value));
+      });
+    }
+    const queryString = params.size > 0 ? `?${params.toString()}` : "";
+    return proxyRequest(
+      `${CORE()}/admin/integrations/connections${queryString}`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Get("admin/integrations/connections/:connectionId/sync-events")
+  async getConnectionSyncEvents(
+    @Param("connectionId") connectionId: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/integrations/connections/${connectionId}/sync-events`,
+      "GET",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Post("admin/integrations/connections")
+  async createConnection(
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/integrations/connections`,
+      "POST",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  @Roles("ADMIN", "STAFF")
+  @Patch("admin/integrations/connections/:connectionId")
+  async updateConnection(
+    @Param("connectionId") connectionId: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/integrations/connections/${connectionId}`,
+      "PATCH",
+      body,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  @Roles("ADMIN")
+  @Post("admin/integrations/seed-providers")
+  async seedProviders(
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/admin/integrations/seed-providers`,
+      "POST",
+      undefined,
+      scopeHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  @Roles("ADMIN", "STAFF")
   @Get("admin/tasks/:taskId/integration-sync-events")
   async getTaskIntegrationSyncEvents(
     @Param("taskId") taskId: string,

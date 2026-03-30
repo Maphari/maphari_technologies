@@ -16,6 +16,7 @@ import {
   simulateAutomation,
   type SimulateResult,
 } from "../../../../lib/api/admin/automation";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -251,15 +252,88 @@ export function AutomationAuditTrailPage({ session }: { session: AuthSession | n
     );
   }
 
+  // ── Widget data ─────────────────────────────────────────────────────────
+  const totalEntries  = entries.length;
+  const adminCount    = entries.filter((e) => e.actorRole?.toUpperCase() === "ADMIN").length;
+  const staffCount    = entries.filter((e) => e.actorRole?.toUpperCase() === "STAFF").length;
+  const systemCount   = entries.filter((e) => !e.actorRole).length;
+
+  const resourceTypeCounts = entries.reduce<Record<string, number>>((acc, e) => {
+    acc[e.resourceType] = (acc[e.resourceType] ?? 0) + 1;
+    return acc;
+  }, {});
+  const auditChartData = Object.entries(resourceTypeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([name, value]) => ({ name, value }));
+
+  const tableRows = entries.slice(0, 50).map((e) => ({
+    id: e.id,
+    actor: e.actorName ?? "System",
+    role: e.actorRole ?? "—",
+    resourceType: e.resourceType,
+    action: e.action,
+    createdAt: e.createdAt,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>AI/ML / AUDIT TRAIL</div>
           <h1 className={styles.pageTitle}>Automation Audit Trail</h1>
-          <div className={styles.pageSub}>Complete log of system actions and automated executions</div>
+          <div className={styles.pageSub}>Execution log · Actor breakdown · Action history</div>
         </div>
       </div>
+
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Events" value={totalEntries} tone="accent" sparkData={[10, 20, 30, 25, 40, 35, 50, totalEntries]} />
+        <StatWidget label="Admin Actions" value={adminCount} tone="amber" progressValue={totalEntries > 0 ? Math.round((adminCount / totalEntries) * 100) : 0} />
+        <StatWidget label="Staff Actions" value={staffCount} tone="green" progressValue={totalEntries > 0 ? Math.round((staffCount / totalEntries) * 100) : 0} />
+        <StatWidget label="System Actions" value={systemCount} sub="automated executions" progressValue={totalEntries > 0 ? Math.round((systemCount / totalEntries) * 100) : 0} />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Events by Resource Type"
+          type="bar"
+          data={auditChartData.length > 0 ? auditChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Actor Breakdown"
+          stages={[
+            { label: "Admin", count: adminCount, total: Math.max(totalEntries, 1), color: "#8b6fff" },
+            { label: "Staff", count: staffCount, total: Math.max(totalEntries, 1), color: "#34d98b" },
+            { label: "System", count: systemCount, total: Math.max(totalEntries, 1), color: "#6b7280" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Execution Log"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No audit events found."
+          columns={[
+            { key: "actor", header: "Actor", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.actor ?? "")}</span> },
+            { key: "role", header: "Role", render: (_v, row) => {
+              const r = String(row.role ?? "—");
+              return <span className={cx("badge", roleBadge(r))}>{r}</span>;
+            }},
+            { key: "resourceType", header: "Resource", render: (_v, row) => <span className={cx("colorMuted")}>{String(row.resourceType ?? "")}</span> },
+            { key: "action", header: "Action", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{String(row.action ?? "")}</span> },
+            { key: "createdAt", header: "When", align: "right", render: (_v, row) => <span className={cx("fontMono", "text11", "colorMuted")}>{formatTs(String(row.createdAt ?? ""))}</span> },
+          ]}
+        />
+      </WidgetGrid>
 
       <article className={styles.card}>
         <div className={styles.cardHd}>

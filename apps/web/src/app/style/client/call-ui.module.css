@@ -20,10 +20,11 @@
   gap: 14px;
   padding: 14px 20px;
   background: #111118;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgb(255 255 255 / 6%);
   flex-shrink: 0;
   z-index: 5;
 }
+
 .callBrandMark {
   display: inline-flex;
   align-items: center;
@@ -37,20 +38,24 @@
   font-size: 0.9rem;
   flex-shrink: 0;
 }
+
 .callHeaderMeta {
   min-width: 0;
 }
+
 .callHeaderTitle {
   font-size: 0.86rem;
   font-weight: 700;
   color: #f5f4f0;
   font-family: var(--font-dm-mono), monospace;
 }
+
 .callHeaderSub {
   font-size: 0.72rem;
-  color: rgba(232, 229, 224, 0.45);
+  color: rgb(232 229 224 / 45%);
   margin-top: 2px;
 }
+
 .callHeaderBadges {
   margin-left: auto;
   display: flex;
@@ -58,26 +63,29 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
 .callHeaderBadge {
   padding: 5px 9px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 4%);
   font-size: 0.68rem;
-  color: rgba(232, 229, 224, 0.72);
+  color: rgb(232 229 224 / 72%);
   font-weight: 700;
 }
+
 .callHeaderActions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .callHeaderAction {
   height: 32px;
   padding: 0 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 4%);
   color: #e8e5e0;
   font-size: 0.74rem;
   font-weight: 600;
@@ -102,6 +110,7 @@
   padding: 16px;
   padding-bottom: 80px;
 }
+
 .callStageTopRow {
   display: flex;
   justify-content: space-between;
@@ -109,16 +118,18 @@
   gap: 12px;
   margin-bottom: 12px;
 }
+
 .callStageLabel {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(232, 229, 224, 0.42);
+  color: rgb(232 229 224 / 42%);
 }
+
 .callStageMeta {
   font-size: 0.74rem;
-  color: rgba(232, 229, 224, 0.35);
+  color: rgb(232 229 224 / 35%);
 }
 
 .callGridInner {
@@ -172,11 +183,12 @@
   bottom: 8px;
   left: 8px;
   padding: 3px 8px;
-  background: rgba(13, 13, 20, 0.75);
+  background: rgb(13 13 20 / 75%);
   border-radius: 20px;
   font-size: 0.72rem;
   font-weight: 600;
   color: #e8e5e0;
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   max-width: calc(100% - 16px);
   overflow: hidden;
@@ -193,8 +205,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgb(239 68 68 / 20%);
+  border: 1px solid rgb(239 68 68 / 40%);
   border-radius: 50%;
   color: #f87171;
 }
@@ -237,11 +249,12 @@
   bottom: 8px;
   left: 8px;
   padding: 3px 8px;
-  background: rgba(13, 13, 20, 0.75);
+  background: rgb(13 13 20 / 75%);
   border-radius: 20px;
   font-size: 0.72rem;
   font-weight: 600;
   color: #e8e5e0;
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
@@ -254,8 +267,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgb(239 68 68 / 20%);
+  border: 1px solid rgb(239 68 68 / 40%);
   border-radius: 50%;
   color: #f87171;
 }
@@ -277,36 +290,40 @@
   flex-direction: row;
   gap: 18px;
   align-items: flex-end;
-  background: rgba(12, 12, 20, 0.55);
-  backdrop-filter: blur(24px) saturate(180%);
+  background: rgb(12 12 20 / 55%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
   border-radius: 26px;
   padding: 12px 16px;
   z-index: 20;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgb(255 255 255 / 10%);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.3) inset;
+    0 8px 32px rgb(0 0 0 / 45%),
+    0 1px 0 rgb(255 255 255 / 6%) inset,
+    0 -1px 0 rgb(0 0 0 / 30%) inset;
 }
+
 .callControlSection {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .callControlSectionSplit {
   padding-left: 6px;
   margin-left: -10px;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 1px solid rgb(255 255 255 / 12%);
 }
+
 .callControlSectionLabel {
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(232,229,224,0.36);
+  color: rgb(232 229 224 / 36%);
   padding-left: 6px;
 }
+
 .callControlGroup {
   display: flex;
   gap: 8px;
@@ -317,7 +334,7 @@
   width: 62px;
   height: 62px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   border: none;
   cursor: pointer;
   display: flex;
@@ -334,33 +351,33 @@
 }
 
 .callCtrlBtn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(255 255 255 / 14%);
 }
 
 .callCtrlBtnActive {
-  background: rgba(181, 255, 77, 0.15);
-  border: 1px solid rgba(181, 255, 77, 0.4);
+  background: rgb(181 255 77 / 15%);
+  border: 1px solid rgb(181 255 77 / 40%);
   color: #b5ff4d;
 }
 
 .callCtrlBtnActive:hover {
-  background: rgba(181, 255, 77, 0.22);
+  background: rgb(181 255 77 / 22%);
 }
 
 .callCtrlBtnDanger {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgb(239 68 68 / 15%);
+  border: 1px solid rgb(239 68 68 / 40%);
   color: #f87171;
 }
 
 .callCtrlBtnDanger:hover {
-  background: rgba(239, 68, 68, 0.25);
+  background: rgb(239 68 68 / 25%);
 }
 
 .callCtrlLabel {
   font-size: 0.63rem;
   font-weight: 600;
-  color: rgba(232,229,224,0.68);
+  color: rgb(232 229 224 / 68%);
   line-height: 1;
 }
 
@@ -388,6 +405,7 @@
   align-items: center;
   justify-content: center;
 }
+
 .callLeaveBtn {
   width: 62px;
   min-width: 62px;
@@ -398,6 +416,7 @@
   justify-content: center;
   height: 62px;
 }
+
 .callLeaveSection {
   display: flex;
   flex-direction: column;
@@ -405,7 +424,7 @@
   padding-left: 4px;
   margin-left: -6px;
   margin-right: 2px;
-  border-left: 1px solid rgba(255,255,255,0.08);
+  border-left: 1px solid rgb(255 255 255 / 8%);
 }
 
 /* Slide-in panel */
@@ -416,7 +435,7 @@
   height: 100%;
   width: 320px;
   background: linear-gradient(180deg, #111118, #0d1018);
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 1px solid rgb(255 255 255 / 6%);
   transform: translateX(100%);
   transition: transform 0.25s ease;
   z-index: 30;
@@ -434,7 +453,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgb(255 255 255 / 6%);
   flex-shrink: 0;
 }
 
@@ -453,13 +472,13 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: rgba(232, 229, 224, 0.5);
+  color: rgb(232 229 224 / 50%);
   border-radius: 6px;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
 .callPanelClose:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: #e8e5e0;
 }
 
@@ -474,7 +493,7 @@
 
 .callPanelInput {
   padding: 12px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgb(255 255 255 / 6%);
   flex-shrink: 0;
   display: flex;
   gap: 8px;
@@ -483,8 +502,8 @@
 
 .callPanelInputField {
   flex: 1;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 12px;
   color: #e8e5e0;
   font-size: 0.82rem;
@@ -497,7 +516,7 @@
 }
 
 .callPanelInputField:focus {
-  border-color: rgba(181, 255, 77, 0.3);
+  border-color: rgb(181 255 77 / 30%);
 }
 
 .callPanelSendBtn {
@@ -526,8 +545,8 @@
 
 /* Chat messages */
 .chatMsg {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 5%);
   border-radius: 14px;
   padding: 10px 12px;
   font-size: 0.8rem;
@@ -537,14 +556,14 @@
 }
 
 .chatMsgMine {
-  background: rgba(181, 255, 77, 0.1);
-  border-color: rgba(181,255,77,0.22);
+  background: rgb(181 255 77 / 10%);
+  border-color: rgb(181 255 77 / 22%);
   align-self: flex-end;
 }
 
 .chatMsgName {
   font-size: 0.7rem;
-  color: rgba(232, 229, 224, 0.5);
+  color: rgb(232 229 224 / 50%);
   margin-bottom: 2px;
   font-weight: 600;
 }
@@ -558,9 +577,9 @@
 .transcriptLine {
   font-size: 0.78rem;
   line-height: 1.6;
-  color: rgba(232, 229, 224, 0.7);
+  color: rgb(232 229 224 / 70%);
   padding: 4px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .transcriptLinePending {
@@ -578,8 +597,8 @@
 .notesTextarea {
   width: 100%;
   flex: 1;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: rgb(255 255 255 / 3%);
+  border: 1px solid rgb(255 255 255 / 6%);
   border-radius: 14px;
   color: #e8e5e0;
   resize: none;
@@ -596,13 +615,13 @@
   align-items: center;
   justify-content: space-between;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgb(255 255 255 / 6%);
   flex-shrink: 0;
 }
 
 .notesCharCount {
   font-size: 0.7rem;
-  color: rgba(232, 229, 224, 0.4);
+  color: rgb(232 229 224 / 40%);
 }
 
 .notesSaveBtn {
@@ -641,8 +660,8 @@
   align-items: center;
   gap: 5px;
   padding: 4px 8px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgb(239 68 68 / 15%);
+  border: 1px solid rgb(239 68 68 / 35%);
   border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -657,8 +676,8 @@
   align-items: center;
   gap: 5px;
   padding: 4px 8px;
-  background: rgba(181, 255, 77, 0.1);
-  border: 1px solid rgba(181, 255, 77, 0.3);
+  background: rgb(181 255 77 / 10%);
+  border: 1px solid rgb(181 255 77 / 30%);
   border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -693,7 +712,7 @@
   bottom: 80px;
   left: 16px;
   background: #1a1a24;
-  border: 1px solid rgba(181, 255, 77, 0.4);
+  border: 1px solid rgb(181 255 77 / 40%);
   padding: 12px 16px;
   border-radius: 10px;
   max-width: 300px;
@@ -706,6 +725,7 @@
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -739,11 +759,11 @@
   gap: 8px;
   padding: 12px;
   background: #111118;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 18px;
   overflow-y: auto;
   z-index: 12;
-  box-shadow: 0 24px 48px rgba(0,0,0,0.35);
+  box-shadow: 0 24px 48px rgb(0 0 0 / 35%);
   cursor: default;
 }
 
@@ -765,7 +785,7 @@
 .participantsSidebarTitle {
   font-size: 0.72rem;
   font-weight: 700;
-  color: rgba(232, 229, 224, 0.4);
+  color: rgb(232 229 224 / 40%);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 4px 0 8px;
@@ -782,9 +802,9 @@
   gap: 10px;
   padding: 12px 14px;
   background: #111118;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0,0,0,0.35);
+  box-shadow: 0 24px 48px rgb(0 0 0 / 35%);
   z-index: 12;
 }
 
@@ -796,7 +816,7 @@
 
 .participantsSidebarMiniMeta {
   font-size: 0.72rem;
-  color: rgba(232, 229, 224, 0.6);
+  color: rgb(232 229 224 / 60%);
   margin-top: 2px;
 }
 
@@ -811,10 +831,11 @@
 }
 
 .participantItem:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
+
 .callWorkspaceRail {
-  border-left: 1px solid rgba(255,255,255,0.06);
+  border-left: 1px solid rgb(255 255 255 / 6%);
   background: #0f1118;
   padding: 16px;
   display: flex;
@@ -822,31 +843,36 @@
   gap: 12px;
   overflow-y: auto;
 }
+
 .callWorkspaceCard {
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.06);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid rgb(255 255 255 / 6%);
+  background: rgb(255 255 255 / 3%);
   padding: 14px;
 }
+
 .callWorkspaceTitle {
   font-size: 0.76rem;
   font-weight: 700;
   color: #f5f4f0;
   margin-bottom: 10px;
 }
+
 .callWorkspaceList {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .callWorkspaceItem {
   display: flex;
   gap: 8px;
   align-items: flex-start;
   font-size: 0.76rem;
   line-height: 1.55;
-  color: rgba(232,229,224,0.72);
+  color: rgb(232 229 224 / 72%);
 }
+
 .callWorkspaceDot {
   width: 7px;
   height: 7px;
@@ -855,63 +881,73 @@
   background: #b5ff4d;
   flex-shrink: 0;
 }
+
 .callWorkspaceActions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
+
 .callWorkspaceInlineActions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
+
 .callWorkspaceBtn {
   height: 34px;
   padding: 0 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 4%);
   color: #e8e5e0;
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
 }
+
 .callWorkspaceBtnActive {
-  background: rgba(181,255,77,0.14);
-  border-color: rgba(181,255,77,0.34);
+  background: rgb(181 255 77 / 14%);
+  border-color: rgb(181 255 77 / 34%);
   color: #b5ff4d;
 }
+
 .callDetailRow {
   display: flex;
   justify-content: space-between;
   gap: 10px;
   padding: 6px 0;
   font-size: 0.74rem;
-  color: rgba(232,229,224,0.6);
+  color: rgb(232 229 224 / 60%);
 }
+
 .callDetailRow strong {
   color: #f5f4f0;
   font-weight: 700;
 }
 
-@media (max-width: 1100px) {
+@media (width <= 1100px) {
   .callBody {
     grid-template-columns: 1fr;
   }
+
   .callWorkspaceRail {
     display: none;
   }
+
   .callSelfView {
     right: 16px;
     top: 96px;
   }
+
   .participantsSidebar {
     right: 16px;
     left: 16px;
     width: auto;
     max-height: min(420px, calc(100vh - 120px));
   }
+
   .participantsSidebarMini {
     left: 16px;
     right: 16px;
@@ -920,46 +956,55 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (width <= 720px) {
   .callHeader {
     flex-wrap: wrap;
   }
+
   .callHeaderBadges {
     margin-left: 0;
     width: 100%;
   }
+
   .callHeaderActions {
     width: 100%;
   }
+
   .callControls {
     gap: 8px;
     padding: 10px 12px;
     flex-wrap: wrap;
     justify-content: flex-start;
   }
+
   .callControlSection,
   .callLeaveSection {
     width: 100%;
   }
+
   .callControlGroup {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
   }
+
   .callCtrlBtn {
     width: 58px;
     height: 58px;
   }
+
   .callSelfView {
     width: 148px;
     height: 84px;
     top: 124px;
     right: 12px;
   }
+
   .callLeaveSection {
     border-left: 0;
     padding-left: 0;
   }
+
   .callLeaveBtn {
     width: 100%;
   }
@@ -990,6 +1035,6 @@
 
 .participantLocal {
   font-size: 0.68rem;
-  color: rgba(232, 229, 224, 0.4);
+  color: rgb(232 229 224 / 40%);
   margin-top: 1px;
 }

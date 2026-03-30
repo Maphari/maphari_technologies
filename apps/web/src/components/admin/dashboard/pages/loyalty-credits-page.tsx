@@ -10,6 +10,7 @@ import { toneClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { loadLoyaltyAccountsWithRefresh, type AdminLoyaltyAccount } from "../../../../lib/api/admin";
 import { saveSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types & helpers ────────────────────────────────────────────────────────────
 type Tab = "members" | "credit log" | "rules" | "redemptions";
@@ -102,14 +103,27 @@ export function LoyaltyCreditsPage({ session }: { session: AuthSession | null })
     );
   }
 
+  const creditsByMonth = [
+    { label: "Jan", count: 0 },
+    { label: "Feb", count: 0 },
+    { label: "Mar", count: totalIssued },
+  ];
+
+  const tableRows = members.map((m) => ({
+    client:      m.client,
+    tier:        m.tier,
+    balance:     `${m.balance.toLocaleString()} pts`,
+    earned:      `${m.earned.toLocaleString()} pts`,
+    lastActivity: m.lastActivity,
+  }));
+
   return (
-    <div className={cx(styles.pageBody)}>
-      {/* ── Header ── */}
+    <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
-          <h1 className={styles.pageTitle}>Loyalty & Credits</h1>
-          <div className={styles.pageSub}>Manage client credit balances, tiers, and redemptions</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / LOYALTY</div>
+          <h1 className={styles.pageTitle}>Loyalty Credits</h1>
+          <div className={styles.pageSub}>Credits issued · Redemption rate · Program health</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export</button>
@@ -117,88 +131,54 @@ export function LoyaltyCreditsPage({ session }: { session: AuthSession | null })
         </div>
       </div>
 
-      {/* ── KPI Grid ── */}
-      <div className={styles.cjKpiGrid}>
-        {[
-          { label: "Credits Issued",       value: `${(totalIssued / 1000).toFixed(0)}k pts`,   sub: "All time",              color: "var(--red)"   },
-          { label: "Active Members",        value: String(activeMembers),                         sub: "With credit balance",   color: "var(--accent)"},
-          { label: "Redeemed",             value: `${(totalRedeemed / 1000).toFixed(1)}k pts`,  sub: "Applied to accounts",   color: "var(--amber)" },
-          { label: "Pending Approval",     value: String(pendingCount),                           sub: "Credit requests",       color: "var(--blue)"  },
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.cjKpiCard, toneClass(k.color))}>
-            <div className={styles.cjKpiLabel}>{k.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.cjKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Total Credits Issued" value={`${(totalIssued / 1000).toFixed(0)}k pts`} sub="All time" tone="accent" />
+        <StatWidget label="Redeemed" value={`${(totalRedeemed / 1000).toFixed(1)}k pts`} sub="Applied to accounts" subTone="up" tone="green" />
+        <StatWidget label="Pending" value={pendingCount} sub="Credit requests" tone={pendingCount > 0 ? "amber" : "default"} />
+        <StatWidget label="Program Participants" value={activeMembers} sub="With credit balance" tone="default" />
+      </WidgetGrid>
 
-      {/* ── Tab bar ── */}
-      <div className={styles.teamFilters}>
-        {tabs.map((t) => (
-          <button key={t} type="button" className={cx("btnSm", activeTab === t ? "btnAccent" : "btnGhost")} onClick={() => setActiveTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Credits Issued by Month"
+          data={creditsByMonth}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Credit Status"
+          stages={[
+            { label: "Issued",   count: totalIssued,   total: Math.max(totalIssued, 1),   color: "#8b6fff" },
+            { label: "Pending",  count: pendingCount,  total: Math.max(totalIssued, 1),   color: "#f5a623" },
+            { label: "Redeemed", count: totalRedeemed, total: Math.max(totalIssued, 1),   color: "#34d98b" },
+            { label: "Expired",  count: 0,             total: Math.max(totalIssued, 1),   color: "#888"    },
+          ]}
+        />
+      </WidgetGrid>
 
-      {/* ── Members table ── */}
-      {activeTab === "members" ? (
-        <div className={styles.teamSection}>
-          <div className={styles.teamSectionHeader}>
-            <span className={styles.teamSectionTitle}>Client Members</span>
-            <span className={styles.teamSectionMeta}>{members.length} CLIENTS</span>
-          </div>
-          <div className={styles.loyHead}>
-            {["Client", "Tier", "Balance", "Earned (All-time)", "Last Activity", "Actions"].map((h) => (
-              <span key={h}>{h}</span>
-            ))}
-          </div>
-          {members.length === 0 ? (
-            <div className={cx("colorMuted", "text12", "textCenter", "py24")}>No loyalty members yet.</div>
-          ) : null}
-          {members.map((m) => (
-            <div key={m.id} className={styles.loyRow}>
-              <span className={cx("fw600", "text13")}>{m.client}</span>
-              <span className={cx("badge", tierBadge(m.tier))}>{m.tier}</span>
-              <span className={cx("fontMono", "fw700", "colorAccent")}>{m.balance.toLocaleString()} pts</span>
-              <span className={cx("fontMono", "text12", "colorMuted")}>{m.earned.toLocaleString()} pts</span>
-              <span className={cx("text12", "colorMuted")}>{m.lastActivity}</span>
-              <div className={cx("flexRow", "gap6")}>
-                <button type="button" className={cx("btnSm", "btnGhost")}>View History</button>
-                <button type="button" className={cx("btnSm", "btnGhost")}>Adjust</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : activeTab === "credit log" ? (
-        <div className={styles.teamSection}>
-          <div className={styles.teamSectionHeader}>
-            <span className={styles.teamSectionTitle}>Credit Log</span>
-            <span className={styles.teamSectionMeta}>{creditLog.length} ITEMS</span>
-          </div>
-          {creditLog.length === 0 ? (
-            <div className={cx("colorMuted", "text12", "textCenter", "py24")}>No transactions yet.</div>
-          ) : creditLog.map((t) => (
-            <div key={t.id} className={cx(styles.loyRow)}>
-              <span className={cx("fw600", "text13")}>{t.clientLabel}</span>
-              <span className={cx("badge", t.type === "EARNED" ? "badgeGreen" : t.type === "REDEEMED" ? "badgeAmber" : "badge")}>{t.type}</span>
-              <span className={cx("fontMono", "fw700", t.type === "REDEEMED" ? "colorAmber" : "colorAccent")}>{t.type === "REDEEMED" ? "-" : "+"}{t.points.toLocaleString()} pts</span>
-              <span className={cx("text12", "colorMuted")}>{t.description ?? "—"}</span>
-              <span className={cx("text12", "colorMuted")}>{new Date(t.createdAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}</span>
-              <span />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className={styles.teamSection}>
-          <div className={styles.teamSectionHeader}>
-            <span className={styles.teamSectionTitle}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
-            <span className={styles.teamSectionMeta}>0 ITEMS</span>
-          </div>
-          <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No data available for this view yet.</div>
-        </div>
-      )}
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Loyalty Members"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "client",      header: "Client" },
+            { key: "tier",        header: "Tier", render: (v) => {
+              const val = v as string;
+              const cls = tierBadge(val);
+              return <span className={cx("badge", cls)}>{val}</span>;
+            }},
+            { key: "balance",     header: "Balance",    align: "right" },
+            { key: "earned",      header: "Earned",     align: "right" },
+            { key: "lastActivity", header: "Last Activity", align: "right" },
+          ]}
+          emptyMessage="No loyalty members yet"
+        />
+      </WidgetGrid>
     </div>
   );
 }

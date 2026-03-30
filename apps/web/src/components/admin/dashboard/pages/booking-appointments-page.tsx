@@ -8,6 +8,7 @@ import { saveSession } from "../../../../lib/auth/session";
 import { loadAllAppointmentsWithRefresh, type AdminAppointment } from "../../../../lib/api/admin/client-ops";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
 import { loadAdminCalendarEventsWithRefresh, type CalendarEvent } from "../../../../lib/api/admin/calendar";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type MeetingType = "Consultation" | "Kickoff" | "Review" | "Check-in";
 type MeetingStatus = "confirmed" | "pending" | "rescheduled";
@@ -170,13 +171,29 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
     );
   }
 
+  const meetingsByType = [
+    { label: "Consultation", count: meetings.filter(m => m.type === "Consultation").length },
+    { label: "Kickoff",      count: meetings.filter(m => m.type === "Kickoff").length },
+    { label: "Review",       count: meetings.filter(m => m.type === "Review").length },
+    { label: "Check-in",     count: meetings.filter(m => m.type === "Check-in").length },
+  ];
+
+  const tableRows = filtered.map(m => ({
+    client:   m.client,
+    type:     m.type,
+    date:     m.date,
+    time:     m.time,
+    duration: m.duration,
+    status:   m.status,
+  }));
+
   return (
-    <div className={cx(styles.pageBody)}>
+    <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / BOOKING</div>
           <h1 className={styles.pageTitle}>Booking &amp; Appointments</h1>
-          <div className={styles.pageSub}>Manage client meetings, consultations, and scheduled calls</div>
+          <div className={styles.pageSub}>Upcoming meetings · Pending confirmations · Calendar view</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export Schedule</button>
@@ -184,117 +201,108 @@ export function BookingAppointmentsPage({ session }: { session: AuthSession | nu
         </div>
       </div>
 
-      <div className={styles.cjKpiGrid}>
-        {[
-          { label: "Today",                value: String(todayCount),    sub: "Meetings today",    color: "var(--accent)" },
-          { label: "This Week",            value: String(weekCount),     sub: "Scheduled",         color: "var(--blue)"   },
-          { label: "Pending Confirmation", value: String(pendingCount),  sub: "Awaiting response", color: "var(--amber)"  },
-          { label: "Cancelled",            value: String(cancelledCount), sub: "Rescheduled",      color: "var(--red)"    },
-        ].map(k => (
-          <div key={k.label} className={cx(styles.cjKpiCard, toneClass(k.color))}>
-            <div className={styles.cjKpiLabel}>{k.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.cjKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Today's Meetings" value={todayCount} sub="Confirmed today" tone="accent" />
+        <StatWidget label="Total Scheduled" value={weekCount} sub="All appointments" tone="default" />
+        <StatWidget label="Pending Confirmation" value={pendingCount} sub="Awaiting response" tone={pendingCount > 0 ? "amber" : "default"} />
+        <StatWidget label="Rescheduled" value={cancelledCount} sub="Moved" tone={cancelledCount > 0 ? "red" : "default"} />
+      </WidgetGrid>
 
-      <div className={styles.teamFilters}>
-        {tabs.map(t => (
-          <button
-            key={t}
-            type="button"
-            className={cx("btnSm", activeTab === t ? "btnAccent" : "btnGhost")}
-            onClick={() => setActiveTab(t)}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Meetings by Type"
+          data={meetingsByType}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Appointment Pipeline"
+          stages={[
+            { label: "Requested", count: meetings.length,   total: Math.max(meetings.length, 1), color: "#8b6fff" },
+            { label: "Confirmed", count: meetings.filter(m => m.status === "confirmed").length, total: Math.max(meetings.length, 1), color: "#34d98b" },
+            { label: "Pending",   count: pendingCount,      total: Math.max(meetings.length, 1), color: "#f5a623" },
+            { label: "Past",      count: meetings.filter(m => m.scheduledMs < NOW - 86_400_000).length, total: Math.max(meetings.length, 1), color: "#888" },
+          ]}
+        />
+      </WidgetGrid>
 
-      <div className={styles.teamSection}>
-        <div className={styles.teamSectionHeader}>
-          <span className={styles.teamSectionTitle}>
-            {activeTab === "upcoming" ? "Upcoming Appointments"
-              : activeTab === "pending" ? "Pending Confirmation"
-              : activeTab === "past"    ? "Past Meetings"
-              : activeTab === "calendar" ? "Calendar — Next 60 Days"
-              : "Settings"}
-          </span>
-          {activeTab !== "calendar" && (
-            <span className={styles.teamSectionMeta}>{filtered.length} MEETINGS</span>
-          )}
+      {/* Row 3 — Table with tab filter */}
+      <WidgetGrid>
+        <div className={styles.teamFilters}>
+          {tabs.map(t => (
+            <button
+              key={t}
+              type="button"
+              className={cx("btnSm", activeTab === t ? "btnAccent" : "btnGhost")}
+              onClick={() => setActiveTab(t)}
+            >
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
         </div>
+      </WidgetGrid>
 
-        {activeTab === "settings" ? (
+      {activeTab === "calendar" ? (
+        <WidgetGrid>
+          <div className={styles.teamSection}>
+            <div className={styles.teamSectionHeader}>
+              <span className={styles.teamSectionTitle}>Calendar — Next 60 Days</span>
+            </div>
+            {calendarLoading ? (
+              <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading calendar…</div>
+            ) : calendarEvents.length === 0 ? (
+              <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No events in the next 60 days.</div>
+            ) : (
+              <div className={cx("flexCol", "gap4")}>
+                {Array.from(groupByDate(calendarEvents)).map(([dateLabel, dayEvents]) => (
+                  <div key={dateLabel}>
+                    <div className={cx("text11", "colorMuted", "fw600", "p12", "bb1")}>{dateLabel}</div>
+                    {dayEvents.map(ev => (
+                      <div key={ev.id} className={cx("flexRow", "gap8", "p12", "alignCenter", "bb1")}>
+                        <span className={cx("badge", calendarEventTypeBadge(ev.type))}>{calendarEventTypeLabel(ev.type)}</span>
+                        <span className={cx("text13", "fw500", "flex1")}>{ev.title}</span>
+                        {ev.clientName && <span className={cx("text12", "colorMuted")}>{ev.clientName}</span>}
+                        {ev.projectName && <span className={cx("text12", "colorMuted")}>{ev.projectName}</span>}
+                        {ev.status && <span className={cx("badge", "badgeMuted")}>{ev.status}</span>}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </WidgetGrid>
+      ) : activeTab === "settings" ? (
+        <WidgetGrid>
           <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
             Booking settings are managed in the platform configuration.
           </div>
-        ) : activeTab === "calendar" ? (
-          calendarLoading ? (
-            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>Loading calendar…</div>
-          ) : calendarEvents.length === 0 ? (
-            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No events in the next 60 days.</div>
-          ) : (
-            <div className={cx("flexCol", "gap4")}>
-              {Array.from(groupByDate(calendarEvents)).map(([dateLabel, dayEvents]) => (
-                <div key={dateLabel}>
-                  <div className={cx("text11", "colorMuted", "fw600", "p12", "bb1")}>{dateLabel}</div>
-                  {dayEvents.map(ev => (
-                    <div key={ev.id} className={cx("flexRow", "gap8", "p12", "alignCenter", "bb1")}>
-                      <span className={cx("badge", calendarEventTypeBadge(ev.type))}>{calendarEventTypeLabel(ev.type)}</span>
-                      <span className={cx("text13", "fw500", "flex1")}>{ev.title}</span>
-                      {ev.clientName && <span className={cx("text12", "colorMuted")}>{ev.clientName}</span>}
-                      {ev.projectName && <span className={cx("text12", "colorMuted")}>{ev.projectName}</span>}
-                      {ev.status && <span className={cx("badge", "badgeMuted")}>{ev.status}</span>}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )
-        ) : (
-          <>
-            <div className={styles.bkngHead}>
-              {["Client", "Type", "Date", "Time", "Owner", "Duration", "Status", "Actions"].map(h => (
-                <span key={h}>{h}</span>
-              ))}
-            </div>
-            {filtered.length === 0 ? (
-              <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No meetings in this view.</div>
-            ) : (
-              filtered.map(m => (
-                <div key={m.id} className={styles.bkngRow}>
-                  <span className={cx("fw600", "text13")}>{m.client}</span>
-                  <span className={cx("text12", "colorMuted")}>{m.type}</span>
-                  <span className={cx("fontMono", "text12")}>{m.date}</span>
-                  <span className={cx("fontMono", "text12")}>{m.time}</span>
-                  <span className={cx("text12", "colorMuted")}>{m.owner}</span>
-                  <span className={cx("text12", "colorMuted")}>{m.duration}</span>
-                  <span className={cx("badge", statusBadge(m.status))}>{m.status}</span>
-                  <div className={cx("flexRow", "gap6")}>
-                    {m.status === "pending" && (
-                      <button type="button" className={cx("btnSm", "btnAccent")}>Confirm</button>
-                    )}
-                    {m.videoRoomUrl ? (
-                      <button
-                        type="button"
-                        className={cx("btnSm", styles.btnJoinCall)}
-                        onClick={() => window.open(m.videoRoomUrl!, "_blank", "noopener,noreferrer")}
-                      >
-                        Join Call
-                      </button>
-                    ) : (
-                      <span className={cx("badge", "badgeMuted")}>No video room</span>
-                    )}
-                    <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
-                  </div>
-                </div>
-              ))
-            )}
-          </>
-        )}
-      </div>
+        </WidgetGrid>
+      ) : (
+        <WidgetGrid>
+          <TableWidget
+            label={activeTab === "upcoming" ? "Upcoming Appointments" : activeTab === "pending" ? "Pending Confirmation" : "Past Meetings"}
+            rows={tableRows as Record<string, unknown>[]}
+            columns={[
+              { key: "client",   header: "Client" },
+              { key: "type",     header: "Type" },
+              { key: "date",     header: "Date",     align: "right" },
+              { key: "time",     header: "Time",     align: "right" },
+              { key: "duration", header: "Duration", align: "right" },
+              { key: "status",   header: "Status",   align: "right", render: (v) => {
+                const val = v as MeetingStatus;
+                const cls = statusBadge(val);
+                return <span className={cx("badge", cls)}>{val}</span>;
+              }},
+            ]}
+            emptyMessage="No meetings in this view"
+          />
+        </WidgetGrid>
+      )}
     </div>
   );
 }

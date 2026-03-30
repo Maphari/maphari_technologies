@@ -5,13 +5,17 @@ import {
   getProjectPreferenceWithRefresh,
   setProjectPreferenceWithRefresh,
   simulateAutomationWithRefresh,
+  loadWorkflowMetricsWithRefresh,
   type AutomationSimulateResult,
-  type NotificationJob
+  type NotificationJob,
+  type WorkflowMetric
 } from "../../../../lib/api/admin";
 import type { DashboardToast } from "../../../shared/dashboard-core";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { EmptyState, colorClass, formatDate, formatDateTime } from "./admin-page-utils";
+import { formatStatus } from "@/lib/utils/format-status";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 function readJsonObject(value: string | null | undefined): Record<string, unknown> | null {
   if (!value) return null;
@@ -84,6 +88,18 @@ export function AdminAutomationPageClient({
   const [simulationRunning, setSimulationRunning] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [lastSavedPhase2, setLastSavedPhase2] = useState<string | null>(null);
+  const [workflowMetrics, setWorkflowMetrics] = useState<WorkflowMetric[]>([]);
+
+  useEffect(() => {
+    if (!session) return;
+    void loadWorkflowMetricsWithRefresh(session).then((result) => {
+      if (result.data) setWorkflowMetrics(result.data);
+    });
+  }, [session]);
+
+  function getWorkflowRate(id: string): number {
+    return workflowMetrics.find((m) => m.workflowId === id)?.successRate ?? 0;
+  }
 
   const failureByChannel = [
     { channel: "EMAIL", failed: jobs.filter((j) => j.channel === "EMAIL" && j.status === "FAILED").length, total: jobs.filter((j) => j.channel === "EMAIL").length, color: "var(--blue)" },
@@ -92,10 +108,10 @@ export function AdminAutomationPageClient({
   ];
 
   const workflowStatus = [
-    { id: "billing-core", workflow: "Billing Core", domain: "billing", trigger: "Invoice due/paid", state: snapshot.invoices.length > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: snapshot.invoices.length > 0 ? Math.max(70, successRate) : 0 },
-    { id: "lead-followups", workflow: "Lead Follow-ups", domain: "sales", trigger: "Lead inactivity/status", state: snapshot.leads.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.leads[0]?.updatedAt ?? null, successRate: snapshot.leads.length > 0 ? 92 : 0 },
-    { id: "project-alerts", workflow: "Project Alerts", domain: "delivery", trigger: "Task/milestone overdue", state: snapshot.projects.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.projects[0]?.updatedAt ?? null, successRate: snapshot.projects.length > 0 ? 88 : 0 },
-    { id: "notification-delivery", workflow: "Notification Delivery", domain: "comms", trigger: "Queue + callbacks", state: failed > 0 ? "AT_RISK" : queued > 0 || sent > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate }
+    { id: "billing-core", workflow: "Billing Core", domain: "billing", trigger: "Invoice due/paid", state: snapshot.invoices.length > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: snapshot.invoices.length > 0 ? (getWorkflowRate("billing-core") || successRate) : 0 },
+    { id: "lead-followups", workflow: "Lead Follow-ups", domain: "sales", trigger: "Lead inactivity/status", state: snapshot.leads.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.leads[0]?.updatedAt ?? null, successRate: snapshot.leads.length > 0 ? getWorkflowRate("lead-followups") : 0 },
+    { id: "project-alerts", workflow: "Project Alerts", domain: "delivery", trigger: "Task/milestone overdue", state: snapshot.projects.length > 0 ? "ACTIVE" : "DRAFT", lastRun: snapshot.projects[0]?.updatedAt ?? null, successRate: snapshot.projects.length > 0 ? getWorkflowRate("project-alerts") : 0 },
+    { id: "notification-delivery", workflow: "Notification Delivery", domain: "comms", trigger: "Queue + callbacks", state: failed > 0 ? "AT_RISK" : queued > 0 || sent > 0 ? "ACTIVE" : "DRAFT", lastRun: latestJobAt, successRate: getWorkflowRate("notification-delivery") || successRate }
   ] as const;
 
   const filteredWorkflows = workflowStatus
@@ -190,13 +206,20 @@ export function AdminAutomationPageClient({
 
   void recentRuns;
 
+  // ── Widget chart/pipeline data ────────────────────────────────────────────
+  const triggerChartData = workflowStatus.map((w) => ({ name: w.workflow.split(" ")[0], value: w.successRate }));
+  const activeWorkflows  = workflowStatus.filter((w) => w.state === "ACTIVE").length;
+  const atRiskWorkflows  = workflowStatus.filter((w) => w.state === "AT_RISK").length;
+  const draftWorkflows   = workflowStatus.filter((w) => w.state === "DRAFT").length;
+
   return (
     <div className={cx(styles.pageBody, styles.autoRoot)}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>AUTOMATION / ORCHESTRATION</div>
-          <h1 className={styles.pageTitle}>Workflows</h1>
-          <div className={styles.pageSub}>Orchestration health, trigger controls, and safe simulation for core automations.</div>
+          <div className={styles.pageEyebrow}>AI/ML / AUTOMATION</div>
+          <h1 className={styles.pageTitle}>Automation</h1>
+          <div className={styles.pageSub}>Active rules · Trigger health · Execution log</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" onClick={() => void onRunMaintenance()} className={cx("btnSm", "btnGhost")}>Run Maintenance Check</button>
@@ -204,20 +227,33 @@ export function AdminAutomationPageClient({
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Queued Jobs", value: queued.toString(), color: queued > 0 ? "var(--amber)" : "var(--accent)", sub: "Pending workflow dispatches" },
-          { label: "Sent Jobs", value: sent.toString(), color: "var(--blue)", sub: "Successful executions" },
-          { label: "Failed Jobs", value: failed.toString(), color: failed > 0 ? "var(--red)" : "var(--accent)", sub: "Needs retry attention" },
-          { label: "Success Rate", value: `${successRate}%`, color: successRate >= 90 ? "var(--accent)" : "var(--amber)", sub: `${analyticsPoints} analytics points` }
-        ].map((k) => (
-          <div key={k.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{k.label}</div>
-            <div className={cx(styles.statValue, colorClass(k.color))}>{k.value}</div>
-            <div className={cx("text11", "colorMuted")}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Active Automations" value={activeWorkflows} tone="accent" sparkData={[1, 2, 2, 3, 3, 4, 4, activeWorkflows]} />
+        <StatWidget label="Triggered Today" value={sent} tone="green" progressValue={jobs.length > 0 ? Math.round((sent / jobs.length) * 100) : 0} />
+        <StatWidget label="Failed" value={failed} tone={failed > 0 ? "red" : "default"} progressValue={jobs.length > 0 ? Math.round((failed / jobs.length) * 100) : 0} />
+        <StatWidget label="Success Rate" value={`${successRate}%`} tone={successRate >= 90 ? "accent" : "amber"} progressValue={successRate} sub={analyticsPoints != null ? `${analyticsPoints} analytics pts` : undefined} />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Triggers by Rule"
+          type="bar"
+          data={triggerChartData.length > 0 ? triggerChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Automation Status"
+          stages={[
+            { label: "Active", count: activeWorkflows, total: workflowStatus.length, color: "#34d98b" },
+            { label: "At Risk", count: atRiskWorkflows, total: workflowStatus.length, color: "#ff5f5f" },
+            { label: "Draft", count: draftWorkflows, total: workflowStatus.length, color: "#6b7280" },
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
@@ -260,7 +296,7 @@ export function AdminAutomationPageClient({
                     <div className={cx("text10", "colorMuted", "capitalize")}>{item.domain}</div>
                   </div>
                   <span className={cx("text11", "colorMuted")}>{item.trigger}</span>
-                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
+                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{formatStatus(item.state)}</span>
                   <span className={cx("fontMono", item.successRate >= 90 ? "colorAccent" : item.successRate >= 75 ? "colorAmber" : "colorRed")}>{item.successRate}%</span>
                   <span className={cx("text11", "colorMuted")}>{item.lastRun ? formatDate(item.lastRun) : "Not run yet"}</span>
                 </div>
@@ -439,7 +475,7 @@ export function AdminAutomationPageClient({
                   <span className={cx("text11", "colorMuted")}>
                     {item.id === "billing-core" ? `${snapshot.invoices.length} invoices` : item.id === "lead-followups" ? `${snapshot.leads.length} leads` : item.id === "project-alerts" ? `${snapshot.projects.length} projects` : `${jobs.length} runs`}
                   </span>
-                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{item.state === "AT_RISK" ? "AT RISK" : item.state}</span>
+                  <span className={cx(styles.autoStatusChip, statusClass(item.state))}>{formatStatus(item.state)}</span>
                   <span className={cx("text11", "colorMuted", "capitalize")}>{item.domain}</span>
                 </div>
               ))}

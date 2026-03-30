@@ -637,4 +637,60 @@ export async function registerContractRoutes(app: FastifyInstance): Promise<void
       return { success: false, error: { code: "CONTRACT_DOWNLOAD_FAILED", message: "Unable to get contract file." } } as ApiResponse;
     }
   });
+
+  // ── POST /contracts/:id/renewal-proposals ─────────────────────────────────
+  app.post("/contracts/:id/renewal-proposals", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role !== "ADMIN") {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Only admins can create renewal proposals." } } as ApiResponse;
+    }
+
+    const { id } = request.params as { id: string };
+    const body = request.body as { adminId?: string; proposedTerms?: unknown };
+
+    try {
+      const contract = await prisma.clientContract.findUnique({ where: { id } });
+      if (!contract) {
+        reply.status(404);
+        return { success: false, error: { code: "NOT_FOUND", message: "Contract not found." } } as ApiResponse;
+      }
+
+      const proposal = await prisma.contractRenewalProposal.create({
+        data: {
+          contractId: id,
+          sentByAdminId: body.adminId ?? scope.userId ?? null,
+          proposedTerms: body.proposedTerms ? (body.proposedTerms as object) : undefined,
+        }
+      });
+
+      return { success: true, data: proposal, meta: { requestId: scope.requestId } } as ApiResponse<typeof proposal>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "RENEWAL_PROPOSAL_CREATE_FAILED", message: "Unable to create renewal proposal." } } as ApiResponse;
+    }
+  });
+
+  // ── GET /contracts/:id/renewal-proposals ──────────────────────────────────
+  app.get("/contracts/:id/renewal-proposals", async (request, reply) => {
+    const scope = readScopeHeaders(request);
+    if (scope.role === "CLIENT") {
+      reply.status(403);
+      return { success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse;
+    }
+
+    const { id } = request.params as { id: string };
+
+    try {
+      const proposals = await prisma.contractRenewalProposal.findMany({
+        where: { contractId: id },
+        orderBy: { createdAt: "desc" }
+      });
+
+      return { success: true, data: proposals, meta: { requestId: scope.requestId } } as ApiResponse<typeof proposals>;
+    } catch (error) {
+      request.log.error(error);
+      return { success: false, error: { code: "RENEWAL_PROPOSALS_FETCH_FAILED", message: "Unable to fetch renewal proposals." } } as ApiResponse;
+    }
+  });
 }

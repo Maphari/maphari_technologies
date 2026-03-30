@@ -5,7 +5,9 @@ import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { loadClientBrandingWithRefresh, updateClientBrandingWithRefresh, type ClientBranding } from "../../../../lib/api/admin/clients";
+import { loadEmailTemplatesWithRefresh, loadCustomDomainsWithRefresh, type AdminEmailTemplate, type AdminCustomDomain } from "../../../../lib/api/admin/brand";
 import { saveSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 const brandTokens = {
   primary: "var(--accent)",
@@ -16,20 +18,7 @@ const brandTokens = {
   logoUrl: "MAPHARI",
 };
 
-const emailTemplates = [
-  { id: "welcome", name: "Client Welcome Email", lastEdited: "Jan 2026", status: "active", sentCount: 12 },
-  { id: "invoice", name: "Invoice Notification", lastEdited: "Feb 2026", status: "active", sentCount: 147 },
-  { id: "milestone", name: "Milestone Approved", lastEdited: "Dec 2025", status: "active", sentCount: 34 },
-  { id: "overdue", name: "Invoice Overdue Reminder", lastEdited: "Feb 2026", status: "active", sentCount: 18 },
-  { id: "report", name: "Monthly Report Delivery", lastEdited: "Jan 2026", status: "active", sentCount: 45 },
-  { id: "churn", name: "Renewal Reminder", lastEdited: "Nov 2025", status: "draft", sentCount: 0 },
-];
-
-const customDomains = [
-  { domain: "portal.maphari.co.za", type: "Client Portal", status: "active", ssl: true, verified: true },
-  { domain: "reports.maphari.co.za", type: "Report Delivery", status: "active", ssl: true, verified: true },
-  { domain: "app.maphari.co.za", type: "Staff Dashboard", status: "pending", ssl: false, verified: false },
-];
+// emailTemplates and customDomains are loaded dynamically from the API in BrandControlPage
 
 const whitelabelClients: { client: string; domain: string; logoApplied: boolean; colorOverride: boolean; status: string }[] = [];
 
@@ -299,6 +288,8 @@ export function BrandControlPage() {
   const [primary, setPrimary] = useState(brandTokens.primary);
   const [accent, setAccent] = useState(brandTokens.accent);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [emailTemplates, setEmailTemplates] = useState<AdminEmailTemplate[]>([]);
+  const [customDomains, setCustomDomains] = useState<AdminCustomDomain[]>([]);
 
   useEffect(() => {
     if (!rootRef.current) return;
@@ -306,11 +297,38 @@ export function BrandControlPage() {
     rootRef.current.style.setProperty("--brand-accent", accent);
   }, [primary, accent]);
 
+  useEffect(() => {
+    if (!session) return;
+    void loadEmailTemplatesWithRefresh(session).then((r) => {
+      if (r.nextSession) saveSession(r.nextSession);
+      if (!r.error && r.data) setEmailTemplates(r.data);
+    });
+    void loadCustomDomainsWithRefresh(session).then((r) => {
+      if (!r.error && r.data) setCustomDomains(r.data);
+    });
+  }, [session]);
+
+  const activeTemplates  = emailTemplates.filter(t => t.status === "active").length;
+  const draftTemplates   = emailTemplates.filter(t => t.status === "draft").length;
+  const sslDomains       = customDomains.filter(d => d.sslActive).length;
+
+  const templateStatusData = [
+    { label: "Active", count: activeTemplates },
+    { label: "Draft",  count: draftTemplates  },
+  ];
+
+  const tableRows = emailTemplates.map(t => ({
+    name:    t.name,
+    status:  t.status,
+    sent:    t.sentCount,
+    edited:  new Date(t.lastEditedAt).toLocaleDateString("en-ZA", { month: "short", year: "numeric" }),
+  }));
+
   return (
     <div ref={rootRef} className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / BRAND & WHITE-LABEL</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / BRAND</div>
           <h1 className={styles.pageTitle}>Brand Control</h1>
           <div className={styles.pageSub}>Global brand tokens · Email templates · Domains · White-label</div>
         </div>
@@ -320,157 +338,60 @@ export function BrandControlPage() {
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Active Email Templates", value: emailTemplates.filter((t) => t.status === "active").length.toString(), color: "var(--accent)", sub: `${emailTemplates.filter((t) => t.status === "draft").length} drafts` },
-          { label: "Custom Domains", value: customDomains.length.toString(), color: "var(--blue)", sub: `${customDomains.filter((d) => d.ssl).length} SSL secured` },
-          { label: "White-Label Clients", value: whitelabelClients.length.toString(), color: "var(--purple)", sub: `${whitelabelClients.filter((c) => c.status === "custom").length} custom branded` },
-          { label: "Brand Version", value: "v2.4", color: "var(--amber)", sub: "Last updated Feb 2026" },
-        ].map((stat) => (
-          <div key={stat.label} className={cx(styles.statCard, toneClass(stat.color))}>
-            <div className={styles.statLabel}>{stat.label}</div>
-            <div className={cx(styles.statValue, styles.brandToneText)}>{stat.value}</div>
-            <div className={cx("text11", "colorMuted")}>{stat.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Active Email Templates" value={activeTemplates} sub={`${draftTemplates} drafts`} tone="accent" />
+        <StatWidget label="Custom Domains" value={customDomains.length} sub={`${sslDomains} SSL secured`} tone="default" />
+        <StatWidget label="White-Label Clients" value={whitelabelClients.length} sub="Custom branded" tone="default" />
+        <StatWidget label="Brand Version" value="v2.4" sub="Last updated Feb 2026" tone="default" />
+      </WidgetGrid>
 
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Email Templates by Status"
+          data={templateStatusData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Domain Health"
+          stages={[
+            { label: "Total",    count: customDomains.length,                                              total: Math.max(customDomains.length, 1), color: "#8b6fff" },
+            { label: "SSL",      count: sslDomains,                                                        total: Math.max(customDomains.length, 1), color: "#34d98b" },
+            { label: "Verified", count: customDomains.filter(d => d.verified).length,                     total: Math.max(customDomains.length, 1), color: "#34d98b" },
+            { label: "Active",   count: customDomains.filter(d => d.status === "active").length,           total: Math.max(customDomains.length, 1), color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Email Templates"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name",   header: "Template" },
+            { key: "status", header: "Status", render: (v) => {
+              const val = v as string;
+              const cls = val === "active" ? cx("badge", "badgeGreen") : cx("badge", "badgeAmber");
+              return <span className={cls}>{val}</span>;
+            }},
+            { key: "sent",   header: "Sent",    align: "right" },
+            { key: "edited", header: "Edited",  align: "right" },
+          ]}
+          emptyMessage="No email templates configured"
+        />
+      </WidgetGrid>
+
+      {/* Tab-specific detail sections below widgets */}
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
           {tabs.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
-
-      {activeTab === "brand tokens" ? (
-        <div className={cx("grid2", "gap20")}>
-          <div className={cx("card", "p24")}>
-            <div className={styles.brandSectionTitle}>Color Palette</div>
-            <div className={styles.brandColorGrid}>
-              {[
-                { label: "Primary", color: primary, editable: true as const, setter: setPrimary },
-                { label: "Secondary", color: "var(--bg)", editable: false as const },
-                { label: "Accent", color: accent, editable: true as const, setter: setAccent },
-              ].map((swatch) => (
-                <div key={swatch.label}>
-                  <div className={styles.brandSwatch}>
-                    <svg viewBox="0 0 100 64" className={styles.brandSwatchSvg} aria-hidden="true" focusable="false">
-                      <rect x="0" y="0" width="100" height="64" fill={swatch.color} />
-                    </svg>
-                  </div>
-                  <div className={cx("text11", "colorMuted")}>{swatch.label}</div>
-                  <div className={cx("fontMono", "text11")}>{swatch.color}</div>
-                  {swatch.editable ? (
-                    <input
-                      type="color"
-                      value={swatch.color}
-                      onChange={(event) => swatch.setter(event.target.value)}
-                      className={styles.brandColorInput}
-                      title={`${swatch.label} color`}
-                    />
-                  ) : null}
-                </div>
-              ))}
-            </div>
-            <div className={styles.brandPreviewCard}>
-              <div className={cx("text11", "colorMuted", "mb8")}>Live Preview</div>
-              <div className={cx("flexRow", "gap8")}>
-                <button type="button" className={cx(styles.brandPrimaryBtn, styles.brandTonePrimary)}>Primary Button</button>
-                <button type="button" className={cx(styles.brandOutlineBtn, styles.brandTonePrimary)}>Outline Button</button>
-              </div>
-              <div className={cx(styles.brandAccentText, styles.brandToneAccent)}>Accent text colour preview</div>
-            </div>
-          </div>
-
-          <div className={cx("flexCol", "gap16")}>
-            <div className={cx("card", "p24")}>
-              <div className={styles.brandSectionTitle}>Typography</div>
-              <div className={cx("flexCol", "gap16")}>
-                <div className={styles.brandTypoCard}>
-                  <div className={cx("text11", "colorMuted", "mb8")}>Display Font: <span className={cx("fontMono", "colorAccent")}>{brandTokens.fontDisplay}</span></div>
-                  <div className={styles.brandDisplaySample}>Maphari Creative</div>
-                </div>
-                <div className={styles.brandTypoCard}>
-                  <div className={cx("text11", "colorMuted", "mb8")}>Body Font: <span className={cx("fontMono", "colorAccent")}>{brandTokens.fontBody}</span></div>
-                  <div className={styles.brandBodySample}>maphari.co.za/portal</div>
-                </div>
-              </div>
-            </div>
-
-            <div className={cx("card", "p24")}>
-              <div className={styles.brandSectionTitle}>Logo & Assets</div>
-              <div className={styles.brandLogoCard}>
-                <div className={styles.brandLogoWordmark}>{brandTokens.logoUrl}</div>
-                <div className={cx("text11", "colorMuted", "mt4")}>Current wordmark</div>
-              </div>
-              <div className={cx("grid2", "gap8")}>
-                <button type="button" className={cx("btnSm", "btnGhost", styles.brandWFull)}>Upload Logo</button>
-                <button type="button" className={cx("btnSm", "btnGhost", styles.brandWFull)}>Upload Favicon</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {activeTab === "email templates" ? (
-        <div className={styles.brandEmailLayout}>
-          <div className={cx("flexCol", "gap12")}>
-            {emailTemplates.map((template) => (
-              <div key={template.id} className={styles.brandTemplateCard}>
-                <div>
-                  <div className={cx("fw600", "mb4")}>{template.name}</div>
-                  <div className={cx("text12", "colorMuted")}>Last edited: {template.lastEdited}</div>
-                </div>
-                <div>
-                  <div className={cx("text10", "colorMuted", "mb2")}>Times Sent</div>
-                  <div className={cx("fontMono", "colorBlue")}>{template.sentCount}</div>
-                </div>
-                <span className={cx("badge", template.status === "active" ? "badgeGreen" : "badgeAmber")}>{template.status}</span>
-                <button type="button" className={cx("btnSm", "btnGhost")}>Preview</button>
-                <button type="button" className={cx("btnSm", "btnAccent")}>Edit Template</button>
-              </div>
-            ))}
-            <button type="button" className={styles.brandCreateCard}>+ Create New Template</button>
-          </div>
-
-          <div className={cx("card", "p24")}>
-            <div className={styles.brandSectionTitle}>Email Preview</div>
-              <div className={styles.brandEmailMockOuter}>
-                <div className={styles.brandEmailMockHead}>
-                <div className={cx(styles.brandEmailMark, styles.brandTonePrimary)}>MAPHARI</div>
-                </div>
-              <div className={styles.brandEmailMockBody}>
-                <div className={styles.brandEmailMockTitle}>Your invoice is ready</div>
-                <div className={styles.brandEmailMockText}>Hi [Client Name], your latest invoice is now available in your portal.</div>
-                <div className={cx(styles.brandEmailMockBtn, styles.brandTonePrimary)}>View Invoice -&gt;</div>
-                <div className={styles.brandEmailMockFoot}>Maphari Creative Agency - maphari.co.za</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {activeTab === "custom domains" ? (
-        <div className={cx("flexCol", "gap16")}>
-          <div className={styles.brandInfoCard}>Custom domains allow each portal or service to run under your own domain. SSL certificates are auto-provisioned and DNS may take up to 48h.</div>
-          {customDomains.map((domain) => (
-            <div key={domain.domain} className={styles.brandDomainCard}>
-              <div>
-                <div className={cx("fontMono", "fw700", "text14", "colorBlue")}>{domain.domain}</div>
-                <div className={cx("text12", "colorMuted", "mt4")}>{domain.type}</div>
-              </div>
-              <div className={cx("flexCol", "gap4")}>
-                <div className={cx("text11", "colorMuted")}>{domain.ssl ? "✓" : "✗"} SSL Active</div>
-                <div className={cx("text11", "colorMuted")}>{domain.verified ? "✓" : "⏳"} DNS Verified</div>
-              </div>
-              <span className={cx("badge", domain.status === "active" ? "badgeGreen" : "badgeAmber")}>{domain.status}</span>
-              <button type="button" className={cx("btnSm", "btnGhost")}>Test</button>
-              <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
-              <button type="button" className={cx("btnSm", styles.brandDangerBtn)}>Remove</button>
-            </div>
-          ))}
-          <button type="button" className={styles.brandCreateAccentCard}>+ Add Custom Domain</button>
-        </div>
-      ) : null}
 
       {activeTab === "white-label clients" && session ? (
         <ClientBrandingSection session={session} />

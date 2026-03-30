@@ -34,6 +34,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Lint styles
+        run: pnpm --filter @maphari/web lint:styles
+
       - name: Build
         run: pnpm build
 

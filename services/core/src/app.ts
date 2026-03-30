@@ -134,6 +134,21 @@ import { registerChurnRiskRoutes } from "./routes/churn-risk.js";
 // ── EFT Verification ───────────────────────────────────────────────────────
 import { registerEftVerificationRoutes } from "./routes/eft-verification.js";
 
+// ── HR: L&D Budget & Skill Proficiency ────────────────────────────────────
+import { registerHrRoutes } from "./routes/hr.js";
+
+// ── Brand Control: Email Templates & Custom Domains ───────────────────────
+import { registerBrandRoutes } from "./routes/brand.js";
+
+// ── Automation Job Metrics ─────────────────────────────────────────────────
+import { registerAutomationMetricRoutes } from "./routes/automation-metrics.js";
+
+// ── Cash Flow Scenarios ────────────────────────────────────────────────────
+import { registerCashFlowScenarioRoutes } from "./routes/cash-flow-scenarios.js";
+
+// ── Prospecting Campaign History ───────────────────────────────────────────
+import { registerProspectingCampaignRoutes } from "./routes/prospecting-campaigns.js";
+
 // ── Standup Crons ──────────────────────────────────────────────────────────
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
@@ -317,6 +332,21 @@ export async function createCoreApp(): Promise<FastifyInstance> {
 
   // ── EFT Verification ───────────────────────────────────────────────────────
   await registerEftVerificationRoutes(app);
+
+  // ── HR: L&D Budget & Skill Proficiency ────────────────────────────────────
+  await registerHrRoutes(app);
+
+  // ── Brand Control: Email Templates & Custom Domains ───────────────────────
+  await registerBrandRoutes(app);
+
+  // ── Automation Job Metrics ─────────────────────────────────────────────────
+  await registerAutomationMetricRoutes(app);
+
+  // ── Cash Flow Scenarios ────────────────────────────────────────────────────
+  await registerCashFlowScenarioRoutes(app);
+
+  // ── Prospecting Campaign History ───────────────────────────────────────────
+  await registerProspectingCampaignRoutes(app);
 
   // ── Standup Crons ──────────────────────────────────────────────────────────
   scheduleStandupReminder();

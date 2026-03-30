@@ -6,6 +6,7 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { colorClass } from "./admin-page-utils";
 import { updateProjectWithRefresh, bulkUpdateProjectStatusWithRefresh } from "../../../../lib/api/admin/projects";
 import { queueAutomationJobWithRefresh } from "../../../../lib/api/admin/automation";
@@ -308,33 +309,65 @@ export function ProjectOperationsPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>PROJECTS / PROJECT OPERATIONS</div>
           <h1 className={styles.pageTitle}>Project Operations</h1>
           <div className={styles.pageSub}>Execution control · Blocker queue · Checkpoint discipline</div>
         </div>
         <button type="button" className={cx("btnSm", "btnAccent")}>+ New Project</button>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb16")}>
-        {[
-          { label: "Active Projects", value: filtered.length.toString(), sub: `${active} in execution`, color: "var(--accent)" },
-          { label: "Blocked / High Risk", value: blocked.toString(), sub: "Needs admin action", color: blocked > 0 ? "var(--red)" : "var(--accent)" },
-          { label: "Overdue", value: overdue.toString(), sub: "Past checkpoint", color: overdue > 0 ? "var(--red)" : "var(--accent)" },
-          { label: "Stale Updates", value: stale.toString(), sub: "No update in 7d+", color: stale > 0 ? "var(--amber)" : "var(--accent)" },
-          {
-            label: "Ops Health",
-            value: `${avgHealth}`,
-            sub: money(filtered.reduce((sum, p) => sum + p.budgetCents, 0), currency) + " managed",
-            color: avgHealth >= 75 ? "var(--accent)" : avgHealth >= 60 ? "var(--amber)" : "var(--red)"
-          }
-        ].map((kpi) => (
-          <div key={kpi.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{kpi.label}</div>
-            <div className={cx(styles.statValue, colorClass(kpi.color))}>{kpi.value}</div>
-            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Active Projects" value={String(active)} tone="accent" sub={`${filtered.length} total`} />
+        <StatWidget label="Milestones Due" value={String(overdue)} tone={overdue > 0 ? "red" : "accent"} sub="Past checkpoint" subTone={overdue > 0 ? "warn" : "neutral"} />
+        <StatWidget label="Blockers" value={String(blocked)} tone={blocked > 0 ? "red" : "accent"} sub="High risk / blocked" subTone={blocked > 0 ? "warn" : "neutral"} />
+        <StatWidget label="On-Time Rate" value={`${filtered.length > 0 ? Math.round(((filtered.length - overdue) / filtered.length) * 100) : 100}%`} tone="green" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Milestones by Week"
+          data={[
+            { week: "W1", milestones: 0 },
+            { week: "W2", milestones: 0 },
+            { week: "W3", milestones: 0 },
+            { week: "W4", milestones: 0 },
+          ]}
+          dataKey="milestones"
+          xKey="week"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Project Health"
+          stages={[
+            { label: "On Rhythm", count: filtered.filter((p) => p.checkpoint.label === "On Rhythm").length, total: Math.max(filtered.length, 1), color: "#34d98b" },
+            { label: "Due Soon", count: filtered.filter((p) => p.checkpoint.label === "Due Soon").length, total: Math.max(filtered.length, 1), color: "#f5a623" },
+            { label: "At Risk", count: filtered.filter((p) => p.checkpoint.label === "At Risk").length, total: Math.max(filtered.length, 1), color: "#ff5f5f" },
+            { label: "Stale", count: stale, total: Math.max(filtered.length, 1), color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Projects Table ──────────────────────────────────────────────── */}
+      <TableWidget
+        label="Projects"
+        rows={filtered}
+        rowKey="id"
+        emptyMessage="No projects found."
+        columns={[
+          { key: "name", header: "Name", render: (_, row) => row.name },
+          { key: "client", header: "Client", render: (_, row) => row.clientName },
+          { key: "milestones", header: "Milestones Due", align: "right", render: (_, row) => row.dueDays !== null ? `${row.dueDays}d` : "—" },
+          { key: "blockers", header: "Blockers", align: "right", render: (_, row) => row.isBlocked ? "Yes" : "—" },
+          { key: "health", header: "Health", render: (_, row) => (
+            <span className={cx("badge", row.health >= 75 ? "badgeGreen" : row.health >= 50 ? "badgeAmber" : "badgeRed")}>
+              {row.checkpoint.label}
+            </span>
+          )},
+        ]}
+      />
 
       <div className={styles.filterRow}>
         <input
@@ -431,7 +464,7 @@ export function ProjectOperationsPage({
           <div className={styles.projOpsDetailCard}>
             <div className={styles.projOpsDetailHead}>
               <div className={cx("text12", "fw700")}>Execution Detail</div>
-              <span className={styles.projOpsIdTag}>{selected?.id.slice(0, 8) ?? "No project"}</span>
+              <span className={styles.projOpsIdTag}>{selected?.name ?? "No project"}</span>
             </div>
             {selected ? (
               <>

@@ -8,6 +8,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { CapacityForecast, ForecastPeriod, StaffForecast } from "../../../../lib/api/admin/capacity";
@@ -101,7 +102,7 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
       <div className={styles.pageBody}>
         <div className={styles.pageHeader}>
           <div>
-            <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+            <div className={styles.pageEyebrow}>GOVERNANCE / CAPACITY PLANNING FORECAST</div>
             <h1 className={styles.pageTitle}>Capacity Forecast</h1>
           </div>
         </div>
@@ -123,13 +124,13 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / CAPACITY PLANNING FORECAST</div>
           <h1 className={styles.pageTitle}>Capacity Forecast</h1>
           <div className={styles.pageSub}>30 / 60 / 90-day staffing projection based on active projects and pipeline</div>
         </div>
         <div className={styles.pageActions}>
           <span className={cx("badge", signal.cls)}>{signal.label}</span>
-          {hiresNeeded > 0 && (
+          {(forecast.hiringSignal === "CRITICAL" || forecast.hiringSignal === "UNDER_CAPACITY") && hiresNeeded > 0 && (
             <span className={cx("badge", "badgeAmber")}>
               Consider {hiresNeeded} hire{hiresNeeded !== 1 ? "s" : ""}
             </span>
@@ -145,6 +146,52 @@ export function CapacityForecastPage({ session, onNotify }: Props) {
           onRetry={() => { setLoadError(null); }}
         />
       )}
+
+      {/* ── Widget stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Capacity (90d)"
+          value={`${period90.totalCapacityHours}h`}
+          sub="Available staff hours"
+          tone="accent"
+        />
+        <StatWidget
+          label="Projected Demand (90d)"
+          value={`${period90.projectedDemandHours}h`}
+          sub="Forecasted requirement"
+          tone={period90.utilizationRate > 90 ? "red" : period90.utilizationRate > 75 ? "amber" : "green"}
+        />
+        <StatWidget
+          label="Utilisation (90d)"
+          value={`${period90.utilizationRate}%`}
+          sub="Capacity utilisation rate"
+          tone={period90.utilizationRate > 90 ? "red" : period90.utilizationRate > 75 ? "amber" : "green"}
+        />
+        <StatWidget
+          label="Recommended Hires"
+          value={hiresNeeded}
+          sub={signal.label}
+          tone={forecast.hiringSignal === "CRITICAL" ? "red" : forecast.hiringSignal === "UNDER_CAPACITY" ? "amber" : "green"}
+        />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Capacity vs Demand by Period"
+          type="bar"
+          dataKey="value"
+          data={forecast.periods.map((p: ForecastPeriod) => ({ label: p.label, value: p.utilizationRate }))}
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Staff Load Distribution"
+          stages={[
+            { label: "Balanced (≤75%)",    count: forecast.staffForecast.filter((s: StaffForecast) => s.availableHours30d > 0 && Math.round((s.allocatedHours30d / s.availableHours30d) * 100) <= 75).length,  total: forecast.staffForecast.length || 1, color: "#34d98b" },
+            { label: "Near Capacity (>75%)", count: forecast.staffForecast.filter((s: StaffForecast) => s.availableHours30d > 0 && Math.round((s.allocatedHours30d / s.availableHours30d) * 100) > 75 && Math.round((s.allocatedHours30d / s.availableHours30d) * 100) <= 100).length, total: forecast.staffForecast.length || 1, color: "#f5a623" },
+            { label: "Overallocated (>100%)", count: forecast.staffForecast.filter((s: StaffForecast) => s.availableHours30d > 0 && Math.round((s.allocatedHours30d / s.availableHours30d) * 100) > 100).length, total: forecast.staffForecast.length || 1, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── 3-period summary cards ── */}
       <div className={styles.cfPeriodGrid}>

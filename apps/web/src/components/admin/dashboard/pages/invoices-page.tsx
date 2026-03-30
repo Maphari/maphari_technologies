@@ -18,6 +18,7 @@ import { callGateway, isUnauthorized, withAuthorizedSession } from "../../../../
 import { cx, styles } from "../style";
 import { AutomationBanner } from "../../../shared/automation-banner";
 import { colorClass, toneClass } from "./admin-page-utils";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -463,7 +464,7 @@ export function InvoicesPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / BILLING</div>
           <h1 className={styles.pageTitle}>Invoices</h1>
           <div className={styles.pageSub}>Invoice register · Tax configuration</div>
         </div>
@@ -515,20 +516,22 @@ export function InvoicesPage({
         onSecondary={() => {/* filter to overdue tab handled by parent */}}
       />
 
-      <div className={cx("topCardsStack", "gap16", "mb28")}>
-        {[
-          { label: "Total Invoiced", value: formatMoneyCents(totalInvoiced, { currency: invoices[0]?.currency, maximumFractionDigits: 0 }), color: "var(--accent)", sub: `${invoices.length} invoices` },
-          { label: "Collected", value: formatMoneyCents(totalCollected, { currency: invoices[0]?.currency, maximumFractionDigits: 0 }), color: "var(--accent)", sub: `${paid.length} paid` },
-          { label: "Outstanding", value: formatMoneyCents(totalOutstanding, { currency: invoices[0]?.currency, maximumFractionDigits: 0 }), color: totalOutstanding > 0 ? "var(--amber)" : "var(--accent)", sub: `${issued.length + overdue.length} open` },
-          { label: "Overdue", value: overdue.length.toString(), color: overdue.length > 0 ? "var(--red)" : "var(--accent)", sub: overdue.length > 0 ? `${formatMoneyCents(overdue.reduce((s, i) => s + i.amountCents, 0), { currency: overdue[0]?.currency, maximumFractionDigits: 0 })} at risk` : "All current" },
-        ].map((summary) => (
-          <div key={summary.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{summary.label}</div>
-            <div className={cx(styles.statValue, colorClass(summary.color))}>{summary.value}</div>
-            <div className={cx("text11", "colorMuted")}>{summary.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="Total Invoiced" value={formatMoneyCents(totalInvoiced, { currency: invoices[0]?.currency, maximumFractionDigits: 0 })} sub={`${invoices.length} invoices`} tone="accent" />
+        <StatWidget label="Collected"      value={formatMoneyCents(totalCollected, { currency: invoices[0]?.currency, maximumFractionDigits: 0 })} sub={`${paid.length} paid`}    tone="green" />
+        <StatWidget label="Outstanding"    value={formatMoneyCents(totalOutstanding, { currency: invoices[0]?.currency, maximumFractionDigits: 0 })} sub={`${issued.length + overdue.length} open`} tone={totalOutstanding > 0 ? "amber" : "default"} />
+        <StatWidget label="Overdue"        value={overdue.length} sub={overdue.length > 0 ? `${formatMoneyCents(overdue.reduce((s, i) => s + i.amountCents, 0), { currency: overdue[0]?.currency, maximumFractionDigits: 0 })} at risk` : "All current"} tone={overdue.length > 0 ? "red" : "green"} />
+      </WidgetGrid>
+
+      <PipelineWidget
+          label="Invoice Status Breakdown"
+          stages={[
+            { label: "Paid",      count: paid.length,    total: invoices.length || 1, color: "#34d98b" },
+            { label: "Issued",    count: issued.length,  total: invoices.length || 1, color: "#8b6fff" },
+            { label: "Overdue",   count: overdue.length, total: invoices.length || 1, color: "#ff5f5f" },
+            { label: "Draft",     count: invoices.filter((i) => i.status === "DRAFT").length, total: invoices.length || 1, color: "#f5a623" },
+          ]}
+        />
 
       <div className={styles.filterRow}>
         <select

@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import { Readable } from "node:stream";
 import type { ApiResponse } from "@maphari/contracts";
 import { registerServiceRateLimit, ServiceMetrics } from "@maphari/platform";
 import { registerNotificationRoutes } from "./routes/notifications.js";
@@ -34,6 +35,22 @@ export async function createNotificationsApp(): Promise<FastifyInstance> {
   metrics.registerCounter("notification_callback_invalid_total", "Total invalid provider callbacks");
   metrics.registerCounter("events_received_total", "Total domain events consumed");
   metrics.registerGauge("event_backlog_depth", "Approximate in-flight event processing depth");
+
+  app.addHook(
+    "preParsing",
+    async (_request, _reply, payload) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of payload) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string));
+      }
+      const raw = Buffer.concat(chunks);
+      (_request as typeof _request & { rawBody?: Buffer }).rawBody = raw;
+      const stream = new Readable();
+      stream.push(raw);
+      stream.push(null);
+      return stream;
+    }
+  );
 
   app.addHook("onRequest", async (request) => {
     (request as typeof request & { __start?: number }).__start = Date.now();

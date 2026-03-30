@@ -56,7 +56,7 @@ export class RbacGuard implements CanActivate {
     const authHeader  = extractHeaderValue(request.headers.authorization);
     const bearerToken = readBearerToken(authHeader);
     const jwtScope    = bearerToken
-      ? verifyAccessToken(bearerToken, process.env.JWT_ACCESS_SECRET ?? "dev-access-secret")
+      ? verifyAccessToken(bearerToken, process.env.JWT_ACCESS_SECRET!)
       : null;
 
     // ── JTI blacklist check (revoked tokens) ────────────────────────────────

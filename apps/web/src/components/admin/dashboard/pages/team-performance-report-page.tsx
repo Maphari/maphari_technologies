@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { colorClass } from "./admin-page-utils";
 import { AdminTabs } from "./shared";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -199,7 +200,7 @@ export function TeamPerformanceReportPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING & INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / TEAM PERFORMANCE REPORT</div>
           <h1 className={styles.pageTitle}>Team Performance Report</h1>
           <div className={styles.pageSub}>Active Staff · Departments · Peer Reviews · Standup Activity</div>
         </div>
@@ -208,20 +209,61 @@ export function TeamPerformanceReportPage({
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb28")}>
-        {[
-          { label: "Active Staff", value: activeCount.toString(), color: "var(--accent)", sub: "Currently active" },
-          { label: "Avg Peer Score", value: avgReview ? `${avgReview}/5` : "—", color: avgReview && Number.parseFloat(avgReview) >= 4 ? "var(--accent)" : "var(--amber)", sub: "From submitted reviews" },
-          { label: "Departments", value: deptCount.toString(), color: "var(--blue)", sub: "Distinct departments" },
-          { label: "Low Engagement", value: lowEngagement.toString(), color: lowEngagement > 0 ? "var(--amber)" : "var(--accent)", sub: "No standup activity" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Active Staff" value={activeCount.toString()} tone="accent" sub="Currently active" />
+        <StatWidget label="Avg Peer Score" value={avgReview ? `${avgReview}/5` : "—"} tone={avgReview && Number.parseFloat(avgReview) >= 4 ? "accent" : "amber"} sub="From submitted reviews" />
+        <StatWidget label="Departments" value={deptCount.toString()} sub="Distinct departments" />
+        <StatWidget label="Low Engagement" value={lowEngagement.toString()} tone={lowEngagement > 0 ? "amber" : "accent"} sub="No standup activity" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Standup Activity by Staff"
+          data={staff.slice(0, 8).map((m) => ({ name: m.name.split(" ")[0], standups: m.standupCount }))}
+          dataKey="standups"
+          xKey="name"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Team Engagement"
+          stages={[
+            { label: "High (10+)", count: staff.filter((m) => m.standupCount >= 10).length, total: Math.max(activeCount, 1), color: "#34d98b" },
+            { label: "Medium (4-9)", count: staff.filter((m) => m.standupCount >= 4 && m.standupCount < 10).length, total: Math.max(activeCount, 1), color: "#8b6fff" },
+            { label: "Low (1-3)", count: staff.filter((m) => m.standupCount >= 1 && m.standupCount < 4).length, total: Math.max(activeCount, 1), color: "#f5a623" },
+            { label: "None (0)", count: lowEngagement, total: Math.max(activeCount, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Staff Table ──────────────────────────────────────────────────── */}
+      <TableWidget
+        label="Staff Performance"
+        rows={staff}
+        rowKey="id"
+        emptyMessage="No active staff found."
+        columns={[
+          { key: "name", header: "Employee", render: (_, row) => <span className={cx("fw600")}>{row.name}</span> },
+          { key: "role", header: "Role", render: (_, row) => row.role },
+          { key: "dept", header: "Department", render: (_, row) => row.department },
+          { key: "standups", header: "Standups", align: "right", render: (_, row) => (
+            <span className={cx("fontMono", row.standupCount === 0 ? "colorRed" : "colorAccent")}>{row.standupCount}</span>
+          )},
+          { key: "reviews", header: "Peer Reviews", align: "right", render: (_, row) => row.reviewCount },
+          { key: "score", header: "Avg Score", align: "right", render: (_, row) => (
+            <span className={cx(row.reviewScore !== null ? (row.reviewScore >= 4 ? "colorAccent" : "colorAmber") : "colorMuted")}>
+              {row.reviewScore !== null ? `${row.reviewScore}/5` : "—"}
+            </span>
+          )},
+          { key: "status", header: "Status", render: (_, row) => (
+            <span className={cx("badge", row.isActive ? "badgeGreen" : "badgeMuted")}>
+              {row.isActive ? "Active" : "Inactive"}
+            </span>
+          )},
+        ]}
+      />
 
       <AdminTabs
         tabs={tabs}

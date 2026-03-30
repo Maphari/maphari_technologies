@@ -4,6 +4,7 @@ import { Roles } from "../auth/roles.decorator.js";
 import { proxyRequest } from "../utils/proxy-request.js";
 
 const AUTOMATION = () => process.env.AUTOMATION_SERVICE_URL ?? "http://localhost:4003";
+const CORE = () => process.env.CORE_SERVICE_URL ?? "http://localhost:4002";
 
 @Controller()
 export class AutomationController {
@@ -93,6 +94,37 @@ export class AutomationController {
       "x-user-role": req.headers["x-user-role"] as string ?? "",
       "x-user-id": req.headers["x-user-id"] as string ?? "",
       "x-request-id": req.headers["x-request-id"] as string ?? "",
+    });
+  }
+
+  // ── GET /automation/metrics ────────────────────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("automation/metrics")
+  async getWorkflowMetrics(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-request-id") requestId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(`${CORE()}/automation/metrics`, "GET", undefined, {
+      "x-user-id":    userId    ?? "",
+      "x-user-role":  role      ?? "ADMIN",
+      "x-request-id": requestId ?? "",
+    });
+  }
+
+  // ── POST /automation/metrics ───────────────────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Post("automation/metrics")
+  async recordWorkflowMetric(
+    @Body() body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-request-id") requestId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(`${CORE()}/automation/metrics`, "POST", body, {
+      "x-user-id":    userId    ?? "",
+      "x-user-role":  role      ?? "ADMIN",
+      "x-request-id": requestId ?? "",
     });
   }
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { toneClass } from "./admin-page-utils";
 
 type Tab = "all meetings" | "with recording" | "action items";
@@ -55,12 +56,20 @@ export function MeetingArchivePage({ session: _session }: { session?: import("..
     URL.revokeObjectURL(url);
   }
 
+  // Placeholder weekly data for chart
+  const weeklyData = [
+    { week: "W1", meetings: 0 },
+    { week: "W2", meetings: 0 },
+    { week: "W3", meetings: 0 },
+    { week: "W4", meetings: 0 },
+  ];
+
   return (
     <div className={cx(styles.pageBody)}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNICATION</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / MEETING ARCHIVE</div>
           <h1 className={styles.pageTitle}>Meeting Archive</h1>
           <div className={styles.pageSub}>Browse past meetings, recordings, and outstanding action items</div>
         </div>
@@ -77,21 +86,33 @@ export function MeetingArchivePage({ session: _session }: { session?: import("..
         </div>
       </div>
 
-      {/* ── KPI Grid ── */}
-      <div className={styles.cjKpiGrid}>
-        {[
-          { label: "Total Archived", value: String(totalArchived), sub: "All time", color: "var(--blue)" },
-          { label: "This Month", value: String(thisMonth), sub: "Recent meetings", color: "var(--accent)" },
-          { label: "With Recording", value: String(withRecording), sub: "Available to replay", color: "var(--amber)" },
-          { label: "Action Items Open", value: String(openActionItems), sub: "Unresolved", color: "var(--red)" },
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.cjKpiCard, toneClass(k.color))}>
-            <div className={styles.cjKpiLabel}>{k.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.cjKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Total Meetings" value={String(totalArchived)} sub="All time" />
+        <StatWidget label="This Month" value={String(thisMonth)} tone="accent" sub="Recent meetings" />
+        <StatWidget label="Avg Duration" value="—" sub="Minutes per meeting" />
+        <StatWidget label="Follow-ups Pending" value={String(openActionItems)} tone={openActionItems > 0 ? "amber" : "accent"} sub="Action items open" subTone={openActionItems > 0 ? "warn" : "neutral"} />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Meetings by Week"
+          data={weeklyData}
+          dataKey="meetings"
+          xKey="week"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Meeting Types"
+          stages={[
+            { label: "Internal", count: 0, total: 1, color: "#8b6fff" },
+            { label: "Client", count: 0, total: 1, color: "#34d98b" },
+            { label: "Review", count: 0, total: 1, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── Tab bar ── */}
       <div className={styles.teamFilters}>
@@ -108,36 +129,23 @@ export function MeetingArchivePage({ session: _session }: { session?: import("..
       </div>
 
       {/* ── Table ── */}
-      <div className={styles.teamSection}>
-        <div className={styles.teamSectionHeader}>
-          <span className={styles.teamSectionTitle}>Meeting Archive</span>
-          <span className={styles.teamSectionMeta}>{filtered.length} MEETINGS</span>
-        </div>
-        <div className={styles.mtaHead}>
-          {["Meeting", "Client", "Date", "Duration", "Attendees", "Recording", "Action Items"].map((h) => (
-            <span key={h}>{h}</span>
-          ))}
-        </div>
-        {filtered.length === 0 ? (
-          <div className={cx("p24", "colorMuted", "text12", "textCenter")}>
-            No meetings recorded yet. Historical meetings will appear here once recording is enabled.
-          </div>
-        ) : filtered.map((m) => (
-          <div key={m.id} className={styles.mtaRow}>
-            <span className={cx("fw600", "text13")}>{m.title}</span>
-            <span className={cx("text12", "colorMuted")}>{m.client}</span>
-            <span className={cx("fontMono", "text12")}>{m.date}</span>
-            <span className={cx("text12", "colorMuted")}>{m.duration}</span>
-            <span className={cx("fontMono", "text12")}>{m.attendees}</span>
-            <span className={cx("badge", m.recording ? "badgeBlue" : "badgeMuted")}>
-              {m.recording ? "Available" : "None"}
+      <TableWidget
+        label="Meeting Archive"
+        rows={filtered}
+        rowKey="id"
+        emptyMessage="No meetings recorded yet. Historical meetings will appear here once recording is enabled."
+        columns={[
+          { key: "title", header: "Title", render: (_, row) => row.title },
+          { key: "type", header: "Type", render: () => "—" },
+          { key: "date", header: "Date", render: (_, row) => row.date },
+          { key: "attendees", header: "Attendees", align: "right", render: (_, row) => String(row.attendees) },
+          { key: "recording", header: "Recording", render: (_, row) => (
+            <span className={cx("badge", row.recording ? "badgeGreen" : "badgeMuted")}>
+              {row.recording ? "Available" : "None"}
             </span>
-            <span className={cx("badge", m.actionItems === "open" ? "badgeAmber" : m.actionItems === "resolved" ? "badgeGreen" : "badgeMuted")}>
-              {m.actionItems}
-            </span>
-          </div>
-        ))}
-      </div>
+          )},
+        ]}
+      />
     </div>
   );
 }

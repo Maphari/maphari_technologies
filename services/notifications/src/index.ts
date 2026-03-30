@@ -3,6 +3,9 @@ import { NatsEventBus } from "@maphari/platform";
 import { createNotificationEventHandler, registerNotificationSubscriptions } from "./lib/subscriptions.js";
 import { processNextJob } from "./lib/queue.js";
 import { prisma } from "./lib/prisma.js";
+import { validateRequiredEnv } from "./lib/validate-env.js";
+
+validateRequiredEnv(["NOTIFICATION_CALLBACK_SECRET"]);
 
 const app = await createNotificationsApp();
 const eventBus = new NatsEventBus(process.env.NATS_URL ?? "nats://localhost:4222", app.log);

@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { AdminTabs } from "./shared";
 import { colorClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
@@ -228,27 +229,66 @@ export function RecruitmentPipelinePage({ session }: { session: AuthSession | nu
     <div className={cx(styles.pageBody, styles.rcpRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / RECRUITMENT PIPELINE</div>
           <h1 className={styles.pageTitle}>Recruitment Pipeline</h1>
           <div className={styles.pageSub}>Open roles, candidates, interview stages, and offer tracking</div>
         </div>
         <button type="button" className={cx("btnSm", "btnAccent")}>+ Open Role</button>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Open Roles", value: totalActive.toString(), color: "var(--accent)", sub: `${roles.filter((r) => r.status === "on-hold").length} on hold` },
-          { label: "Total Applications", value: totalApplications.toString(), color: "var(--blue)", sub: "Across all roles" },
-          { label: "Interview Conversion", value: `${conversionRate}%`, color: "var(--accent)", sub: `${totalInterviewed} interviewed` },
-          { label: "Offers Outstanding", value: roles.flatMap((r) => r.candidates.filter((c) => c.stage === "Offer")).length.toString(), color: "var(--amber)", sub: "Awaiting candidate response" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Open Roles" value={String(totalActive)} tone="accent" sub={`${roles.filter((r) => r.status === "on-hold").length} on hold`} />
+        <StatWidget label="Candidates" value={String(totalApplications)} sub="Total applications" />
+        <StatWidget label="Interviews" value={String(totalInterviewed)} tone="amber" sub={`${conversionRate}% conversion`} />
+        <StatWidget label="Offers Made" value={String(roles.flatMap((r) => r.candidates.filter((c) => c.stage === "Offer")).length)} tone="green" sub="Awaiting response" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Applications by Week"
+          data={[
+            { week: "W1", applications: 0 },
+            { week: "W2", applications: 0 },
+            { week: "W3", applications: 0 },
+            { week: "W4", applications: 0 },
+          ]}
+          dataKey="applications"
+          xKey="week"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Recruitment Stages"
+          stages={[
+            { label: "Applied", count: totalApplications, total: Math.max(totalApplications, 1), color: "#8b6fff" },
+            { label: "Screening", count: candidatesFlat.filter((c) => c.stage === "Screen").length, total: Math.max(totalApplications, 1), color: "#f5a623" },
+            { label: "Interview", count: totalInterviewed, total: Math.max(totalApplications, 1), color: "#f5a623" },
+            { label: "Offer", count: roles.flatMap((r) => r.candidates.filter((c) => c.stage === "Offer")).length, total: Math.max(totalApplications, 1), color: "#34d98b" },
+            { label: "Hired", count: candidatesFlat.filter((c) => c.stage === "Offer Accepted").length, total: Math.max(totalApplications, 1), color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Candidates Table ─────────────────────────────────────────────── */}
+      <TableWidget
+        label="Candidates"
+        rows={candidatesFlat as unknown as Record<string, unknown>[]}
+        rowKey="name"
+        emptyMessage="No candidates found."
+        columns={[
+          { key: "name", header: "Name", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return row.name; } },
+          { key: "role", header: "Role", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return row.roleName; } },
+          { key: "source", header: "Source", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return row.source; } },
+          { key: "stage", header: "Stage", render: (_, r) => { const row = r as typeof candidatesFlat[number]; return (
+            <span className={cx("badge", row.stage === "Offer Accepted" ? "badgeGreen" : row.stage === "Offer Declined" ? "badgeRed" : row.stage === "Offer" ? "badgeAmber" : "badgeMuted")}>
+              {row.stage}
+            </span>
+          ); } },
+          { key: "applied", header: "Applied", render: () => "—" },
+        ]}
+      />
 
       <AdminTabs
         tabs={tabs}

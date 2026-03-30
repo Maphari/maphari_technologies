@@ -5,7 +5,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { cx } from "../style";
+import { cx, styles } from "../style";
 import {
   loadAdminStaffScheduleWithRefresh,
   type StaffScheduleEntry,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/admin/staff-schedule";
 import type { AuthSession } from "@/lib/auth/session";
 import { saveSession } from "@/lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -154,15 +155,88 @@ export function StaffSchedulingPage({ session }: StaffSchedulingPageProps) {
   const selectedWeek: StaffScheduleWeek | null =
     selectedEntry && selected ? (selectedEntry.weeks[selected.weekIdx] ?? null) : null;
 
+  const availableCount = schedule.filter(e => e.weeks[0]?.status === "available").length;
+  const partialCount   = schedule.filter(e => e.weeks[0]?.status === "partial").length;
+  const onLeaveCount   = schedule.filter(e => e.weeks[0]?.status === "on-leave").length;
+  const totalCapacity  = schedule.reduce((s, e) => s + e.weeklyCapacity, 0);
+
+  const availabilityData = [
+    { label: "Available", count: availableCount },
+    { label: "Partial",   count: partialCount   },
+    { label: "On Leave",  count: onLeaveCount   },
+  ];
+
+  const tableRows = schedule.map(e => ({
+    name:     e.staffName,
+    role:     e.role,
+    capacity: `${e.weeklyCapacity}h`,
+    status:   e.weeks[0]?.status ?? "—",
+    projects: e.weeks[0]?.projectAssignments.length ?? 0,
+  }));
+
   return (
     <section className={cx("page", "pageBody", "pageActive")} id="page-staff-scheduling">
-      <div className={cx("pageHeaderBar")}>
-        <div className={cx("pageEyebrowText", "mb8")}>Communication / Staff</div>
-        <h1 className={cx("pageTitleText")}>Staff Schedule</h1>
-        <p className={cx("pageSubtitleText", "mb20")}>8-week scheduling timeline — availability, leave, and project assignments</p>
+      <div className={styles.pageHeader}>
+        <div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF SCHEDULING</div>
+          <h1 className={styles.pageTitle}>Staff Schedule</h1>
+          <div className={styles.pageSub}>Availability · Leave · Project assignments</div>
+        </div>
+        <div className={styles.pageActions}>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={handlePrev}>← Prev</button>
+          <button type="button" className={cx("btnSm", "btnGhost")} onClick={handleNext}>Next →</button>
+        </div>
       </div>
 
-      {/* Header with navigation */}
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Total Staff" value={schedule.length} sub="On schedule" tone="default" />
+        <StatWidget label="Available This Week" value={availableCount} sub="Fully available" tone={availableCount > 0 ? "green" : "amber"} />
+        <StatWidget label="On Leave" value={onLeaveCount} sub="This week" tone={onLeaveCount > 0 ? "amber" : "default"} />
+        <StatWidget label="Total Weekly Capacity" value={`${totalCapacity}h`} sub="All staff combined" tone="accent" />
+      </WidgetGrid>
+
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Availability Breakdown"
+          data={availabilityData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Schedule Status"
+          stages={[
+            { label: "Available", count: availableCount, total: Math.max(schedule.length, 1), color: "#34d98b" },
+            { label: "Partial",   count: partialCount,   total: Math.max(schedule.length, 1), color: "#f5a623" },
+            { label: "On Leave",  count: onLeaveCount,   total: Math.max(schedule.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Staff Schedule"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name",     header: "Name" },
+            { key: "role",     header: "Role" },
+            { key: "capacity", header: "Capacity", align: "right" },
+            { key: "projects", header: "Projects",  align: "right" },
+            { key: "status",   header: "Status",    align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val === "available" ? cx("badge", "badgeGreen") : val === "partial" ? cx("badge", "badgeAmber") : cx("badge", "badgeRed");
+              return <span className={cls}>{val}</span>;
+            }},
+          ]}
+          emptyMessage="No staff schedule data"
+        />
+      </WidgetGrid>
+
+      {/* Schedule grid navigation */}
       <div className={cx("staffSchedHeader")}>
         <div className={cx("staffSchedTitle")}>
           Week of {fmtWeek(weekStart.toISOString().split("T")[0] as string)}

@@ -16,7 +16,9 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
+  BadRequestException,
 } from "@nestjs/common";
 import { type ApiResponse, type Role } from "@maphari/contracts";
 import { Roles } from "../auth/roles.decorator.js";
@@ -1105,6 +1107,334 @@ export class AdminController {
     return proxyRequest(
       `${BILLING()}/analytics/clv`,
       "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SLA RECORDS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /sla — list all SLA records (admin/staff view) ───────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("sla")
+  async listAllSlaRecords(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/sla`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMMUNICATION LOGS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /comms — list all communication logs (admin/staff view) ───────────
+  @Roles("ADMIN", "STAFF")
+  @Get("comms")
+  async listAllCommLogs(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/comms`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CLIENT HEALTH SCORES
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /health-scores — list all client health scores ───────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("health-scores")
+  async listAllHealthScores(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/health-scores`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PORTFOLIO RISKS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /risks — list all portfolio risks across all projects ─────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("risks")
+  async listAllPortfolioRisks(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/risks`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CRISIS ESCALATION CHAIN & PLAYBOOKS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── GET /crises/escalation-chain ──────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("crises/escalation-chain")
+  async listEscalationChain(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/escalation-chain`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PUT /crises/escalation-chain/:level ───────────────────────────────────
+  @Roles("ADMIN")
+  @Put("crises/escalation-chain/:level")
+  async upsertEscalationLevel(
+    @Param("level")          level: string,
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/escalation-chain/${level}`,
+      "PUT",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── GET /crises/playbooks ──────────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("crises/playbooks")
+  async listPlaybooks(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/playbooks`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /crises/playbooks ─────────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("crises/playbooks")
+  async createPlaybook(
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/playbooks`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PATCH /crises/playbooks/:id ────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Patch("crises/playbooks/:id")
+  async updatePlaybook(
+    @Param("id")             id: string,
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/crises/playbooks/${id}`,
+      "PATCH",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CASH FLOW SCENARIOS
+
+  // ── GET /cash-flow/scenarios ───────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("cash-flow/scenarios")
+  async listCashFlowScenarios(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /cash-flow/scenarios ──────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("cash-flow/scenarios")
+  async createCashFlowScenario(
+    @Body() body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    if (!body || typeof (body as Record<string, unknown>).name !== "string") {
+      throw new BadRequestException("name is required");
+    }
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── PUT /cash-flow/scenarios/:id ───────────────────────────────────────────
+  @Roles("ADMIN")
+  @Put("cash-flow/scenarios/:id")
+  async updateCashFlowScenario(
+    @Param("id")             id: string,
+    @Body()                  body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios/${id}`,
+      "PUT",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── DELETE /cash-flow/scenarios/:id ───────────────────────────────────────
+  @Roles("ADMIN")
+  @Delete("cash-flow/scenarios/:id")
+  async deleteCashFlowScenario(
+    @Param("id")             id: string,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/cash-flow/scenarios/${id}`,
+      "DELETE",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PROSPECTING CAMPAIGNS
+
+  // ── GET /prospecting/campaigns ─────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("prospecting/campaigns")
+  async listProspectingCampaigns(
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/prospecting/campaigns`,
+      "GET",
+      undefined,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── POST /prospecting/campaigns ────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Post("prospecting/campaigns")
+  async createProspectingCampaign(
+    @Body() body: unknown,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/prospecting/campaigns`,
+      "POST",
+      body,
+      adminHeaders(userId, role, clientId, requestId, traceId)
+    );
+  }
+
+  // ── DELETE /prospecting/campaigns/:id ──────────────────────────────────────
+  @Roles("ADMIN")
+  @Delete("prospecting/campaigns/:id")
+  async deleteProspectingCampaign(
+    @Param("id")             id: string,
+    @Headers("x-user-id")    userId?: string,
+    @Headers("x-user-role")  role?: Role,
+    @Headers("x-client-id")  clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id")   traceId?: string
+  ): Promise<ApiResponse> {
+    return proxyRequest(
+      `${CORE()}/prospecting/campaigns/${id}`,
+      "DELETE",
       undefined,
       adminHeaders(userId, role, clientId, requestId, traceId)
     );

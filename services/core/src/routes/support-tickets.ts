@@ -24,12 +24,23 @@ export async function registerSupportTicketRoutes(app: FastifyInstance): Promise
       ? CacheKeys.supportTickets(scopedClientId)
       : CacheKeys.supportTickets("all");
 
-    const data = await withCache(cacheKey, 60, () =>
+    const raw = await withCache(cacheKey, 60, () =>
       prisma.supportTicket.findMany({
         where,
         orderBy: { createdAt: "desc" }
       })
     );
+
+    // Deduplicate: for open/in-progress tickets with the same clientId+title,
+    // keep only the most-recent record (the list is already sorted desc by createdAt)
+    const seen = new Set<string>();
+    const data = raw.filter((t) => {
+      if (t.status !== "OPEN" && t.status !== "IN_PROGRESS") return true;
+      const key = `${t.clientId}::${t.title}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     return { success: true, data, meta: { requestId: scope.requestId } } as ApiResponse<typeof data>;
   });
@@ -49,6 +60,21 @@ export async function registerSupportTicketRoutes(app: FastifyInstance): Promise
     const scopedClientId = resolveClientFilter(scope.role, scope.clientId);
     if (scopedClientId && scopedClientId !== body.clientId) {
       return reply.code(403).send({ success: false, error: { code: "FORBIDDEN", message: "Access denied." } } as ApiResponse);
+    }
+
+    // Prevent duplicate open tickets with the same title submitted within 24 h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existing = await prisma.supportTicket.findFirst({
+      where: {
+        clientId: body.clientId,
+        title: body.title,
+        status: { in: ["OPEN", "IN_PROGRESS"] },
+        createdAt: { gte: since },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (existing) {
+      return reply.code(200).send({ success: true, data: existing, meta: { requestId: scope.requestId } } as ApiResponse<typeof existing>);
     }
 
     const ticket = await prisma.supportTicket.create({

@@ -11,6 +11,7 @@
     "validate:openapi": "node scripts/validate-openapi.mjs",
     "validate:alerts": "node scripts/validate-alert-rules.mjs",
     "validate:contracts": "pnpm validate:openapi && pnpm validate:alerts",
+    "validate:csp": "bash scripts/check-csp.sh",
     "infra:up": "docker compose -f infrastructure/docker-compose.yml up -d",
     "infra:down": "docker compose -f infrastructure/docker-compose.yml down -v",
     "infra:logs": "docker compose -f infrastructure/docker-compose.yml logs -f",

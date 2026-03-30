@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Mono, DM_Sans, Instrument_Serif, Syne } from "next/font/google";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import "./style/globals.css";
 import "./style/print.css";
 
@@ -60,17 +60,19 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const resolvedTheme = (cookieStore.get("maphari:theme-r")?.value ?? "light") as "light" | "dark";
+  const headersList = await headers();
+  const nonce = headersList.get("x-csp-nonce") ?? "";
   return (
     <html lang="en" data-theme={resolvedTheme} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('maphari:theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=d?'dark':'light';document.documentElement.setAttribute('data-theme',r);document.cookie='maphari:theme-r='+r+';path=/;max-age=31536000;SameSite=Lax';})();` }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('maphari:theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=d?'dark':'light';document.documentElement.setAttribute('data-theme',r);document.cookie='maphari:theme-r='+r+';path=/;max-age=31536000;SameSite=Lax';})();` }} />
         {/* PWA meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Maphari" />
         <link rel="apple-touch-icon" href="/icons/icon.svg" />
         {/* Service worker registration */}
-        <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(err){console.warn('SW registration failed:',err);});});}` }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: `if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(err){console.warn('SW registration failed:',err);});});}` }} />
       </head>
       <body className={`${syne.variable} ${dmSans.variable} ${dmMono.variable} ${instrumentSerif.variable}`}>{children}</body>
     </html>

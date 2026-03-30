@@ -169,7 +169,7 @@
   font-family: var(--font-dm-mono);
   letter-spacing: 0.06em;
   background: var(--green-d);
-  border: 1px solid rgba(34,197,94,0.3);
+  border: 1px solid rgb(34 197 94 / 30%);
   color: var(--green);
 }
 
@@ -322,7 +322,7 @@
 
 .edwHourBtnActive {
   background: var(--accent-d);
-  border-color: rgba(249,115,22,0.3);
+  border-color: rgb(249 115 22 / 30%);
   color: var(--accent);
 }
 
@@ -353,7 +353,7 @@
 
 .edwFlagRow:hover { background: var(--s2); }
 
-.edwFlagRowActive { background: var(--accent-d); border-color: rgba(249,115,22,0.25); }
+.edwFlagRowActive { background: var(--accent-d); border-color: rgb(249 115 22 / 25%); }
 
 .edwFlagCheck {
   width: 16px;
@@ -382,7 +382,7 @@
   font-weight: 700;
   font-family: var(--font-dm-mono);
   background: var(--red-d);
-  border: 1px solid rgba(239,68,68,0.3);
+  border: 1px solid rgb(239 68 68 / 30%);
   color: var(--red);
   letter-spacing: 0.08em;
 }
@@ -433,7 +433,7 @@
   font-weight: 700;
   font-family: var(--font-dm-mono);
   background: var(--green-d);
-  border: 1px solid rgba(34,197,94,0.3);
+  border: 1px solid rgb(34 197 94 / 30%);
   color: var(--green);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -560,9 +560,9 @@
 .pfHealthDot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 
 /* Health chip colour variants (applied alongside pfHealthChip) */
-.pfChipGreen { background: rgba(52,217,139,0.10); border-color: rgba(52,217,139,0.20); color: var(--green); }
-.pfChipAmber { background: rgba(245,166,35,0.08); border-color: rgba(245,166,35,0.18); color: var(--amber); }
-.pfChipRed   { background: rgba(239,68,68,0.08);  border-color: rgba(239,68,68,0.18);  color: var(--red);   }
+.pfChipGreen { background: rgb(52 217 139 / 10%); border-color: rgb(52 217 139 / 20%); color: var(--green); }
+.pfChipAmber { background: rgb(245 166 35 / 8%); border-color: rgb(245 166 35 / 18%); color: var(--amber); }
+.pfChipRed   { background: rgb(239 68 68 / 8%);  border-color: rgb(239 68 68 / 18%);  color: var(--red);   }
 
 /* Health dot colour variants (applied alongside pfHealthDot) */
 .pfDotGreen { background: var(--green); }
@@ -570,9 +570,9 @@
 .pfDotRed   { background: var(--red);   }
 
 /* Priority chip colour variants (applied alongside pfPriorityChip which already has border: 1px solid) */
-.pfPriorityHigh { background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.18);  color: var(--red);   }
-.pfPriorityMed  { background: rgba(245,166,35,0.08);  border-color: rgba(245,166,35,0.18); color: var(--amber); }
-.pfPriorityLow  { background: rgba(255,255,255,0.04); border-color: var(--b2);             color: var(--muted); }
+.pfPriorityHigh { background: rgb(239 68 68 / 8%);   border-color: rgb(239 68 68 / 18%);  color: var(--red);   }
+.pfPriorityMed  { background: rgb(245 166 35 / 8%);  border-color: rgb(245 166 35 / 18%); color: var(--amber); }
+.pfPriorityLow  { background: rgb(255 255 255 / 4%); border-color: var(--b2);             color: var(--muted); }
 
 .pfTaskPills { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
@@ -709,6 +709,7 @@
   cursor: pointer;
   transition: background 120ms, border-color 120ms;
 }
+
 .mcOverloadBtn:hover:not(:disabled) {
   background: color-mix(in oklab, var(--red, #ef4444) 20%, var(--s1));
 }
@@ -735,7 +736,6 @@
   display: flex;
   align-items: flex-end;
   gap: 12px;
-  padding: 20px 0 4px;
   background: var(--s1);
   border: 1px solid var(--b2);
   border-radius: var(--r-md);
@@ -866,17 +866,8 @@
 }
 
 /* Ensure project left stacks the dot + name + client */
-.mcProjectLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
 
 /* Responsive: collapse to 3-col at ≤600px */
-@media (max-width: 600px) {
-  .mcWeekChart { gap: 8px; padding: 14px 14px 12px; }
-  .mcDayBarWrap { height: 72px; }
-}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    MY LEARNING  (mll*)
@@ -947,8 +938,8 @@
   color: var(--muted);
 }
 
-.mllStatusDone { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
-.mllStatusProgress { background: var(--accent-d); border-color: rgba(249,115,22,0.3); color: var(--accent); }
+.mllStatusDone { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
+.mllStatusProgress { background: var(--accent-d); border-color: rgb(249 115 22 / 30%); color: var(--accent); }
 .mllStatusNotStarted { background: var(--s3); border-color: var(--b2); color: var(--muted2); }
 
 .mllCatBadge {
@@ -965,11 +956,11 @@
   color: var(--muted);
 }
 
-.mllCatCompliance { background: var(--red-d); border-color: rgba(239,68,68,0.25); color: var(--red); }
-.mllCatCulture { background: var(--amber-d); border-color: rgba(234,179,8,0.25); color: var(--amber); }
-.mllCatDesign { background: var(--purple-d); border-color: rgba(168,85,247,0.25); color: var(--purple); }
-.mllCatOps { background: var(--blue-d); border-color: rgba(59,130,246,0.25); color: var(--blue); }
-.mllCatSoftSkills { background: var(--green-d); border-color: rgba(34,197,94,0.25); color: var(--green); }
+.mllCatCompliance { background: var(--red-d); border-color: rgb(239 68 68 / 25%); color: var(--red); }
+.mllCatCulture { background: var(--amber-d); border-color: rgb(234 179 8 / 25%); color: var(--amber); }
+.mllCatDesign { background: var(--purple-d); border-color: rgb(168 85 247 / 25%); color: var(--purple); }
+.mllCatOps { background: var(--blue-d); border-color: rgb(59 130 246 / 25%); color: var(--blue); }
+.mllCatSoftSkills { background: var(--green-d); border-color: rgb(34 197 94 / 25%); color: var(--green); }
 
 .mllProgressWrap { display: flex; flex-direction: column; gap: 4px; }
 .mllProgressLabel { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); display: flex; align-items: center; justify-content: space-between; }
@@ -1092,9 +1083,9 @@
   color: var(--muted);
 }
 
-.mlvStatusApproved { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
-.mlvStatusPending { background: var(--amber-d); border-color: rgba(234,179,8,0.3); color: var(--amber); }
-.mlvStatusRejected { background: var(--red-d); border-color: rgba(239,68,68,0.3); color: var(--red); }
+.mlvStatusApproved { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
+.mlvStatusPending { background: var(--amber-d); border-color: rgb(234 179 8 / 30%); color: var(--amber); }
+.mlvStatusRejected { background: var(--red-d); border-color: rgb(239 68 68 / 30%); color: var(--red); }
 
 .mlvHistDates { display: flex; align-items: center; gap: 8px; }
 
@@ -1273,9 +1264,9 @@
 
 .enpScoreBtn:hover { border-color: var(--b3); color: var(--text); }
 
-.enpScoreBtnDetractor { background: var(--red-d); border-color: rgba(239,68,68,0.4); color: var(--red); }
-.enpScoreBtnPassive { background: var(--amber-d); border-color: rgba(234,179,8,0.4); color: var(--amber); }
-.enpScoreBtnPromoter { background: var(--green-d); border-color: rgba(34,197,94,0.4); color: var(--green); }
+.enpScoreBtnDetractor { background: var(--red-d); border-color: rgb(239 68 68 / 40%); color: var(--red); }
+.enpScoreBtnPassive { background: var(--amber-d); border-color: rgb(234 179 8 / 40%); color: var(--amber); }
+.enpScoreBtnPromoter { background: var(--green-d); border-color: rgb(34 197 94 / 40%); color: var(--green); }
 
 .enpZoneLabels { display: flex; align-items: center; justify-content: space-between; }
 
@@ -1399,10 +1390,10 @@
   color: var(--muted);
 }
 
-.rptTypePerformance { background: var(--green-d); border-color: rgba(34,197,94,0.25); color: var(--green); }
-.rptTypeProject { background: var(--blue-d); border-color: rgba(59,130,246,0.25); color: var(--blue); }
-.rptTypeSkills { background: var(--purple-d); border-color: rgba(168,85,247,0.25); color: var(--purple); }
-.rptTypeTime { background: var(--amber-d); border-color: rgba(234,179,8,0.25); color: var(--amber); }
+.rptTypePerformance { background: var(--green-d); border-color: rgb(34 197 94 / 25%); color: var(--green); }
+.rptTypeProject { background: var(--blue-d); border-color: rgb(59 130 246 / 25%); color: var(--blue); }
+.rptTypeSkills { background: var(--purple-d); border-color: rgb(168 85 247 / 25%); color: var(--purple); }
+.rptTypeTime { background: var(--amber-d); border-color: rgb(234 179 8 / 25%); color: var(--amber); }
 
 .rptFormatChip {
   display: inline-flex;
@@ -1418,8 +1409,8 @@
   color: var(--muted);
 }
 
-.rptFormatPdf { background: var(--red-d); border-color: rgba(239,68,68,0.25); color: var(--red); }
-.rptFormatCsv { background: var(--green-d); border-color: rgba(34,197,94,0.25); color: var(--green); }
+.rptFormatPdf { background: var(--red-d); border-color: rgb(239 68 68 / 25%); color: var(--red); }
+.rptFormatCsv { background: var(--green-d); border-color: rgb(34 197 94 / 25%); color: var(--green); }
 
 .rptFreqBadge {
   display: inline-flex;
@@ -1454,7 +1445,7 @@
 .rptScheduleBtn {
   padding: 6px 14px;
   background: var(--accent-d);
-  border: 1px solid rgba(249,115,22,0.3);
+  border: 1px solid rgb(249 115 22 / 30%);
   border-radius: var(--r-sm);
   font-size: 11px;
   font-weight: 700;
@@ -1548,11 +1539,12 @@
 .rptModalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(6,6,14,0.8);
+  background: rgb(6 6 14 / 80%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
@@ -1810,8 +1802,8 @@
   color: var(--muted);
 }
 
-.tlBadgeDone { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
-.tlBadgeProgress { background: var(--accent-d); border-color: rgba(249,115,22,0.3); color: var(--accent); }
+.tlBadgeDone { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
+.tlBadgeProgress { background: var(--accent-d); border-color: rgb(249 115 22 / 30%); color: var(--accent); }
 .tlBadgeUpcoming { background: var(--s3); border-color: var(--b2); color: var(--muted2); }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1864,7 +1856,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: var(--green-d);
-  border: 1px solid rgba(34,197,94,0.3);
+  border: 1px solid rgb(34 197 94 / 30%);
   color: var(--green);
 }
 
@@ -1879,88 +1871,9 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: var(--amber-d);
-  border: 1px solid rgba(234,179,8,0.3);
+  border: 1px solid rgb(234 179 8 / 30%);
   color: var(--amber);
 }
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   WORKLOAD HEATMAP  (wlh*) — primary definition here, pages-g also has these
-   ══════════════════════════════════════════════════════════════════════════════ */
-
-.wlhTableWrap { overflow-x: auto; border: 1px solid var(--b2); border-radius: var(--r-md); }
-
-.wlhTable { width: 100%; border-collapse: collapse; min-width: 600px; }
-
-.wlhNameCell {
-  padding: 10px 14px;
-  background: var(--s1);
-  border-bottom: 1px solid var(--b1);
-  border-right: 1px solid var(--b1);
-  position: sticky;
-  left: 0;
-  z-index: 1;
-}
-
-.wlhStaffName { font-size: 12px; font-weight: 600; font-family: var(--font-syne); color: var(--text); }
-.wlhStaffRole { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); }
-
-.wlhHeaderCell {
-  padding: 8px 10px;
-  background: var(--s2);
-  border-bottom: 1px solid var(--b2);
-  border-right: 1px solid var(--b1);
-  font-size: 9px;
-  font-weight: 700;
-  font-family: var(--font-dm-mono);
-  color: var(--muted2);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.wlhCell {
-  padding: 8px 6px;
-  border-bottom: 1px solid var(--b1);
-  border-right: 1px solid var(--b1);
-  text-align: center;
-  position: relative;
-  transition: background 0.1s;
-}
-
-.wlhCellTip {
-  display: none;
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--s4);
-  border: 1px solid var(--b3);
-  border-radius: var(--r-xs);
-  padding: 4px 8px;
-  font-size: 10px;
-  font-family: var(--font-dm-mono);
-  color: var(--text);
-  white-space: nowrap;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.wlhCell:hover .wlhCellTip { display: block; }
-
-.wlhHours { font-size: 10px; font-weight: 700; font-family: var(--font-dm-mono); color: var(--text); }
-.wlhPct { font-size: 9px; font-family: var(--font-dm-mono); color: var(--muted2); }
-
-.wlhGreen { background: rgba(34,197,94,0.12); }
-.wlhAmber { background: rgba(234,179,8,0.12); }
-.wlhRed { background: rgba(239,68,68,0.14); }
-
-.wlhLegend { display: flex; align-items: center; gap: 14px; padding-top: 10px; }
-.wlhLegendDot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-.wlhLegendGreen { background: var(--green); }
-.wlhLegendAmber { background: var(--amber); }
-.wlhLegendRed { background: var(--red); }
-.wlhLegendLabel { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); letter-spacing: 0.04em; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    MY EMPLOYMENT (emp*) — minimal, main definition in pages-d
@@ -2027,9 +1940,9 @@
   color: var(--muted);
 }
 
-.empRatingExceeds { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
-.empRatingMeets { background: var(--blue-d); border-color: rgba(59,130,246,0.3); color: var(--blue); }
-.empRatingBelow { background: var(--red-d); border-color: rgba(239,68,68,0.3); color: var(--red); }
+.empRatingExceeds { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
+.empRatingMeets { background: var(--blue-d); border-color: rgb(59 130 246 / 30%); color: var(--blue); }
+.empRatingBelow { background: var(--red-d); border-color: rgb(239 68 68 / 30%); color: var(--red); }
 
 .empReviewCard {
   background: var(--s1);
@@ -2090,7 +2003,7 @@
   color: var(--muted);
 }
 
-.empCompStatusCurrent { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
+.empCompStatusCurrent { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
 .empCompStatusPrev { background: var(--s3); border-color: var(--b2); color: var(--muted2); }
 .empCompStatusRow { display: flex; align-items: center; gap: 8px; }
 
@@ -2108,7 +2021,7 @@
   color: var(--muted);
 }
 
-.empChangePlus { background: var(--green-d); border-color: rgba(34,197,94,0.3); color: var(--green); }
+.empChangePlus { background: var(--green-d); border-color: rgb(34 197 94 / 30%); color: var(--green); }
 .empChangeNeutral { background: var(--s3); border-color: var(--b2); color: var(--muted); }
 
 .enpHistoryCardLast { margin-bottom: 0; }

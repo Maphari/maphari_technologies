@@ -138,4 +138,33 @@ export class ContractsController {
   ): Promise<ApiResponse> {
     return proxyRequest(`${this.baseUrl}/contracts/generate`, "POST", body as Record<string, unknown>, this.headers(userId, role, clientId, requestId, traceId));
   }
+
+  // ── POST /contracts/:id/renewal-proposals ────────────────────────────────
+  @Roles("ADMIN")
+  @Post("contracts/:id/renewal-proposals")
+  async createRenewalProposal(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string,
+  ): Promise<ApiResponse> {
+    return proxyRequest(`${this.baseUrl}/contracts/${id}/renewal-proposals`, "POST", body as Record<string, unknown>, this.headers(userId, role, clientId, requestId, traceId));
+  }
+
+  // ── GET /contracts/:id/renewal-proposals ─────────────────────────────────
+  @Roles("ADMIN", "STAFF")
+  @Get("contracts/:id/renewal-proposals")
+  async listRenewalProposals(
+    @Param("id") id: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string,
+  ): Promise<ApiResponse> {
+    return proxyRequest(`${this.baseUrl}/contracts/${id}/renewal-proposals`, "GET", undefined, this.headers(userId, role, clientId, requestId, traceId));
+  }
 }

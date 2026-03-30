@@ -9,24 +9,24 @@
   gap: 14px;
   margin-bottom: 4px;
 }
+
 .clmKpiCard {
   position: relative;
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  background: rgb(19 19 30 / 75%);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
   overflow: hidden;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 .clmKpiCard.toneAccent { border-left-color: var(--accent); }
 .clmKpiCard.toneBlue   { border-left-color: var(--blue);   }
 .clmKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .clmKpiCard.toneRed    { border-left-color: var(--red);    }
+
 .clmKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -35,6 +35,7 @@
   color: var(--muted);
   margin-bottom: 6px;
 }
+
 .clmKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800;
@@ -42,11 +43,14 @@
   line-height: 1;
   letter-spacing: -0.02em;
   margin-bottom: 6px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 .clmKpiValue.toneAccent { color: var(--accent); }
 .clmKpiValue.toneBlue   { color: var(--blue);   }
 .clmKpiValue.toneAmber  { color: var(--amber);  }
 .clmKpiValue.toneRed    { color: var(--red);    }
+
 .clmKpiMeta {
   font-size: 0.62rem;
   color: var(--muted2);
@@ -59,14 +63,16 @@
   gap: 10px;
   margin-bottom: 4px;
 }
+
 .clmStatusTile {
   position: relative;
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 14px 16px;
   overflow: hidden;
 }
+
 .clmStatusTile::before {
   content: "";
   position: absolute;
@@ -74,6 +80,7 @@
   width: 3px;
   border-radius: 0 2px 2px 0;
 }
+
 .clmStatusTileLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -83,13 +90,17 @@
   color: var(--muted);
   margin-bottom: 8px;
 }
+
 .clmStatusTileCount {
   font-family: var(--font-syne), sans-serif;
   font-size: 1.3rem;
   font-weight: 800;
   line-height: 1;
   margin-bottom: 4px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
+
 .clmStatusTilePct {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.55rem;
@@ -102,7 +113,7 @@
 .clmStripBlue::before   { background: var(--blue);   }
 .clmStripAmber::before  { background: var(--amber);  }
 .clmStripRed::before    { background: var(--red);    }
-.clmStripMuted::before  { background: rgba(255,255,255,0.12); }
+.clmStripMuted::before  { background: rgb(255 255 255 / 12%); }
 
 /* ── Filter bar ── */
 .clmFilters {
@@ -111,7 +122,7 @@
   gap: 10px;
   flex-wrap: wrap;
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 10px 14px;
   margin-bottom: 4px;
@@ -128,10 +139,11 @@
 /* ── Section wrapper (list view) ── */
 .clmSection {
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
+
 .clmSectionHeader {
   display: flex;
   align-items: center;
@@ -139,11 +151,13 @@
   padding: 13px 20px;
   border-bottom: 1px solid var(--border);
 }
+
 .clmSectionTitle {
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem;
   font-weight: 700;
 }
+
 .clmSectionMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem;
@@ -157,7 +171,7 @@
   grid-template-columns: 1.6fr 0.8fr 0.7fr 1fr 1fr 0.5fr 0.6fr 56px;
   gap: 10px;
   padding: 9px 20px 9px 23px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem;
@@ -174,17 +188,18 @@
   gap: 10px;
   padding: 13px 20px 13px 23px;
   align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
   cursor: pointer;
 }
+
 .clmClientRow::before {
   content: "";
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 3px;
 }
-.clmClientRow:hover { background: rgba(255,255,255,0.02); }
+.clmClientRow:hover { background: rgb(255 255 255 / 2%); }
 .clmClientRow:last-child { border-bottom: none; }
 .clmClientSelected { background: var(--accent-d) !important; }
 .clmClientSelected::before { background: var(--accent) !important; }
@@ -195,6 +210,7 @@
 /* Status chips */
 .clmStatusChip {
   display: inline-flex; align-items: center;
+  width: fit-content; justify-self: start;
   padding: 2px 8px; border-radius: 4px;
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem; font-weight: 600;
@@ -205,7 +221,7 @@
 .clmChipAccent  { background: var(--accent-d); color: var(--accent); }
 .clmChipAmber   { background: var(--amber-d);  color: var(--amber);  }
 .clmChipRed     { background: var(--red-d);    color: var(--red);    }
-.clmChipMuted   { background: rgba(255,255,255,0.05); color: var(--muted); }
+.clmChipMuted   { background: rgb(255 255 255 / 5%); color: var(--muted); }
 
 /* Tier chips */
 .clmTierChip {
@@ -216,9 +232,9 @@
   letter-spacing: 0.06em; text-transform: uppercase;
   white-space: nowrap;
 }
-.clmTierEnterprise { background: rgba(139,111,255,0.12); color: var(--accent); }
+.clmTierEnterprise { background: rgb(139 111 255 / 12%); color: var(--accent); }
 .clmTierGrowth     { background: var(--blue-d);          color: var(--blue);   }
-.clmTierStarter    { background: rgba(255,255,255,0.05); color: var(--muted);  }
+.clmTierStarter    { background: rgb(255 255 255 / 5%); color: var(--muted);  }
 
 /* Inline health bar */
 .clmHealthCell  { display: flex; flex-direction: column; gap: 4px; }
@@ -256,12 +272,13 @@
   padding: 48px 24px 40px;
   text-align: center;
 }
+
 .clmEmptyIcon {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: rgba(139, 111, 255, 0.08);
-  border: 1px solid rgba(139, 111, 255, 0.18);
+  background: rgb(139 111 255 / 8%);
+  border: 1px solid rgb(139 111 255 / 18%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -269,12 +286,14 @@
   margin-bottom: 4px;
   flex-shrink: 0;
 }
+
 .clmEmptyTitle {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text);
   letter-spacing: -0.01em;
 }
+
 .clmEmptySub {
   font-size: 0.75rem;
   color: var(--muted);
@@ -285,13 +304,15 @@
 
 /* ── Portfolio grid ── */
 .clmPortfolioGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
 .clmPortfolioCard {
   position: relative;
-  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
+  background: var(--s2); border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm); padding: 16px 18px 16px 21px;
   cursor: pointer; transition: background 120ms ease, border-color 120ms ease;
   overflow: hidden;
 }
+
 .clmPortfolioCard::before {
   content: ""; position: absolute;
   left: 0; top: 0; bottom: 0; width: 3px;
@@ -308,7 +329,7 @@
 .clmPortfolioHealthLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 
 .clmPortfolioMeta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
-.clmPortfolioMetaCell { background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-xs); padding: 7px 10px; }
+.clmPortfolioMetaCell { background: rgb(255 255 255 / 2%); border: 1px solid rgb(139 111 255 / 10%); border-radius: var(--r-xs); padding: 7px 10px; }
 .clmPortfolioMetaLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
 .clmPortfolioMetaVal   { font-family: var(--font-dm-mono), monospace; font-size: 0.66rem; font-weight: 700; }
 .clmPortfolioMetaVal.toneAccent { color: var(--accent); }
@@ -316,7 +337,7 @@
 .clmPortfolioMetaVal.toneRed    { color: var(--red);    }
 
 /* ── Detail panel ── */
-.clmDetailPanel { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); overflow: hidden; align-self: start; position: sticky; top: 20px; }
+.clmDetailPanel { background: var(--s2); border: 1px solid rgb(139 111 255 / 10%); border-radius: var(--r-sm); overflow: hidden; align-self: start; position: sticky; top: 20px; }
 .clmDetailHeader { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; border-bottom: 1px solid var(--border); }
 .clmDetailTitle  { font-family: var(--font-syne), sans-serif; font-size: 0.78rem; font-weight: 700; }
 .clmDetailId     { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; color: var(--muted); }
@@ -337,7 +358,7 @@
 
 /* 4-cell metric grid */
 .clmMetaGrid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.clmMetaCell  { background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-xs); padding: 10px 12px; }
+.clmMetaCell  { background: rgb(255 255 255 / 2%); border: 1px solid rgb(139 111 255 / 10%); border-radius: var(--r-xs); padding: 10px 12px; }
 .clmMetaLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 5px; }
 .clmMetaValue { font-family: var(--font-dm-mono), monospace; font-size: 0.7rem; font-weight: 700; }
 .clmMetaValue.toneAccent { color: var(--accent); }
@@ -347,14 +368,14 @@
 
 /* Info blocks */
 .clmInfoLabel { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 5px; }
-.clmInfoBlock { background: rgba(255,255,255,0.02); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-xs); padding: 10px 14px; font-family: var(--font-dm-mono), monospace; font-size: 0.64rem; }
+.clmInfoBlock { background: rgb(255 255 255 / 2%); border: 1px solid rgb(139 111 255 / 10%); border-radius: var(--r-xs); padding: 10px 14px; font-family: var(--font-dm-mono), monospace; font-size: 0.64rem; }
 
 /* Actions */
 .clmDetailActions { display: flex; flex-wrap: wrap; gap: 6px; }
 .clmEmptyDetail   { font-size: 0.75rem; color: var(--muted); }
 
 /* ── Renewal queue ── */
-.clmRenewalWrap   { background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1); border-radius: var(--r-sm); overflow: hidden; }
+.clmRenewalWrap   { background: var(--s2); border: 1px solid rgb(139 111 255 / 10%); border-radius: var(--r-sm); overflow: hidden; }
 .clmRenewalHeader { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; border-bottom: 1px solid var(--border); }
 .clmRenewalTitle  { font-family: var(--font-syne), sans-serif; font-size: 0.78rem; font-weight: 700; }
 .clmRenewalMeta   { font-family: var(--font-dm-mono), monospace; font-size: 0.56rem; letter-spacing: 0.08em; color: var(--muted); }
@@ -363,40 +384,44 @@
   display: grid;
   grid-template-columns: 1.6fr 1fr 0.6fr 1fr 1.5fr;
   gap: 10px; padding: 9px 20px;
-  background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+  background: rgb(255 255 255 / 2%); border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
 }
+
 .clmRenewalRow {
   display: grid;
   grid-template-columns: 1.6fr 1fr 0.6fr 1fr 1.5fr;
   gap: 10px; padding: 13px 20px; align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 .clmRenewalRow:last-child { border-bottom: none; }
-.clmRenewalRowUrgent { background: rgba(255,95,95,0.04); }
+.clmRenewalRowUrgent { background: rgb(255 95 95 / 4%); }
 .clmRenewalClientName { font-size: 0.78rem; font-weight: 700; margin-bottom: 2px; }
 .clmRenewalClientSub  { font-family: var(--font-dm-mono), monospace; font-size: 0.58rem; color: var(--muted); }
 .clmRenewalAction     { font-size: 0.68rem; color: var(--muted); }
 
 /* ── Responsive ── */
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .clmLayout { grid-template-columns: 1fr; }
   .clmDetailPanel { position: static; }
   .clmKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 900px) {
+
+@media (width <= 900px) {
   .clmStatusRail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .clmPortfolioGrid { grid-template-columns: 1fr; }
   .clmListHead { display: none; }
   .clmClientRow { grid-template-columns: 1fr 0.8fr 56px; }
+
   .clmClientRow > :nth-child(3),
   .clmClientRow > :nth-child(4),
   .clmClientRow > :nth-child(5),
   .clmClientRow > :nth-child(7) { display: none; }
 }
-@media (max-width: 600px) {
+
+@media (width <= 600px) {
   .clmStatusRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .clmKpiGrid    { grid-template-columns: 1fr; }
 }
@@ -494,7 +519,7 @@
 }
 
 .commToneBorder {
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .commTitle15 {
@@ -524,7 +549,6 @@
   flex: 1;
   height: 6px;
   appearance: none;
-  -webkit-appearance: none;
   border: none;
   border-radius: 3px;
   background: var(--border);
@@ -537,12 +561,12 @@
 
 .commBarFillTone::-webkit-progress-value {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .commBarFillTone::-moz-progress-bar {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 /* Tone-specific fills for progress bars */
@@ -598,7 +622,7 @@
 
 .cmpiTonePurple { --cmpi-tone: var(--purple); --cmpi-tone-d: var(--purple-d); color: var(--purple); border-color: var(--purple); }
 
-.cmpiToneMuted { --cmpi-tone: var(--muted); --cmpi-tone-d: rgba(255,255,255,0.04); color: var(--muted); border-color: var(--muted); }
+.cmpiToneMuted { --cmpi-tone: var(--muted); --cmpi-tone-d: rgb(255 255 255 / 4%); color: var(--muted); border-color: var(--muted); }
 
 .cmpiValue18 {
   font-size: 1.125rem;
@@ -618,13 +642,10 @@
 
 .cmpiCompItem {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
-  border-left: 3px solid currentColor;
+  border: 1px solid rgb(139 111 255 / 10%);
+  border-left: 3px solid currentcolor;
   border-radius: var(--r-sm);
-  padding-top: 26px !important;
-  padding-bottom: 26px !important;
-  padding-left: 18px !important;
-  padding-right: 18px !important;
+  padding: 26px 18px !important;
   background: var(--s2);
   text-align: left;
   color: var(--text);
@@ -633,7 +654,7 @@
 }
 
 .cmpiCompItem:hover {
-  background: rgba(255,255,255,0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .cmpiCompItemActive {
@@ -670,11 +691,11 @@
 }
 
 .cmpiCompDetail {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 28px;
   background: var(--s2);
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .cmpiCompDetailHead {
@@ -723,7 +744,7 @@
 
 .cmpiTile {
   padding: 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -766,7 +787,7 @@
   gap: 8px;
   padding: 6px 0;
   font-size: 0.75rem;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .cmpiPointRow:last-child {
@@ -787,7 +808,7 @@
 }
 
 .cmpiBeatCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--accent-d);
@@ -831,7 +852,7 @@
 
 .cmpiTableHead {
   padding: 10px 16px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   color: var(--muted);
@@ -871,7 +892,7 @@
 .cmpiSummaryCell {
   text-align: center;
   padding: 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -893,7 +914,6 @@
   width: 100%;
   height: 8px;
   appearance: none;
-  -webkit-appearance: none;
   border: none;
   border-radius: 4px;
   background: var(--border);
@@ -1010,7 +1030,7 @@
 .cmpiPosRange {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: 3px;
 }
 
@@ -1041,9 +1061,9 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1.4 / 1;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-md);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   overflow: hidden;
 }
 
@@ -1133,15 +1153,15 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
   border: 2px solid var(--bg);
-  box-shadow: 0 0 0 2px currentColor;
+  box-shadow: 0 0 0 2px currentcolor;
 }
 
 .cmpiDotUs {
   width: 18px;
   height: 18px;
-  box-shadow: 0 0 0 3px currentColor, 0 0 12px currentColor;
+  box-shadow: 0 0 0 3px currentcolor, 0 0 12px currentcolor;
 }
 
 .cmpiDotLabel {
@@ -1237,7 +1257,7 @@
 }
 
 .crisCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   overflow: hidden;
@@ -1271,7 +1291,7 @@
 }
 
 .crisHead:hover {
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .crisHeadTop {
@@ -1339,7 +1359,7 @@
 
 .crisSeverityTagMedium { background: var(--blue-d); color: var(--blue); }
 
-.crisSeverityTagLow { background: rgba(255,255,255,0.04); color: var(--muted); }
+.crisSeverityTagLow { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 .crisClient {
   font-size: 0.75rem;
@@ -1390,7 +1410,7 @@
 
 .crisActionBox {
   padding: 12px 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -1425,7 +1445,7 @@
 
 .crisExpandedInner {
   padding: 20px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
 }
 
@@ -1517,11 +1537,11 @@
 }
 
 .crisChainCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .crisChainRow {
@@ -1574,7 +1594,7 @@
 }
 
 .crisPolicyCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -1585,7 +1605,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .crisPolicyRow:last-child {
@@ -1625,7 +1645,7 @@
 }
 
 .crisPlayCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -1695,7 +1715,7 @@
   gap: 14px;
   align-items: center;
   padding: 16px 20px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
 }
@@ -1716,7 +1736,7 @@
 }
 
 .refToneBorder {
-  border-left: 3px solid currentColor;
+  border-left: 3px solid currentcolor;
 }
 
 .refLogRow {
@@ -1747,7 +1767,7 @@
 
 .refToneTag.tonePurple { background: var(--purple-d); }
 
-.refToneTag.toneMuted { background: rgba(255,255,255,0.04); }
+.refToneTag.toneMuted { background: rgb(255 255 255 / 4%); }
 
 .refTopRow {
   display: grid;
@@ -1780,7 +1800,7 @@
 
 .refTopRank.toneRed { background: var(--red-d); color: var(--red); }
 
-.refTopRank.toneMuted { background: rgba(255,255,255,0.04); color: var(--muted); }
+.refTopRank.toneMuted { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 .refTitle15 {
   font-size: 0.9375rem;
@@ -1792,7 +1812,7 @@
 
 .refToneBtn {
   cursor: pointer;
-  border: 1px solid currentColor;
+  border: 1px solid currentcolor;
   background: transparent;
   padding: 6px 14px;
   border-radius: var(--r-xs);
@@ -1802,7 +1822,7 @@
 }
 
 .refToneBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .refBarTone {
@@ -1811,12 +1831,12 @@
 
 .refBarTone::-webkit-progress-value {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .refBarTone::-moz-progress-bar {
   border-radius: 3px;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .refBarTone.toneAccent::-webkit-progress-value { background: var(--accent); }
@@ -1907,9 +1927,9 @@
 
 .sciTonePurple { --sci-tone: var(--purple); --sci-tone-d: var(--purple-d); color: var(--purple); border-color: var(--purple); }
 
-.sciToneMuted { --sci-tone: var(--muted); --sci-tone-d: rgba(255,255,255,0.04); color: var(--muted); border-color: var(--muted); }
+.sciToneMuted { --sci-tone: var(--muted); --sci-tone-d: rgb(255 255 255 / 4%); color: var(--muted); border-color: var(--muted); }
 
-.sciToneBorder { --sci-tone: var(--border); --sci-tone-d: rgba(255,255,255,0.03); color: var(--border); border-color: var(--border); }
+.sciToneBorder { --sci-tone: var(--border); --sci-tone-d: rgb(255 255 255 / 3%); color: var(--border); border-color: var(--border); }
 
 /* Fill variants for SCI progress bars */
 
@@ -1947,7 +1967,7 @@
   font-family: var(--font-dm-mono), monospace;
   font-weight: 700;
   text-transform: uppercase;
-  background: var(--sci-tone-d, rgba(255,255,255,0.04));
+  background: var(--sci-tone-d, rgb(255 255 255 / 4%));
 }
 
 .sciAvatar {
@@ -1978,7 +1998,7 @@
 
 .sciSegBtn {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -1989,12 +2009,12 @@
 }
 
 .sciSegBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .sciSegBtnActive {
   background: var(--sci-tone-d, var(--accent-d));
-  border-color: currentColor;
+  border-color: currentcolor;
   color: inherit;
 }
 
@@ -2017,7 +2037,7 @@
 
 .sciStatBox {
   padding: 12px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   text-align: center;
 }
@@ -2104,7 +2124,6 @@
   height: 100%;
   border: none;
   appearance: none;
-  -webkit-appearance: none;
   background: transparent;
 }
 
@@ -2126,7 +2145,7 @@
 }
 
 .sciRatioCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px;
   background: var(--s2);
@@ -2169,7 +2188,7 @@
 }
 
 .sciChurnCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -2249,7 +2268,7 @@
 
 .sciMonitorBtn {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -2260,7 +2279,7 @@
 }
 
 .sciMonitorBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .sciRiskSummary {
@@ -2325,7 +2344,7 @@
   grid-template-columns: 1fr 0.6fr 0.8fr 0.8fr 0.6fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   color: var(--muted);
@@ -2369,7 +2388,7 @@
 
 .sciRetentionTile {
   padding: 14px;
-  background: rgba(255,255,255,0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
   text-align: center;
 }
@@ -2419,7 +2438,7 @@
 }
 
 .sciUpsellBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .sciTextBg {
@@ -2473,7 +2492,7 @@
 /* --- Table --- */
 
 .emprTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -2483,7 +2502,7 @@
   grid-template-columns: 2fr 1.4fr 0.9fr 0.9fr 0.8fr 0.9fr 0.5fr 0.7fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -2497,11 +2516,11 @@
 }
 
 .emprTableRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .emprReviewWarn {
-  background: rgba(239, 68, 68, 0.04);
+  background: rgb(239 68 68 / 4%);
 }
 
 .emprEmpCell {
@@ -2575,12 +2594,12 @@
 }
 
 .emprSideItem:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .emprSideItemActive {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--r-sm);
 }
 
@@ -2601,14 +2620,14 @@
 /* --- Detail Card --- */
 
 .emprDetailCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
 }
 
 .emprDetailCardTone {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgb(255 255 255 / 8%);
 }
 
 .emprProfileHead {
@@ -2660,7 +2679,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.78rem;
 }
 
@@ -2672,7 +2691,7 @@
 
 .emprFieldBlock {
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .emprBlockLabel {
@@ -2714,9 +2733,9 @@
   font-family: var(--font-dm-mono), monospace;
   padding: 4px 10px;
   border-radius: var(--r-xs);
-  background: rgba(239, 68, 68, 0.08);
+  background: rgb(239 68 68 / 8%);
   color: var(--red);
-  border: 1px solid rgba(239, 68, 68, 0.15);
+  border: 1px solid rgb(239 68 68 / 15%);
 }
 
 /* --- Notes --- */
@@ -2724,8 +2743,8 @@
 .emprNotesBox {
   padding: 14px 16px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 3%);
+  border: 1px solid rgb(255 255 255 / 6%);
   margin-bottom: 20px;
 }
 
@@ -2758,7 +2777,7 @@
 }
 
 .emprPanelCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -2769,7 +2788,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .emprComplianceLeft {
@@ -2807,7 +2826,7 @@
 /* --- Org Chart --- */
 
 .emprOrgCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 32px;
   background: var(--s2);
@@ -2871,7 +2890,7 @@
 }
 
 .emprLeadCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px 22px;
   text-align: center;
@@ -2879,7 +2898,7 @@
 }
 
 .emprLeadCardTone {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgb(255 255 255 / 10%);
 }
 
 .emprLeadId {
@@ -2904,7 +2923,7 @@
 }
 
 .emprReportCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 10px 16px;
   text-align: center;
@@ -2912,7 +2931,7 @@
 }
 
 .emprReportCardTone {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgb(255 255 255 / 8%);
 }
 
 .emprReportName {
@@ -2965,15 +2984,15 @@
 
 .lvaToneAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.lvaToneRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.lvaToneRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.lvaToneAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.lvaToneAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.lvaToneBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.lvaToneBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.lvaTonePurple { background: rgba(167, 139, 250, 0.12); color: var(--purple); }
+.lvaTonePurple { background: rgb(167 139 250 / 12%); color: var(--purple); }
 
-.lvaToneMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.lvaToneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Status pills --- */
 
@@ -2988,13 +3007,13 @@
 
 .lvaStatusAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.lvaStatusRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.lvaStatusRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.lvaStatusAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.lvaStatusAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.lvaStatusBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.lvaStatusBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.lvaStatusMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.lvaStatusMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Fill variants (progress bars) --- */
 
@@ -3022,19 +3041,19 @@
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   transition: background 120ms ease;
 }
 
 .lvaReqRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lvaReqRowPending {
-  border-color: rgba(245, 158, 11, 0.2);
-  background: rgba(245, 158, 11, 0.03);
+  border-color: rgb(245 158 11 / 20%);
+  background: rgb(245 158 11 / 3%);
 }
 
 .lvaReqId {
@@ -3120,8 +3139,8 @@
   width: 28px;
   height: 28px;
   border-radius: var(--r-xs);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgb(239 68 68 / 30%);
+  background: rgb(239 68 68 / 8%);
   color: var(--red);
   font-size: 0.82rem;
   cursor: pointer;
@@ -3131,13 +3150,13 @@
 }
 
 .lvaDeclineBtn:hover {
-  background: rgba(239, 68, 68, 0.18);
+  background: rgb(239 68 68 / 18%);
 }
 
 /* --- Leave Balances Table --- */
 
 .lvaTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -3147,7 +3166,7 @@
   grid-template-columns: 2fr 1.4fr 1.2fr 0.8fr 0.5fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -3161,11 +3180,11 @@
 }
 
 .lvaBalRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lvaBalLow {
-  background: rgba(239, 68, 68, 0.04);
+  background: rgb(239 68 68 / 4%);
 }
 
 .lvaRole {
@@ -3197,12 +3216,11 @@
   height: 5px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
   background: transparent;
 }
 
 .lvaMiniBar::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3234,7 +3252,7 @@
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 100px;
-  background: rgba(239, 68, 68, 0.12);
+  background: rgb(239 68 68 / 12%);
   color: var(--red);
 }
 
@@ -3255,7 +3273,7 @@
   grid-template-columns: 100px repeat(23, 1fr);
   gap: 0;
   padding: 8px 0;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -3303,11 +3321,11 @@
 }
 
 .lvaCalDayPending {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgb(245 158 11 / 10%);
 }
 
 .lvaCalDayLeave {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .lvaCalDot {
@@ -3357,7 +3375,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .lvaUtilName {
@@ -3371,11 +3389,10 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .lvaUtilTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3396,7 +3413,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .lvaTypeName {
@@ -3410,11 +3427,10 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .lvaTypeTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3431,10 +3447,10 @@
 }
 
 .lvaComplianceCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lvaComplianceTitle {
@@ -3485,15 +3501,15 @@
 
 .lndToneAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.lndToneRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.lndToneRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.lndToneAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.lndToneAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.lndToneBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.lndToneBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.lndTonePurple { background: rgba(167, 139, 250, 0.12); color: var(--purple); }
+.lndTonePurple { background: rgb(167 139 250 / 12%); color: var(--purple); }
 
-.lndToneMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.lndToneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Fill variants (progress) --- */
 
@@ -3509,21 +3525,21 @@
 
 .lndPlanFillAccent { fill: color-mix(in oklab, var(--accent) 25%, transparent); }
 
-.lndPlanFillAmber  { fill: rgba(245, 158, 11, 0.25); }
+.lndPlanFillAmber  { fill: rgb(245 158 11 / 25%); }
 
-.lndPlanFillBlue   { fill: rgba(96, 165, 250, 0.25); }
+.lndPlanFillBlue   { fill: rgb(96 165 250 / 25%); }
 
-.lndPlanFillMuted  { fill: rgba(255, 255, 255, 0.1); }
+.lndPlanFillMuted  { fill: rgb(255 255 255 / 10%); }
 
 /* --- Skill tone variants --- */
 
-.lndSkillTone0 { background: rgba(255, 255, 255, 0.04); }
+.lndSkillTone0 { background: rgb(255 255 255 / 4%); }
 
-.lndSkillTone1 { background: rgba(239, 68, 68, 0.35); }
+.lndSkillTone1 { background: rgb(239 68 68 / 35%); }
 
-.lndSkillTone2 { background: rgba(245, 158, 11, 0.35); }
+.lndSkillTone2 { background: rgb(245 158 11 / 35%); }
 
-.lndSkillTone3 { background: rgba(96, 165, 250, 0.4); }
+.lndSkillTone3 { background: rgb(96 165 250 / 40%); }
 
 .lndSkillTone4 { background: color-mix(in oklab, var(--accent) 40%, transparent); }
 
@@ -3538,7 +3554,7 @@
 }
 
 .lndCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   overflow: hidden;
@@ -3551,7 +3567,7 @@
 }
 
 .lndCardHead:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lndHeadGrid {
@@ -3600,11 +3616,10 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .lndTrack6::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3628,7 +3643,7 @@
 
 .lndExpandWrap {
   padding: 0 20px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-top: 1px solid var(--border);
 }
 
@@ -3646,7 +3661,7 @@
   align-items: center;
   padding: 10px 14px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgb(255 255 255 / 4%);
 }
 
 .lndCourseName {
@@ -3702,7 +3717,7 @@
 /* --- All Courses Table --- */
 
 .lndTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -3712,7 +3727,7 @@
   grid-template-columns: 1fr 2fr 1.2fr 0.8fr 0.8fr 0.6fr 0.5fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -3753,7 +3768,7 @@
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
 }
@@ -3778,7 +3793,7 @@
   width: 100%;
   height: 8px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
 }
 
@@ -3829,9 +3844,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .lndPortfolioStats {
@@ -3859,7 +3874,7 @@
 
 .lndSkillsCellHead {
   padding: 12px 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -3870,9 +3885,9 @@
   color: var(--muted);
   text-transform: uppercase;
   text-align: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
-  border-left: 1px solid rgba(255, 255, 255, 0.03);
+  border-left: 1px solid rgb(255 255 255 / 3%);
 }
 
 .lndSkillsContents {
@@ -3883,7 +3898,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 10px;
+  padding: 10px;
 }
 
 .lndSkillsStaffName {
@@ -3897,7 +3912,7 @@
   justify-content: center;
   gap: 3px;
   padding: 10px 4px;
-  border-left: 1px solid rgba(255, 255, 255, 0.03);
+  border-left: 1px solid rgb(255 255 255 / 3%);
 }
 
 .lndSkillSquare {
@@ -3969,25 +3984,25 @@
 
 .rcpPillAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.rcpPillRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.rcpPillRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.rcpPillAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.rcpPillAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.rcpPillBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.rcpPillBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.rcpPillMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.rcpPillMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 /* --- Kanban card tone --- */
 
 .rcpKanbanCardAccent { border-color: color-mix(in oklab, var(--accent) 15%, transparent); background: color-mix(in oklab, var(--accent) 4%, transparent); }
 
-.rcpKanbanCardRed    { border-color: rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.04); }
+.rcpKanbanCardRed    { border-color: rgb(239 68 68 / 15%); background: rgb(239 68 68 / 4%); }
 
-.rcpKanbanCardAmber  { border-color: rgba(245, 158, 11, 0.15); background: rgba(245, 158, 11, 0.04); }
+.rcpKanbanCardAmber  { border-color: rgb(245 158 11 / 15%); background: rgb(245 158 11 / 4%); }
 
-.rcpKanbanCardBlue   { border-color: rgba(96, 165, 250, 0.15); background: rgba(96, 165, 250, 0.04); }
+.rcpKanbanCardBlue   { border-color: rgb(96 165 250 / 15%); background: rgb(96 165 250 / 4%); }
 
-.rcpKanbanCardMuted  { border-color: rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); }
+.rcpKanbanCardMuted  { border-color: rgb(255 255 255 / 8%); background: rgb(255 255 255 / 2%); }
 
 /* --- Bar fill variants --- */
 
@@ -3995,12 +4010,11 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
 }
 
 .rcpBarFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -4027,14 +4041,14 @@
 }
 
 .rcpRoleCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   overflow: hidden;
 }
 
 .rcpRoleCardHigh {
-  border-color: rgba(239, 68, 68, 0.2);
+  border-color: rgb(239 68 68 / 20%);
 }
 
 .rcpRoleHead {
@@ -4044,7 +4058,7 @@
 }
 
 .rcpRoleHead:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .rcpRoleSummary {
@@ -4110,7 +4124,7 @@
 
 .rcpExpanded {
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-top: 1px solid var(--border);
 }
 
@@ -4140,7 +4154,7 @@
   gap: 12px;
   align-items: center;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgb(255 255 255 / 5%);
   border-radius: var(--r-sm);
 }
 
@@ -4169,7 +4183,7 @@
   color: var(--red);
   padding: 3px 8px;
   border-radius: var(--r-xs);
-  background: rgba(239, 68, 68, 0.08);
+  background: rgb(239 68 68 / 8%);
 }
 
 .rcpActionRow {
@@ -4221,7 +4235,7 @@
 }
 
 .rcpKanbanCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 10px 12px;
 }
@@ -4249,7 +4263,7 @@
 /* --- Candidates table --- */
 
 .rcpTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -4259,7 +4273,7 @@
   grid-template-columns: 1.4fr 1.2fr 1fr 1fr 0.5fr 0.5fr auto;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -4299,7 +4313,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .rcpTrack80 {
@@ -4341,12 +4355,12 @@
   gap: 12px;
   padding: 14px 18px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
 
 .staffReqRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .staffAcctHead {
@@ -4354,7 +4368,7 @@
   grid-template-columns: 2fr 1fr 1fr auto;
   gap: 12px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -4388,17 +4402,17 @@
 
 .onboardToneAccent    { --_tone: var(--accent);  --_tone-bg: color-mix(in oklab, var(--accent) 12%, transparent); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneRed       { --_tone: var(--red);     --_tone-bg: rgba(239, 68, 68, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneRed       { --_tone: var(--red);     --_tone-bg: rgb(239 68 68 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneAmber     { --_tone: var(--amber);   --_tone-bg: rgba(245, 158, 11, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneAmber     { --_tone: var(--amber);   --_tone-bg: rgb(245 158 11 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneBlue      { --_tone: var(--blue);    --_tone-bg: rgba(96, 165, 250, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneBlue      { --_tone: var(--blue);    --_tone-bg: rgb(96 165 250 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardTonePurple    { --_tone: var(--purple);  --_tone-bg: rgba(167, 139, 250, 0.12); background: var(--_tone-bg); color: var(--_tone); }
+.onboardTonePurple    { --_tone: var(--purple);  --_tone-bg: rgb(167 139 250 / 12%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneMuted     { --_tone: var(--muted);   --_tone-bg: rgba(255, 255, 255, 0.06); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneMuted     { --_tone: var(--muted);   --_tone-bg: rgb(255 255 255 / 6%); background: var(--_tone-bg); color: var(--_tone); }
 
-.onboardToneVarBorder { --_tone: var(--border);  --_tone-bg: rgba(255, 255, 255, 0.04); background: var(--_tone-bg); color: var(--_tone); }
+.onboardToneVarBorder { --_tone: var(--border);  --_tone-bg: rgb(255 255 255 / 4%); background: var(--_tone-bg); color: var(--_tone); }
 
 /* text/border tone helpers */
 
@@ -4415,7 +4429,7 @@
 .onboardToneText.toneRed    { color: var(--red);    }
 .onboardToneText.tonePurple { color: var(--purple); }
 .onboardToneText.toneMuted  { color: var(--muted);  }
-.onboardToneText.toneText   { color: rgba(255,255,255,0.45); }
+.onboardToneText.toneText   { color: rgb(255 255 255 / 45%); }
 
 /* onboardToneBorder.tone* */
 .onboardToneBorder.toneAccent { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
@@ -4436,7 +4450,7 @@
 .onboardTaskCheck.toneBlue   { border-color: var(--blue);   }
 .onboardTaskCheck.toneAmber  { border-color: var(--amber);  }
 .onboardTaskCheck.toneRed    { border-color: var(--red);    }
-.onboardTaskCheck.toneText   { border-color: rgba(255,255,255,0.15); }
+.onboardTaskCheck.toneText   { border-color: rgb(255 255 255 / 15%); }
 
 /* onboardTemplateCard.tone* (left-border accent strip) */
 .onboardTemplateCard.toneAccent { border-left: 3px solid var(--accent); }
@@ -4448,9 +4462,9 @@
 /* --- Alert banner --- */
 
 .onboardAlert {
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  border: 1px solid rgb(245 158 11 / 20%);
   border-radius: var(--r-sm);
-  background: rgba(245, 158, 11, 0.04);
+  background: rgb(245 158 11 / 4%);
 }
 
 /* --- Row layout --- */
@@ -4469,11 +4483,10 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .onboardProgTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -4601,13 +4614,13 @@
 }
 
 .sstFeedbackNeg {
-  border-color: rgba(239, 68, 68, 0.15);
-  background: rgba(239, 68, 68, 0.03);
+  border-color: rgb(239 68 68 / 15%);
+  background: rgb(239 68 68 / 3%);
 }
 
 .sstFeedbackNeutral {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* --- Latest Pulse split --- */
@@ -4626,14 +4639,14 @@
 
 .sstScoreCard {
   padding: 12px 16px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
 }
 
 .sstScoreCardWarn {
-  border-color: rgba(245, 158, 11, 0.2);
-  background: rgba(245, 158, 11, 0.03);
+  border-color: rgb(245 158 11 / 20%);
+  background: rgb(245 158 11 / 3%);
 }
 
 .sstScoreRow {
@@ -4653,11 +4666,10 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .sstTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -4697,7 +4709,7 @@
 }
 
 .sstEnpsCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -4750,7 +4762,7 @@
 /* --- Strongest / Weakest --- */
 
 .sstStrongWeakCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
   display: grid;
@@ -4760,7 +4772,7 @@
 .sstStrongBlock {
   padding: 16px;
   text-align: center;
-  border-right: 1px solid rgba(139, 111, 255, 0.1);
+  border-right: 1px solid rgb(139 111 255 / 10%);
 }
 
 .sstWeakBlock {
@@ -4820,7 +4832,7 @@
   gap: 16px;
   align-items: center;
   padding: 12px 16px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
 }
@@ -4870,9 +4882,9 @@
   font-size: 0.76rem;
   color: var(--muted);
   padding: 12px 16px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   margin-bottom: 16px;
 }
 
@@ -4883,7 +4895,7 @@
 }
 
 .sstFeedbackCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px;
 }
@@ -4926,7 +4938,7 @@
   font-style: italic;
   line-height: 1.5;
   padding-left: 12px;
-  border-left: 2px solid rgba(255, 255, 255, 0.08);
+  border-left: 2px solid rgb(255 255 255 / 8%);
 }
 
 .sstEmpty {
@@ -4945,7 +4957,7 @@
 }
 
 .sstSettingsCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -4956,7 +4968,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.78rem;
 }
 
@@ -4971,7 +4983,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .sstQuestionNo {
@@ -5032,15 +5044,15 @@
 
 .tprToneAccent { background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent); }
 
-.tprToneRed    { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.tprToneRed    { background: rgb(239 68 68 / 12%); color: var(--red); }
 
-.tprToneAmber  { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
+.tprToneAmber  { background: rgb(245 158 11 / 12%); color: var(--amber); }
 
-.tprToneBlue   { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+.tprToneBlue   { background: rgb(96 165 250 / 12%); color: var(--blue); }
 
-.tprTonePurple { background: rgba(167, 139, 250, 0.12); color: var(--purple); }
+.tprTonePurple { background: rgb(167 139 250 / 12%); color: var(--purple); }
 
-.tprToneMuted  { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.tprToneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .tprToneBorder { background: transparent; border-color: var(--border); }
 
@@ -5072,7 +5084,7 @@
   gap: 14px;
   align-items: center;
   padding: 14px 18px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   cursor: pointer;
@@ -5080,7 +5092,7 @@
 }
 
 .tprOverviewRow:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .tprNameCol {
@@ -5128,11 +5140,10 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .tprTrack6::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -5178,12 +5189,12 @@
 }
 
 .tprProfileNavItem:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
 }
 
 .tprProfileNavItemActive {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 6%);
 }
 
 .tprProfileNavName {
@@ -5194,7 +5205,7 @@
 /* --- Profile Card --- */
 
 .tprProfileCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -5240,10 +5251,10 @@
 
 .tprMetricTile {
   padding: 14px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   text-align: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .tprMetricValue {
@@ -5319,9 +5330,9 @@
 
 .tprDevCard {
   padding: 16px;
-  border: 1px solid rgba(245, 158, 11, 0.15);
+  border: 1px solid rgb(245 158 11 / 15%);
   border-radius: var(--r-sm);
-  background: rgba(245, 158, 11, 0.03);
+  background: rgb(245 158 11 / 3%);
 }
 
 .tprStrengthHd {
@@ -5373,7 +5384,7 @@
 }
 
 .tprUtilCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -5394,7 +5405,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .tprUtilName {
@@ -5413,11 +5424,10 @@
   height: 8px;
   border-radius: 4px;
   appearance: none;
-  -webkit-appearance: none;
 }
 
 .tprUtilFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 4px;
 }
 
@@ -5438,7 +5448,7 @@
   top: 0;
   width: 1px;
   height: 8px;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgb(255 255 255 / 40%);
 }
 
 .tprUtilPct {
@@ -5455,7 +5465,7 @@
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 100px;
-  background: rgba(245, 158, 11, 0.12);
+  background: rgb(245 158 11 / 12%);
   color: var(--amber);
 }
 
@@ -5464,7 +5474,7 @@
   color: var(--muted);
   margin-top: 14px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 /* --- Big Trend Bars --- */
@@ -5493,7 +5503,7 @@
 /* --- Tasks & Output table --- */
 
 .tprTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -5503,7 +5513,7 @@
   grid-template-columns: 2fr 0.7fr 0.7fr 1.2fr 0.6fr 0.6fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -5553,12 +5563,11 @@
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  -webkit-appearance: none;
   margin-bottom: 4px;
 }
 
 .tprTrack6Mb::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -5614,7 +5623,7 @@
 }
 
 .teamOrgCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   text-align: center;
@@ -5624,7 +5633,7 @@
 }
 
 .teamOrgCard:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .teamOrgWrap {
@@ -5675,7 +5684,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
 }
 
 /* --- Departments --- */
@@ -5692,7 +5701,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
 }
 
 .teamRounded8 {
@@ -5704,7 +5713,7 @@
 }
 
 .teamToneBtn {
-  border: 1px solid currentColor;
+  border: 1px solid currentcolor;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -5715,7 +5724,7 @@
 }
 
 .teamToneBtn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .teamAddCard {
@@ -5738,7 +5747,7 @@
   grid-template-columns: 1.6fr 1fr 0.8fr 0.5fr 2fr;
   gap: 12px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
@@ -5752,7 +5761,7 @@
   grid-template-columns: 1.6fr 1fr 0.8fr 0.5fr 2fr;
   gap: 12px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .teamRolesRowPad {
@@ -5763,7 +5772,7 @@
 
 .teamInfoCard {
   padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .teamHireCard {
@@ -5784,9 +5793,10 @@
 
 /* ── Team Structure — root + utilities ── */
 .teamRoot { display: grid; gap: 20px; }
+
 .teamInfoBanner {
   border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,0.015);
+  background: rgb(255 255 255 / 1.5%);
   line-height: 1.6;
 }
 .teamAddHireFooter { border-top: 1px solid var(--border); }
@@ -5797,29 +5807,30 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
+
 .teamKpiCard {
   position: relative;
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  background: rgb(19 19 30 / 75%);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 .teamKpiCard.toneAccent { border-left-color: var(--accent); }
 .teamKpiCard.toneBlue   { border-left-color: var(--blue);   }
 .teamKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .teamKpiCard.toneRed    { border-left-color: var(--red);    }
 .teamKpiCard.tonePurple { border-left-color: var(--purple); }
+
 .teamKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; text-transform: uppercase;
   letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px;
 }
+
 .teamKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800; font-size: 1.75rem;
@@ -5830,6 +5841,7 @@
 .teamKpiValue.toneAmber  { color: var(--amber);  }
 .teamKpiValue.toneRed    { color: var(--red);    }
 .teamKpiValue.tonePurple { color: var(--purple); }
+
 .teamKpiMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; color: var(--muted2);
@@ -5838,23 +5850,26 @@
 /* ── Filter toolbar ── */
 .teamFilters {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
+  background: var(--s2); border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm); padding: 10px 14px;
 }
 
 /* ── Section wrapper ── */
 .teamSection {
-  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
+  background: var(--s2); border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm); overflow: hidden;
 }
+
 .teamSectionHeader {
   display: flex; align-items: center; justify-content: space-between;
   padding: 13px 20px; border-bottom: 1px solid var(--border);
 }
+
 .teamSectionTitle {
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem; font-weight: 700;
 }
+
 .teamSectionMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem; letter-spacing: 0.08em; color: var(--muted);
@@ -5866,7 +5881,7 @@
   grid-template-columns: 2fr auto 0.8fr 1fr auto auto;
   gap: 16px; align-items: center;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .teamHireRow:last-child { border-bottom: none; }
 
@@ -5913,27 +5928,27 @@
 .teamToneBtn.toneRed    { border-color: var(--red);    color: var(--red);    }
 .teamToneBtn.tonePurple { border-color: var(--purple); color: var(--purple); }
 
-@media (max-width: 1100px) { .teamKpiGrid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 700px)  { .teamKpiGrid { grid-template-columns: 1fr; } }
+@media (width <= 1100px) { .teamKpiGrid { grid-template-columns: repeat(2, 1fr); } }
 
+@media (width <= 700px)  { .teamKpiGrid { grid-template-columns: 1fr; } }
 
 /* ── Responsive: KPI grids ──────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .clmKpiGrid,
   .teamKpiGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .clmKpiGrid,
   .teamKpiGrid {
     grid-template-columns: 1fr;
   }
 }
 
-
 /* ── Responsive: layout splits and card grids ───────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   /* 2-col layout splits → single column */
   .commDetailSplitOpen,
   .cmpiCompSplit,
@@ -5969,7 +5984,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   /* 3-col card grids fully collapse */
   .clmPortfolioMeta,
   .sciStatsGrid,
@@ -5979,36 +5994,42 @@
 }
 
 /* ── CMPI mobile fixes ───────────────────────────────────────────── */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   /* Competitor list items — reduce vertical padding */
   .cmpiCompItem {
     padding-top: 14px;
     padding-bottom: 14px;
   }
+
   /* Competitor detail panel — reduce padding */
   .cmpiCompDetail {
     padding: 16px;
   }
+
   /* Win/loss table — compress 5 cols to fit */
   .cmpiWinLossGrid {
     grid-template-columns: minmax(0, 0.6fr) minmax(0, 1fr) minmax(0, 0.5fr) minmax(0, 0.8fr) minmax(0, 1.4fr);
     gap: 6px;
   }
+
   .cmpiTableHead,
   .cmpiTableRow {
     padding-left: 10px;
     padding-right: 10px;
     font-size: 0.58rem;
   }
+
   /* Market rates table — compress 5 cols to fit */
   .cmpiRatesGrid {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.6fr) minmax(0, 0.5fr) minmax(0, 0.5fr) minmax(0, 1.2fr);
     gap: 6px;
   }
+
   .cmpiRatesRow {
     padding-left: 10px;
     padding-right: 10px;
   }
+
   /* Win/loss summary grid stays 2-col but tighter */
   .cmpiSummaryGrid {
     grid-template-columns: 1fr 1fr;

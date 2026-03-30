@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, PipelineWidget, TableWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAdminClientCLVWithRefresh, type ClientCLV } from "../../../../lib/api/admin/analytics";
@@ -137,7 +138,7 @@ export function CLVAnalyticsPage({ session, onNotify }: Props) {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / CLV & CHURN RISK ANALYTICS</div>
           <h1 className={styles.pageTitle}>Client Lifetime Value &amp; Churn Risk</h1>
           <div className={styles.pageSub}>Projected CLV and churn risk score per client</div>
         </div>
@@ -155,24 +156,52 @@ export function CLVAnalyticsPage({ session, onNotify }: Props) {
         </div>
       ) : null}
 
-      {/* ── KPI strip ──────────────────────────────────────────────────── */}
-      <div className={styles.clvKpiGrid}>
-        <div className={`${styles.kpiCard} ${styles.kpiTeal}`}>
-          <p>Total Projected ARR</p>
-          <strong>{formatZAR(totalARR)}</strong>
-          <span className={styles.kpiSub}>across {rows.length} client{rows.length !== 1 ? "s" : ""}</span>
-        </div>
-        <div className={`${styles.kpiCard} ${styles.kpiSlate}`}>
-          <p>Avg CLV per Client</p>
-          <strong>{formatZAR(avgCLV)}</strong>
-          <span className={styles.kpiSub}>annual projected value</span>
-        </div>
-        <div className={`${styles.kpiCard} ${highRiskCount > 0 ? styles.kpiRed : styles.kpiTeal}`}>
-          <p>High Churn Risk</p>
-          <strong>{highRiskCount}</strong>
-          <span className={styles.kpiSub}>{highRiskCount > 0 ? "clients above 60% risk" : "no high-risk clients"}</span>
-        </div>
-      </div>
+      {/* ── Widget stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Projected ARR" value={formatZAR(totalARR)} sub={`Across ${rows.length} clients`} tone="green" />
+        <StatWidget label="Avg CLV per Client"  value={formatZAR(avgCLV)}   sub="Annual projected value"          tone="accent" />
+        <StatWidget label="High Churn Risk"      value={highRiskCount}        sub={highRiskCount > 0 ? "Clients above 60% risk" : "No high-risk clients"} tone={highRiskCount > 0 ? "red" : "green"} />
+        <StatWidget label="Medium Risk"          value={rows.filter((r) => r.churnRisk >= 0.3 && r.churnRisk < 0.6).length} sub="Churn risk 30–60%" tone="amber" />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="CLV by Client (Top 10)"
+          type="bar"
+          dataKey="value"
+          data={[...rows].sort((a, b) => b.clv - a.clv).slice(0, 10).map((r) => ({
+            label: clientNameMap.get(r.clientId)?.slice(0, 12) ?? r.clientId.slice(0, 8),
+            value: Math.round(r.clv / 100),
+          }))}
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Churn Risk Distribution"
+          stages={[
+            { label: "Low (<30%)",    count: rows.filter((r) => r.churnRisk < 0.3).length,                              total: rows.length || 1, color: "#34d98b" },
+            { label: "Medium (30-60%)", count: rows.filter((r) => r.churnRisk >= 0.3 && r.churnRisk < 0.6).length,    total: rows.length || 1, color: "#f5a623" },
+            { label: "High (60%+)",   count: rows.filter((r) => r.churnRisk >= 0.6).length,                             total: rows.length || 1, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      <TableWidget
+        label="CLV by Client"
+        columns={[
+          { key: "client",    header: "Client" },
+          { key: "clv",       header: "CLV" },
+          { key: "tenure",    header: "Tenure (mo)" },
+          { key: "churnRisk", header: "Churn Risk" },
+        ]}
+        rows={[...rows].sort((a, b) => b.clv - a.clv).slice(0, 20).map((r) => ({
+          client:    clientNameMap.get(r.clientId) ?? r.clientId.slice(0, 8),
+          clv:       formatZAR(r.clv),
+          tenure:    r.engagementMonths?.toString() ?? "—",
+          churnRisk: churnRiskLabel(r.churnRisk),
+          churnRiskRaw: r.churnRisk,
+        }) as Record<string, unknown>)}
+        emptyMessage="No CLV data available"
+      />
 
       {/* ── Client table ───────────────────────────────────────────────── */}
       {rows.length === 0 ? (

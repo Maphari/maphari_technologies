@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { colorClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -229,11 +230,17 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
     );
   }
 
+  // Build chart data: risks by category
+  const riskByCat = Object.keys(categoryColors).map((cat) => ({
+    category: cat,
+    count: risks.filter((r) => r.category === cat).length,
+  }));
+
   return (
     <div className={cx(styles.pageBody, styles.prrRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING &amp; INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PORTFOLIO RISK REGISTER</div>
           <h1 className={styles.pageTitle}>Portfolio Risk Register</h1>
           <div className={styles.pageSub}>Live risk log — Likelihood × Impact — Mitigations — Residual exposure</div>
         </div>
@@ -243,20 +250,52 @@ export function PortfolioRiskRegisterPage({ session }: { session: AuthSession | 
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Active Risks",      value: active.length.toString(),                                         color: "var(--red)",    sub: `${critical.length} critical, ${highRisks.length} high` },
-          { label: "MRR Exposure",      value: `R${(totalMRRExposure / 1000).toFixed(0)}k`,                      color: "var(--red)",    sub: "From active client risks" },
-          { label: "Monitoring",        value: risks.filter((r) => r.status === "monitoring").length.toString(), color: "var(--amber)",  sub: "Watch-list items" },
-          { label: "Resolved (FY2026)", value: risks.filter((r) => r.status === "resolved").length.toString(),  color: "var(--accent)", sub: "Closed out this year" },
-        ].map((stat) => (
-          <div key={stat.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{stat.label}</div>
-            <div className={cx(styles.statValue, colorClass(stat.color))}>{stat.value}</div>
-            <div className={cx("text11", "colorMuted")}>{stat.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Total Risks" value={String(risks.length)} sub="All risk items" />
+        <StatWidget label="High" value={String(highRisks.length + critical.length)} tone="red" sub={`${critical.length} critical`} subTone={critical.length > 0 ? "warn" : "neutral"} />
+        <StatWidget label="Medium" value={String(risks.filter((r) => { const s = r.likelihood * r.impact; return s >= 4 && s < 9; }).length)} tone="amber" />
+        <StatWidget label="Mitigated" value={String(risks.filter((r) => r.status === "resolved").length)} tone="green" sub="Resolved FY2026" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Risks by Category"
+          data={riskByCat}
+          dataKey="count"
+          xKey="category"
+          type="bar"
+          color="#ff5f5f"
+        />
+        <PipelineWidget
+          label="Risk Levels"
+          stages={[
+            { label: "Critical", count: critical.length, total: Math.max(risks.length, 1), color: "#ff5f5f" },
+            { label: "High", count: highRisks.length, total: Math.max(risks.length, 1), color: "#f5a623" },
+            { label: "Medium", count: risks.filter((r) => { const s = r.likelihood * r.impact; return s >= 4 && s < 9; }).length, total: Math.max(risks.length, 1), color: "#f5a623" },
+            { label: "Low", count: risks.filter((r) => r.likelihood * r.impact < 4).length, total: Math.max(risks.length, 1), color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Risks Table ─────────────────────────────────────────────────── */}
+      <TableWidget
+        label="Risk Register"
+        rows={[...risks].sort((a, b) => b.likelihood * b.impact - a.likelihood * a.impact)}
+        rowKey="id"
+        emptyMessage="No risks logged. Use '+ Add Risk' to log the first risk."
+        columns={[
+          { key: "title", header: "Title", render: (_, row) => row.title },
+          { key: "project", header: "Project", render: (_, row) => row.owner },
+          { key: "severity", header: "Severity", render: (_, row) => {
+            const level = riskLevel(row.likelihood, row.impact);
+            return <span className={cx("badge", level.color === "var(--red)" ? "badgeRed" : level.color === "var(--amber)" ? "badgeAmber" : "badgeGreen")}>{level.label}</span>;
+          }},
+          { key: "mitigation", header: "Mitigation", render: (_, row) => row.mitigations.length > 0 ? "Yes" : "None" },
+          { key: "owner", header: "Owner", render: (_, row) => row.owner },
+        ]}
+      />
 
       {risks.length === 0 ? (
         <div className={cx("emptyState")}>

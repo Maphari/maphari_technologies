@@ -92,3 +92,35 @@ export async function simulateAutomation(
     return { unauthorized: false, data: response.payload.data ?? null, error: null };
   });
 }
+
+// ── Workflow Execution Metrics ─────────────────────────────────────────────────
+
+export interface WorkflowMetric {
+  workflowId: string;
+  totalRuns: number;
+  successCount: number;
+  successRate: number;
+}
+
+export async function loadWorkflowMetricsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<WorkflowMetric[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<WorkflowMetric[]>(
+      "/automation/metrics",
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "METRICS_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load workflow metrics."
+        ),
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}

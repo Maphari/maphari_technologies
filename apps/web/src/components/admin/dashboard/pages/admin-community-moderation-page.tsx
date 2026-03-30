@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -160,13 +161,30 @@ export function AdminCommunityModerationPage({ session }: { session: AuthSession
     );
   }
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const threadCount  = items.filter((i) => i.type === "thread").length;
+  const postCount    = items.filter((i) => i.type === "post").length;
+  const featureCount = items.filter((i) => i.type === "feature_request").length;
+
+  const typeChart = [
+    { label: "Threads", value: threadCount },
+    { label: "Posts",   value: postCount },
+    { label: "Feature", value: featureCount },
+  ];
+
+  const typePipeline = [
+    { label: "Threads",  count: threadCount,  total: items.length || 1, color: "#8b6fff" },
+    { label: "Posts",    count: postCount,     total: items.length || 1, color: "#34d98b" },
+    { label: "Features", count: featureCount,  total: items.length || 1, color: "#f5a623" },
+  ];
+
   // ── Main render ──────────────────────────────────────────────────────────
   return (
     <div className={styles.pageBody}>
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNITY</div>
+          <div className={styles.pageEyebrow}>COMMUNITY / COMMUNITY MODERATION</div>
           <h1 className={styles.pageTitle}>Moderation Queue</h1>
           <div className={styles.pageSub}>
             Review and approve or reject pending forum threads, replies, and feature requests
@@ -176,6 +194,18 @@ export function AdminCommunityModerationPage({ session }: { session: AuthSession
           <span className={cx("badge", "badgeRed")}>{items.length} pending</span>
         </div>
       </div>
+
+      <WidgetGrid>
+        <StatWidget label="Pending Review" value={items.length}   sub="Total in queue"      tone={items.length > 0 ? "red" : "green"} />
+        <StatWidget label="Threads"        value={threadCount}    sub="Forum threads"        tone="accent" />
+        <StatWidget label="Replies"        value={postCount}      sub="Reply posts"          tone="accent" />
+        <StatWidget label="Feature Req."   value={featureCount}   sub="Feature requests"     tone="amber" />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <ChartWidget    label="Queue by Type"       type="bar" dataKey="value" data={typeChart}    color="#8b6fff" />
+        <PipelineWidget label="Content Type Split"  stages={typePipeline} />
+      </WidgetGrid>
 
       {/* Action error banner */}
       {actionError ? (

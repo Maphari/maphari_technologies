@@ -7,6 +7,7 @@ import {
   setNotificationSnoozeStateSchema,
   type ApiResponse
 } from "@maphari/contracts";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { verifyWebhookSignature } from "@maphari/platform";
 import type { FastifyInstance } from "fastify";
 import { enforceCallbackRateLimit } from "../lib/callback-rate-limit.js";
@@ -30,6 +31,47 @@ type MetricsApp = FastifyInstance & {
     inc: (name: string, labels?: Record<string, string | number>) => void;
   };
 };
+
+async function verifyCallbackSignature(
+  rawBody: string,
+  secret: string,
+  headers: Record<string, string | string[] | undefined>,
+  log: { warn: (obj: object) => void },
+  redis: { set: (key: string, value: string, expiryMode: string, time: number, setMode: string) => Promise<string | null> }
+): Promise<boolean> {
+  const timestamp = headers["x-timestamp"] as string | undefined;
+  const nonce = headers["x-nonce"] as string | undefined;
+  const signature = headers["x-api-signature"] as string | undefined;
+  const provider = (headers["x-provider-name"] as string | undefined) ?? "unknown";
+
+  // New canonical format
+  if (timestamp && nonce && signature) {
+    const ts = Number(timestamp);
+    if (!Number.isFinite(ts) || Math.abs(Date.now() - ts) > 300_000) return false;
+    const replayKey = `replay:notification:${provider}:${nonce}`;
+    const replaySet = await redis.set(replayKey, "1", "EX", 300, "NX");
+    if (replaySet === null) return false;
+    const payload = `${timestamp}.${rawBody}`;
+    const expected = createHmac("sha256", secret).update(payload).digest("hex");
+    const expectedBuf = Buffer.from(expected, "utf8");
+    const sigBuf = Buffer.from(signature, "utf8");
+    if (expectedBuf.length !== sigBuf.length) return false;
+    return timingSafeEqual(expectedBuf, sigBuf);
+  }
+
+  // Legacy fallback
+  const legacySig = headers["x-maphari-signature"] as string | undefined;
+  if (legacySig) {
+    log.warn({ event: "legacy_callback_signature", provider });
+    const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+    const expectedBuf = Buffer.from(expected, "utf8");
+    const legacyBuf = Buffer.from(legacySig, "utf8");
+    if (expectedBuf.length !== legacyBuf.length) return false;
+    return timingSafeEqual(expectedBuf, legacyBuf);
+  }
+
+  return false;
+}
 
 export async function registerNotificationRoutes(app: FastifyInstance): Promise<void> {
   const metrics = (app as MetricsApp).serviceMetrics;
@@ -278,9 +320,15 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
   });
 
   app.post("/notifications/provider-callback", async (request, reply) => {
-    const signature = request.headers["x-provider-signature"] as string | undefined;
-    const callbackSecret = process.env.NOTIFICATION_CALLBACK_SECRET ?? "dev-notification-callback-secret";
-    const rawBody = JSON.stringify(request.body ?? {});
+    const callbackSecret = process.env.NOTIFICATION_CALLBACK_SECRET as string;
+    const rawBodyBuf = (request as typeof request & { rawBody?: Buffer }).rawBody;
+    let rawBody: string;
+    if (rawBodyBuf) {
+      rawBody = rawBodyBuf.toString("utf8");
+    } else {
+      request.log.warn({ event: "rawBody_missing_fallback", note: "preParsing hook did not capture raw body — falling back to JSON.stringify(body)" });
+      rawBody = JSON.stringify(request.body ?? {});
+    }
 
     const callbackLimit = Number(process.env.NOTIFICATION_CALLBACK_RATE_LIMIT_MAX ?? 30);
     const callbackWindowMs = Number(process.env.NOTIFICATION_CALLBACK_RATE_LIMIT_WINDOW_MS ?? 60_000);
@@ -297,7 +345,31 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
       } as ApiResponse;
     }
 
-    if (!signature || !verifyWebhookSignature(rawBody, signature, callbackSecret)) {
+    const redisUrl = process.env.REDIS_URL;
+    let redisAdapter: { set: (key: string, value: string, expiryMode: string, time: number, setMode: string) => Promise<string | null> } | null = null;
+    if (redisUrl) {
+      try {
+        const { Redis } = await import("ioredis");
+        const r = new Redis(redisUrl);
+        redisAdapter = {
+          set: (key, value, expiryMode, time, setMode) =>
+            (r as unknown as { set: (...args: unknown[]) => Promise<string | null> }).set(key, value, expiryMode, time, setMode),
+        };
+      } catch {
+        // Redis unavailable — skip nonce check for canonical path
+      }
+    }
+
+    const signatureValid = redisAdapter
+      ? await verifyCallbackSignature(rawBody, callbackSecret, request.headers as Record<string, string | string[] | undefined>, request.log, redisAdapter)
+      : (() => {
+          // Fallback: legacy signature only when Redis unavailable
+          const legacySig = request.headers["x-maphari-signature"] as string | undefined;
+          if (legacySig) return verifyWebhookSignature(rawBody, legacySig, callbackSecret);
+          return false;
+        })();
+
+    if (!signatureValid) {
       metrics?.inc("notification_callback_invalid_total", { service: "notifications", reason: "signature" });
       reply.status(401);
       return {

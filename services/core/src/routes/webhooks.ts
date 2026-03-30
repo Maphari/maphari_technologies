@@ -21,11 +21,14 @@ import { prisma } from "../lib/prisma.js";
 
 export interface WebhookConfig {
   id: string;
+  name: string;
   url: string;
   events: string[];
-  hasSecret: boolean;
+  secret: string | null;
   active: boolean;
   createdAt: string;
+  lastFiredAt: string | null;
+  failCount: number;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -41,19 +44,25 @@ function signPayload(secret: string, body: string): string {
 /** Convert a Prisma WebhookEndpoint row to the response shape. */
 function toConfig(ep: {
   id: string;
+  name: string;
   url: string;
   events: string;
   secret: string | null;
   active: boolean;
   createdAt: Date;
+  lastFiredAt: Date | null;
+  failCount: number;
 }): WebhookConfig {
   return {
     id: ep.id,
+    name: ep.name,
     url: ep.url,
     events: ep.events.split(",").map((e) => e.trim()).filter(Boolean),
-    hasSecret: ep.secret !== null,
+    secret: null, // never expose the raw secret value
     active: ep.active,
     createdAt: ep.createdAt.toISOString(),
+    lastFiredAt: ep.lastFiredAt ? ep.lastFiredAt.toISOString() : null,
+    failCount: ep.failCount,
   };
 }
 
@@ -83,15 +92,16 @@ export async function registerWebhookRoutes(app: FastifyInstance): Promise<void>
     }
 
     const body = request.body as {
+      name?: string;
       url?: string;
       events?: string[];
       secret?: string;
       active?: boolean;
     };
 
-    if (!body.url || !Array.isArray(body.events) || body.events.length === 0) {
+    if (!body.name || !body.url || !Array.isArray(body.events) || body.events.length === 0) {
       reply.status(400);
-      return { success: false, error: { code: "VALIDATION_ERROR", message: "url and events are required" } } as ApiResponse;
+      return { success: false, error: { code: "VALIDATION_ERROR", message: "name, url and events are required" } } as ApiResponse;
     }
 
     if (!isValidUrl(body.url)) {
@@ -101,6 +111,7 @@ export async function registerWebhookRoutes(app: FastifyInstance): Promise<void>
 
     const row = await prisma.webhookEndpoint.create({
       data: {
+        name: body.name,
         url: body.url,
         events: body.events.join(","),
         secret: body.secret ?? null,
@@ -122,6 +133,7 @@ export async function registerWebhookRoutes(app: FastifyInstance): Promise<void>
 
     const { id } = request.params as { id: string };
     const body = request.body as {
+      name?: string;
       url?: string;
       events?: string[];
       secret?: string | null;
@@ -142,6 +154,7 @@ export async function registerWebhookRoutes(app: FastifyInstance): Promise<void>
     const row = await prisma.webhookEndpoint.update({
       where: { id },
       data: {
+        ...(body.name !== undefined ? { name: body.name } : {}),
         ...(body.url !== undefined ? { url: body.url } : {}),
         ...(body.events !== undefined ? { events: body.events.join(",") } : {}),
         ...(body.secret !== undefined ? { secret: body.secret } : {}),

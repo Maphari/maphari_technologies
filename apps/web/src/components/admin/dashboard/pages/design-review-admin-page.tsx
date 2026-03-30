@@ -8,6 +8,7 @@
 import { useState, useEffect } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -111,7 +112,7 @@ export function DesignReviewAdminPage({ session }: { session: AuthSession | null
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / EXPERIENCE</div>
+          <div className={styles.pageEyebrow}>EXPERIENCE / DESIGN REVIEW</div>
           <h1 className={styles.pageTitle}>Design Review</h1>
           <div className={styles.pageSub}>Review and resolve design submissions from clients</div>
         </div>
@@ -120,21 +121,22 @@ export function DesignReviewAdminPage({ session }: { session: AuthSession | null
         </div>
       </div>
 
-      {/* ── KPI Grid ── */}
-      <div className={styles.cjKpiGrid}>
-        {[
-          { label: "Pending Review", value: String(pendingCount),  sub: "Awaiting action",    color: "var(--amber)"  },
-          { label: "In Review",      value: String(inReviewCount), sub: "Being reviewed",     color: "var(--blue)"   },
-          { label: "Resolved",       value: String(resolvedCount), sub: "Signed off",         color: "var(--accent)" },
-          { label: "Total",          value: String(reviews.length),sub: "All submissions",    color: "var(--muted)"  },
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.cjKpiCard, toneClass(k.color))}>
-            <div className={styles.cjKpiLabel}>{k.label}</div>
-            <div className={cx(styles.cjKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.cjKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Widget stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Pending Review" value={pendingCount}   sub="Awaiting action"  tone={pendingCount > 0 ? "amber" : "default"} />
+        <StatWidget label="In Review"      value={inReviewCount}  sub="Being reviewed"   tone="accent" />
+        <StatWidget label="Resolved"       value={resolvedCount}  sub="Signed off"       tone="green" />
+        <StatWidget label="Total"          value={reviews.length} sub="All submissions"  tone="default" />
+      </WidgetGrid>
+
+      <PipelineWidget
+          label="Review Stage Breakdown"
+          stages={[
+            { label: "Pending",   count: pendingCount,   total: reviews.length || 1, color: "#f5a623" },
+            { label: "In Review", count: inReviewCount,  total: reviews.length || 1, color: "#8b6fff" },
+            { label: "Resolved",  count: resolvedCount,  total: reviews.length || 1, color: "#34d98b" },
+          ]}
+        />
 
       {/* ── Tab bar ── */}
       <div className={styles.teamFilters}>

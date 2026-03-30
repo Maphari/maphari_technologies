@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAllSlaRecordsWithRefresh, type AdminSlaRecord } from "../../../../lib/api/admin/client-ops";
@@ -216,200 +217,125 @@ export function SlaTrackerPage({ session }: { session: AuthSession | null }) {
     );
   }
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const avgSlaScore = clients.length > 0
+    ? Math.round(clients.reduce((s, c) => s + c.overallScore, 0) / clients.length)
+    : 0;
+  const slaCompliance = Math.max(0, Math.round((1 - totalBreaches / Math.max(clients.length * 5, 1)) * 100));
+
+  // Avg response time from first response metric
+  const avgResponseTime = clients.length > 0
+    ? (clients.reduce((s, c) => s + c.slaData.firstResponse.avg, 0) / clients.length).toFixed(1)
+    : "—";
+
+  // Bar chart: SLA performance per client
+  const slaChartData = clients.map((c) => ({
+    label: c.name.split(" ")[0],
+    score: c.overallScore,
+  }));
+
+  // Table rows: one row per client SLA summary
+  const tableRows = clients.map((c) => ({
+    name: c.name,
+    tier: c.tier,
+    target: "100%",
+    actual: `${c.overallScore}%`,
+    _score: c.overallScore,
+    breaches: c.slaData.firstResponse.breaches30d + c.slaData.substantive.breaches30d,
+  }));
+
   return (
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / OPERATIONS</div>
+          <div className={styles.pageEyebrow}>OPERATIONS / SLA</div>
           <h1 className={styles.pageTitle}>SLA Tracker</h1>
-          <div className={styles.pageSub}>Response times - Breach alerts - Client service level compliance</div>
+          <div className={styles.pageSub}>SLA compliance · Breach tracking · Response time analysis</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnAccent")}>Export SLA Report</button>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Avg SLA Score",   value: `${clients.length > 0 ? Math.round(clients.reduce((s, c) => s + c.overallScore, 0) / clients.length) : 0}%`, color: "var(--accent)", sub: "Across all clients"    },
-          { label: "Clients At Risk", value: atRisk.toString(),                                                                                            color: atRisk > 0 ? "var(--red)" : "var(--accent)",  sub: "Score < 70%"         },
-          { label: "Breaches (30d)",  value: totalBreaches.toString(),                                                                                     color: totalBreaches > 5 ? "var(--red)" : "var(--amber)", sub: "Across all SLAs" },
-          { label: "SLA Compliance",  value: `${Math.max(0, Math.round((1 - totalBreaches / Math.max(clients.length * 5, 1)) * 100))}%`,                  color: "var(--blue)",   sub: "~5 SLA events per client" },
-        ].map(s => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "slaToneText", toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — 4 stat widgets */}
+      <WidgetGrid>
+        <StatWidget
+          label="SLA Compliance"
+          value={`${slaCompliance}%`}
+          sub="~5 SLA events per client"
+          tone={slaCompliance >= 80 ? "accent" : slaCompliance >= 60 ? "amber" : "red"}
+          progressValue={slaCompliance}
+        />
+        <StatWidget
+          label="Breached"
+          value={totalBreaches}
+          sub="Across all SLAs (30d)"
+          tone={totalBreaches > 5 ? "red" : totalBreaches > 0 ? "amber" : "default"}
+        />
+        <StatWidget
+          label="At Risk"
+          value={atRisk}
+          sub="Score < 70%"
+          tone={atRisk > 0 ? "amber" : "default"}
+        />
+        <StatWidget
+          label="Avg Response Time"
+          value={typeof avgResponseTime === "string" && avgResponseTime !== "—" ? `${avgResponseTime}h` : avgResponseTime}
+          sub="First response metric"
+          tone={parseFloat(String(avgResponseTime)) <= 4 ? "green" : "amber"}
+        />
+      </WidgetGrid>
 
-      <div className={styles.filterRow}>
-        <select title="View" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>
-          {tabs.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
+      {/* Row 2 — bar chart + pipeline compliance tiers */}
+      <WidgetGrid>
+        <ChartWidget
+          label="SLA Performance by Client"
+          data={slaChartData.length > 0 ? slaChartData : [{ label: "—", score: 0 }]}
+          dataKey="score"
+          type="bar"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Compliance Tiers"
+          stages={[
+            { label: "Excellent (≥85%)", count: clients.filter((c) => c.overallScore >= 85).length || 0, total: clients.length || 1, color: "#34d98b" },
+            { label: "Good (70–84%)", count: clients.filter((c) => c.overallScore >= 70 && c.overallScore < 85).length || 0, total: clients.length || 1, color: "#f5a623" },
+            { label: "At Risk (<70%)", count: atRisk || 0, total: clients.length || 1, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
-      {activeTab === "client sla scores" && (
-        <div className={cx("flexCol", "gap12")}>
-          {clients.length === 0 ? (
-            <div className={cx("emptyState")}>
-              <div className={cx("emptyStateTitle")}>No SLA records</div>
-              <p className={cx("emptyStateSub")}>SLA records logged for clients will appear here.</p>
-            </div>
-          ) : [...clients].sort((a, b) => a.overallScore - b.overallScore).map(c => {
-            const scoreColor = c.overallScore >= 85 ? "var(--accent)" : c.overallScore >= 65 ? "var(--amber)" : "var(--red)";
-            const totalBreachesClient = Object.values(c.slaData)
-              .filter((m): m is SlaPoint => Boolean(m))
-              .reduce((s, m) => s + m.breaches30d, 0);
-            return (
-              <div key={c.name} className={cx("card", "p24", c.overallScore < 70 && "slaRiskCard")}>
-                <div className={cx("slaScoreGrid", "slaScoreAligned", "gap20")}>
-                  <div>
-                    <div className={cx("fw700", "slaClientName", "slaToneText", toneClass(c.color))}>{c.name}</div>
-                    <div className={cx("text11", "colorMuted")}>{c.tier} tier — {c.am}</div>
-                  </div>
-                  <div>
-                    <div className={cx("flexBetween", "mb6")}>
-                      <span className={cx("text11", "colorMuted")}>SLA Compliance Score</span>
-                      <span className={cx("fontMono", "fw800", "slaToneText", toneClass(scoreColor))}>{c.overallScore}%</span>
-                    </div>
-                    <progress className={cx(styles.slaProgressLg, styles.slaBarFill, toneClass(scoreColor))} max={100} value={c.overallScore} aria-label={`${c.name} SLA compliance ${c.overallScore}%`} />
-                  </div>
-                  <div>
-                    <div className={cx("text10", "colorMuted", "mb3")}>Breaches</div>
-                    <div className={cx("fontMono", "fw700", "slaBreachCount", "slaToneText", toneClass(totalBreachesClient > 0 ? "var(--red)" : "var(--accent)"))}>{totalBreachesClient}</div>
-                  </div>
-                  <div className={cx("flexRow", "gap6")}>
-                    <span className={cx("text14")}>{c.trend === "improving" ? "▲" : c.trend === "declining" ? "▼" : "→"}</span>
-                    <span className={cx("text11", "slaToneText", toneClass(c.trend === "improving" ? "var(--accent)" : c.trend === "declining" ? "var(--red)" : "var(--muted)"))}>{c.trend}</span>
-                  </div>
-                  {c.overallScore < 70 ? (
-                    <button type="button" className={cx("btnSm", "slaActionBtn")}>Action Required</button>
-                  ) : (
-                    <button type="button" className={cx("btnSm", "btnGhost")}>View Detail</button>
-                  )}
-                </div>
-                <div className={cx("slaMetricGrid", "gap10", "mt16")}>
-                  {slaMetrics.map(m => {
-                    const data        = c.slaData[m.key];
-                    const val         = m.divisor ? (data.avg / m.divisor).toFixed(1) : data.avg.toFixed(1);
-                    const overTarget  = data.avg > 0 && data.avg > m.targetHrs;
-                    return (
-                      <div key={m.key} className={cx("bgBg", "textCenter", "p12", "slaCellRadius")}>
-                        <div className={cx("fontMono", "fw700", "slaMetricValue", "slaToneText", toneClass(overTarget ? "var(--red)" : data.avg > 0 ? "var(--accent)" : "var(--muted)"))}>{data.avg > 0 ? `${val}${m.unit}` : "—"}</div>
-                        <div className={cx("colorMuted", "mt4", "slaMetricName")}>{m.name}</div>
-                        {data.breaches30d > 0 ? <div className={cx("colorRed", "mt4", "slaMetricBreach")}>{data.breaches30d} breach{data.breaches30d !== 1 ? "es" : ""}</div> : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {activeTab === "sla matrix" && (
-        <div className={cx("card", "overflowHidden", "p0")}>
-          <div className={cx("slaMatrixGrid", "px20", "borderB", "text10", "colorMuted", "uppercase", "tracking", "gap8", "slaMatrixHead")}>
-            <span>SLA Metric</span>
-            {clients.map(c => (
-              <span key={c.name} className={cx("textCenter", "slaToneText", toneClass(c.color))}>{c.name.split(" ")[0]}</span>
-            ))}
-          </div>
-          {slaMetrics.map((m, ri) => (
-            <div key={m.key} className={cx("slaMatrixGrid", "gap8", "slaMatrixRow", ri < slaMetrics.length - 1 && "borderB")}>
-              <div>
-                <div className={cx("text12", "fw600")}>{m.name}</div>
-                <div className={cx("text10", "colorMuted")}>Target: {m.targetHrs}{m.unit}</div>
-              </div>
-              {clients.map(c => {
-                const data  = c.slaData[m.key];
-                const ok    = data.avg === 0 || data.avg <= m.targetHrs;
-                const val   = m.divisor ? (data.avg / m.divisor).toFixed(1) : data.avg.toFixed(1);
-                return (
-                  <div key={c.name} className={cx("textCenter", "p12", "slaCellRadius", data.avg === 0 ? "" : ok ? "slaMatrixCellOk" : "slaMatrixCellFail")}>
-                    <div className={cx("fontMono", "fw700", "text14", "slaToneText", toneClass(data.avg === 0 ? "var(--muted)" : ok ? "var(--accent)" : "var(--red)"))}>
-                      {data.avg > 0 ? `${val}${m.unit}` : "—"}
-                    </div>
-                    {data.breaches30d > 0 ? <div className={cx("colorRed", "slaTiny9")}>{"\u00D7"}{data.breaches30d}</div> : null}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {activeTab === "breach log" && (
-        <div className={cx("flexCol", "gap10")}>
-          {clients
-            .flatMap(c =>
-              slaMetrics
-                .map(m => {
-                  const data = c.slaData[m.key];
-                  if (data.breaches30d === 0) return null;
-                  return {
-                    client: c.name, clientColor: c.color, am: c.am,
-                    metric: m.name, breaches: data.breaches30d,
-                    lastBreached: data.lastBreached, avg: data.avg,
-                    target: m.targetHrs, unit: m.unit,
-                  };
-                })
-                .filter((x): x is NonNullable<typeof x> => Boolean(x))
-            )
-            .sort((a, b) => b.breaches - a.breaches)
-            .map((breach, i) => (
-              <div key={i} className={cx("slaBreachGrid", "card", "p20", "gap16", "slaBreachCard")}>
-                <div className={cx("fw700", "slaToneText", toneClass(breach.clientColor))}>{breach.client}</div>
-                <div>
-                  <div className={cx("fw600")}>{breach.metric}</div>
-                  <div className={cx("text11", "colorMuted")}>AM: {breach.am}</div>
-                </div>
-                <div>
-                  <div className={cx("text10", "colorMuted", "mb3")}>Avg Time</div>
-                  <div className={cx("fontMono", "colorRed", "fw700")}>{breach.avg.toFixed(1)}{breach.unit}</div>
-                </div>
-                <div>
-                  <div className={cx("text10", "colorMuted", "mb3")}>Target</div>
-                  <div className={cx("fontMono", "colorAccent")}>{breach.target}{breach.unit}</div>
-                </div>
-                <div>
-                  <div className={cx("text10", "colorMuted", "mb3")}>Last Breach</div>
-                  <div className={cx("fontMono", "text12")}>{breach.lastBreached ?? "—"}</div>
-                </div>
-                <div className={cx("textCenter", "p12", "slaCellRadius", "slaBreachBadge")}>
-                  <div className={cx("fontMono", "colorRed", "fw800")}>{breach.breaches}</div>
-                  <div className={cx("colorRed", "slaTiny9")}>breaches</div>
-                </div>
-              </div>
-            ))}
-          {clients.every(c => Object.values(c.slaData).filter((m): m is SlaPoint => Boolean(m)).every(m => m.breaches30d === 0)) && (
-            <div className={cx("emptyState")}>
-              <div className={cx("emptyStateTitle")}>No breaches in last 30 days</div>
-              <p className={cx("emptyStateSub")}>All SLA metrics are currently within target.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "sla definitions" && (
-        <div className={cx("flexCol", "gap12")}>
-          {slaDefinitions.map(sla => (
-            <div key={sla.id} className={cx("slaDefGrid", "card", "p20", "gap20", "slaDefRow")}>
-              <span className={cx("fontMono", "text11", "colorMuted")}>{sla.id}</span>
-              <div>
-                <div className={cx("fw600", "mb4")}>{sla.name}</div>
-                <div className={cx("text12", "colorMuted")}>{sla.description}</div>
-              </div>
-              <span className={cx("badge", "badgeBlue")}>{sla.tier}</span>
-              <div className={cx("fontMono", "text14", "fw700", "colorAccent")}>Target: {sla.target}</div>
-              <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Row 3 — SLA table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Client SLA Scores"
+          rows={tableRows as Record<string, unknown>[]}
+          rowKey="name"
+          emptyMessage="No SLA records found."
+          columns={[
+            { key: "name", header: "Client", align: "left" },
+            { key: "tier", header: "Tier", align: "left" },
+            { key: "target", header: "Target", align: "right" },
+            { key: "actual", header: "Actual", align: "right" },
+            {
+              key: "_score",
+              header: "Status",
+              align: "right",
+              render: (val) => {
+                const score = Number(val);
+                const badgeCls =
+                  score >= 85 ? cx("badgeGreen")
+                  : score >= 70 ? cx("badgeAmber")
+                  : cx("badgeRed");
+                const label = score >= 85 ? "On Track" : score >= 70 ? "Monitor" : "At Risk";
+                return <span className={badgeCls}>{label}</span>;
+              },
+            },
+            { key: "breaches", header: "Breaches", align: "right" },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }

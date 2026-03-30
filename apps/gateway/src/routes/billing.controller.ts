@@ -651,4 +651,26 @@ export class BillingController {
       "x-trace-id": traceId ?? requestId ?? ""
     });
   }
+
+  // ── GET /analytics/mrr-history ────────────────────────────────────────────
+  @Roles("ADMIN")
+  @Get("analytics/mrr-history")
+  async getMrrHistory(
+    @Query("months") months?: string,
+    @Headers("x-user-id") userId?: string,
+    @Headers("x-user-role") role?: Role,
+    @Headers("x-client-id") clientId?: string,
+    @Headers("x-request-id") requestId?: string,
+    @Headers("x-trace-id") traceId?: string
+  ): Promise<ApiResponse> {
+    const baseUrl = process.env.BILLING_SERVICE_URL ?? "http://localhost:4006";
+    const query = months ? `?months=${encodeURIComponent(months)}` : "";
+    return proxyRequest(`${baseUrl}/analytics/mrr-history${query}`, "GET", undefined, {
+      "x-user-id":    userId    ?? "",
+      "x-user-role":  role      ?? "ADMIN",
+      "x-client-id":  clientId  ?? "",
+      "x-request-id": requestId ?? "",
+      "x-trace-id":   traceId   ?? requestId ?? ""
+    });
+  }
 }

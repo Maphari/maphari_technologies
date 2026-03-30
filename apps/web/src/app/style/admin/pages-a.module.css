@@ -16,13 +16,13 @@
 }
 
 .healthIntvCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .healthIntvHeadGrid {
@@ -50,7 +50,7 @@
 
 .healthIntvExpanded {
   padding: 0 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .healthIntvExpandedGrid {
@@ -71,7 +71,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 1px;
 }
 
@@ -98,9 +98,9 @@
 .healthIntvTimelineCard {
   border-radius: var(--r-sm);
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .healthIntvNextStep {
@@ -127,6 +127,8 @@
 
 .healthIntvMetricVal {
   font-size: 1.25rem;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .healthIntvFlex1 {
@@ -144,17 +146,16 @@
 }
 
 .healthIntvMiniFill {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .healthIntvMiniFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -203,6 +204,8 @@
 .lglStatusBadge {
   display: inline-flex;
   align-items: center;
+  width: fit-content;
+  justify-self: start;
   padding: 2px 10px;
   border-radius: var(--r-xs);
   font-size: 0.625rem;
@@ -227,7 +230,7 @@
 }
 
 .lglStatusMuted {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--muted);
 }
 
@@ -239,7 +242,7 @@
 }
 
 .lglExpiryCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -266,7 +269,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .lglTimelineCol {
@@ -290,7 +293,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   flex-shrink: 0;
 }
 
@@ -310,7 +313,7 @@
 }
 
 .lglTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -330,7 +333,7 @@
   grid-template-columns: 80px 1fr 1fr 100px 100px 90px 100px 120px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lglContractRow {
@@ -384,7 +387,7 @@
 
 .lglRenewBtn {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   padding: 4px 12px;
   border-radius: var(--r-xs);
@@ -404,7 +407,7 @@
   grid-template-columns: 1.4fr 100px 100px 80px 100px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lglComplianceRow {
@@ -475,6 +478,8 @@
   font-weight: 800;
   color: var(--amber);
   margin-bottom: 8px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .lglScoreFill {
@@ -483,7 +488,7 @@
 }
 
 .lglInfoCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -508,7 +513,7 @@
   grid-template-columns: 1.2fr 80px 1fr 70px 90px 100px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .lglDataRow {
@@ -552,7 +557,7 @@
 }
 
 .lglIncidentCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px;
   background: var(--s2);
@@ -596,7 +601,7 @@
   grid-template-columns: 90px 1fr 80px 110px 140px 90px 1fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .crtRow {
@@ -607,7 +612,7 @@
   align-items: center;
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .crtHead,
   .crtRow {
     grid-template-columns: 1fr;
@@ -632,6 +637,7 @@
   gap: 0;
   height: 100%;
   min-height: 0;
+
   /* header · kpi cards · filter bar · inbox/escalations fill remaining */
   grid-template-rows: auto auto auto 1fr;
 }
@@ -646,6 +652,8 @@
 
 .msgValue24 {
   font-size: 1.5rem;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 /* ── KPI grid (redesigned) ── */
@@ -655,20 +663,22 @@
   gap: 12px;
   margin-bottom: 12px;
 }
+
 .msgKpiCard {
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 .msgKpiCard.toneAccent { border-left-color: var(--accent); }
 .msgKpiCard.toneBlue   { border-left-color: var(--blue);   }
 .msgKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .msgKpiCard.toneRed    { border-left-color: var(--red);    }
+
 .msgKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem;
@@ -677,6 +687,7 @@
   color: var(--muted);
   margin-bottom: 6px;
 }
+
 .msgKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800;
@@ -684,11 +695,14 @@
   letter-spacing: -0.02em;
   line-height: 1;
   margin-bottom: 6px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 .msgKpiValue.toneAccent { color: var(--accent); }
 .msgKpiValue.toneBlue   { color: var(--blue);   }
 .msgKpiValue.toneAmber  { color: var(--amber);  }
 .msgKpiValue.toneRed    { color: var(--red);    }
+
 .msgKpiMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem;
@@ -701,11 +715,12 @@
   align-items: center;
   gap: 8px;
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 10px 14px;
   margin-bottom: 12px;
 }
+
 .msgToolbarDivider {
   width: 1px;
   align-self: stretch;
@@ -713,6 +728,7 @@
   flex-shrink: 0;
   margin: 0 4px;
 }
+
 .msgToolbarLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.52rem;
@@ -723,11 +739,13 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
 .msgSearchInput {
   width: 220px;
   min-width: 140px;
   flex-shrink: 0;
 }
+
 .msgSubjectInput {
   min-width: 160px;
   flex: 1;
@@ -763,11 +781,11 @@
 }
 
 .msgThreadBtn:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .msgThreadBtnSelected {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   border-left: 3px solid var(--accent);
 }
 
@@ -828,6 +846,28 @@
   line-height: 1.5;
 }
 
+.joinCallBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: var(--r-sm, 8px);
+  background: rgb(var(--accent-rgb, 200, 241, 53), 0.12);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font-family: var(--font-dm-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 140ms;
+}
+
+.joinCallBtn:hover {
+  background: rgb(var(--accent-rgb, 200, 241, 53), 0.22);
+}
+
 .msgComposeRow {
   padding: 10px 14px;
   gap: 8px;
@@ -870,7 +910,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 /* ─── Notifications Page ────────────────────────────────────────── */
@@ -893,25 +933,28 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
+
 .notifKpiCard {
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 .notifKpiCard.toneAccent { border-left-color: var(--accent); }
 .notifKpiCard.toneBlue   { border-left-color: var(--blue);   }
 .notifKpiCard.toneAmber  { border-left-color: var(--amber);  }
 .notifKpiCard.toneRed    { border-left-color: var(--red);    }
+
 .notifKpiLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; text-transform: uppercase;
   letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px;
 }
+
 .notifKpiValue {
   font-family: var(--font-syne), sans-serif;
   font-weight: 800; font-size: 1.75rem;
@@ -921,6 +964,7 @@
 .notifKpiValue.toneBlue   { color: var(--blue);   }
 .notifKpiValue.toneAmber  { color: var(--amber);  }
 .notifKpiValue.toneRed    { color: var(--red);    }
+
 .notifKpiMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.58rem; color: var(--muted2);
@@ -929,13 +973,15 @@
 /* ── Filter bar ── */
 .notifFilters {
   display: flex; align-items: center; gap: 8px;
-  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
+  background: var(--s2); border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm); padding: 10px 14px;
 }
+
 .notifFiltersDivider {
   width: 1px; align-self: stretch;
   background: var(--border); flex-shrink: 0; margin: 0 4px;
 }
+
 .notifFiltersLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.52rem; font-weight: 600;
@@ -947,17 +993,20 @@
 .notifSection,
 .notifComposerCard,
 .notifDeliveryCard {
-  background: var(--s2); border: 1px solid rgba(139, 111, 255, 0.1);
+  background: var(--s2); border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm); overflow: hidden;
 }
+
 .notifSectionHeader {
   display: flex; align-items: center; justify-content: space-between;
   padding: 13px 20px; border-bottom: 1px solid var(--border);
 }
+
 .notifSectionTitle {
   font-family: var(--font-syne), sans-serif;
   font-size: 0.78rem; font-weight: 700;
 }
+
 .notifSectionMeta {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem; letter-spacing: 0.08em; color: var(--muted);
@@ -968,29 +1017,31 @@
   display: grid;
   grid-template-columns: 0.8fr 1fr 1.4fr 0.9fr 0.6fr 1fr;
   gap: 12px; padding: 9px 20px 9px 23px;
-  background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+  background: rgb(255 255 255 / 2%); border-bottom: 1px solid var(--border);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
 }
+
 .notifQueueRow {
   position: relative;
   display: grid;
   grid-template-columns: 0.8fr 1fr 1.4fr 0.9fr 0.6fr 1fr;
   gap: 12px; padding: 11px 20px 11px 23px;
-  align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04);
+  align-items: center; border-bottom: 1px solid rgb(255 255 255 / 4%);
   transition: background 120ms ease;
 }
+
 .notifQueueRow::before {
   content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
 }
-.notifQueueRow:hover { background: rgba(255,255,255,0.02); }
+.notifQueueRow:hover { background: rgb(255 255 255 / 2%); }
 .notifQueueRow:last-child { border-bottom: none; }
 
 /* ── Row strips ── */
 .notifStripAccent::before { background: var(--accent); }
 .notifStripAmber::before  { background: var(--amber);  }
 .notifStripRed::before    { background: var(--red);    }
-.notifStripMuted::before  { background: rgba(255,255,255,0.12); }
+.notifStripMuted::before  { background: rgb(255 255 255 / 12%); }
 
 /* ── Status + channel tags ── */
 .notifStatusTag,
@@ -1001,13 +1052,16 @@
   font-size: 0.58rem; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
 }
+
 .notifStatusTag.toneAccent,
 .notifChannelTag.toneAccent { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+
 .notifStatusTag.toneAmber,
 .notifChannelTag.toneAmber  { background: color-mix(in srgb, var(--amber)  12%, transparent); color: var(--amber);  }
+
 .notifStatusTag.toneRed,
 .notifChannelTag.toneRed    { background: color-mix(in srgb, var(--red)    12%, transparent); color: var(--red);    }
-.notifStatusTag.toneMuted   { background: rgba(255,255,255,0.06); color: var(--muted); }
+.notifStatusTag.toneMuted   { background: rgb(255 255 255 / 6%); color: var(--muted); }
 .notifChannelTag.toneBlue   { background: color-mix(in srgb, var(--blue)   12%, transparent); color: var(--blue);   }
 
 /* ── Composer form ── */
@@ -1015,12 +1069,15 @@
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
   padding: 16px 20px;
 }
+
 .notifComposerBody {
   padding: 0 20px 16px;
 }
+
 .notifComposerTextarea {
   width: 100%;
 }
+
 .notifComposerActions {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 20px; border-top: 1px solid var(--border);
@@ -1030,15 +1087,18 @@
 .notifDeliverySplit {
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
 }
+
 .notifDeliveryChannel {
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .notifDeliveryChannel:last-child { border-bottom: none; }
+
 .notifDeliveryHead {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 8px;
 }
+
 .notifDeliveryChLabel {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.68rem; font-weight: 700;
@@ -1047,6 +1107,7 @@
 .notifDeliveryChLabel.toneBlue   { color: var(--blue);   }
 .notifDeliveryChLabel.toneAmber  { color: var(--amber);  }
 .notifDeliveryChLabel.toneAccent { color: var(--accent); }
+
 .notifDeliveryPct {
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.9rem; font-weight: 800; line-height: 1;
@@ -1056,7 +1117,7 @@
 .notifFailRow {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 12px; padding: 12px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 .notifFailRow:last-child { border-bottom: none; }
 
@@ -1065,22 +1126,23 @@
   padding: 20px; font-size: 0.75rem; color: var(--muted); text-align: center;
 }
 
-@media (max-width: 1100px) { .notifKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 700px)  { .notifKpiGrid { grid-template-columns: 1fr; } }
-@media (max-width: 900px)  { .notifDeliverySplit { grid-template-columns: 1fr; } }
+@media (width <= 1100px) { .notifKpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (width <= 700px)  { .notifKpiGrid { grid-template-columns: 1fr; } }
+
+@media (width <= 900px)  { .notifDeliverySplit { grid-template-columns: 1fr; } }
 
 .notifProgress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .notifProgress::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -1132,7 +1194,7 @@
   flex: 1;
   padding: 10px 14px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: var(--s2);
   transition: all 0.12s ease;
 }
@@ -1202,17 +1264,16 @@
 }
 
 .ownerProgFill {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
   border: none;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .ownerProgFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 2px;
 }
 
@@ -1226,17 +1287,16 @@
 }
 
 .ownerProgFillMd {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .ownerProgFillMd::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -1279,9 +1339,9 @@
   border-radius: var(--r-sm);
   line-height: 1.6;
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .ownerAddPrivateBtn {
@@ -1338,7 +1398,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .perfScoreWarn {
@@ -1348,22 +1408,21 @@
 .perfBarTrack {
   width: 100%;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
 }
 
 .perfBarFill {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .perfBarFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -1408,7 +1467,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .perfIncentiveSplit {
@@ -1423,7 +1482,7 @@
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 /* ─── Platform Infrastructure Page ──────────────────────────────── */
@@ -1445,7 +1504,7 @@
   gap: 8px;
   padding: 6px 14px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
 }
 
 .pifHealthBadgeTone {
@@ -1488,13 +1547,13 @@
   gap: 12px;
   padding: 16px 20px;
   align-items: center;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .pifServiceRowAlert {
@@ -1552,6 +1611,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: fit-content;
+  justify-self: start;
   padding: 2px 10px;
   border-radius: var(--r-xs);
   font-size: 0.625rem;
@@ -1587,17 +1648,16 @@
 }
 
 .pifProgress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 8px;
   border: none;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .pifProgress::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 4px;
 }
 
@@ -1624,10 +1684,10 @@
 }
 
 .pifMiniCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 12px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
 }
 
 .pifAdvisoryCard {
@@ -1653,7 +1713,7 @@
 
 .pifQuickBtn {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   color: var(--muted);
   padding: 10px 14px;
@@ -1670,7 +1730,7 @@
 }
 
 .pifTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -1680,7 +1740,7 @@
   grid-template-columns: 80px 1fr 60px 1fr 60px 80px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .pifErrorRow {
@@ -1701,7 +1761,7 @@
   gap: 12px;
   padding: 16px 20px;
   align-items: center;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
 }
@@ -1719,7 +1779,7 @@
 }
 
 .pifInfoCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px 20px;
   background: var(--s2);
@@ -1735,7 +1795,7 @@
   gap: 16px;
   padding: 16px 20px;
   align-items: center;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
 }
@@ -1750,7 +1810,7 @@
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   position: relative;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -1825,7 +1885,7 @@
 }
 
 .prrRiskCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   overflow: hidden;
@@ -1868,7 +1928,7 @@
 
 .prrTagTonePurple { background: var(--purple-d); color: var(--purple); }
 
-.prrTagToneMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.prrTagToneMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .prrCenterCol {
   text-align: center;
@@ -1890,7 +1950,7 @@
 
 .prrExpanded {
   padding: 0 20px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .prrExpandedGrid {
@@ -1926,11 +1986,11 @@
 .prrLevelCard {
   padding: 12px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .prrLevelRed { border-left-color: var(--red); }
@@ -1956,7 +2016,7 @@
 /* Risk Matrix */
 
 .prrMatrixCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -2016,7 +2076,7 @@
 
 .prrMatrixCellMedium { background: color-mix(in srgb, var(--amber) 5%, transparent); }
 
-.prrMatrixCellLow { background: rgba(255, 255, 255, 0.02); }
+.prrMatrixCellLow { background: rgb(255 255 255 / 2%); }
 
 .prrMatrixScore {
   font-family: var(--font-dm-mono), monospace;
@@ -2045,7 +2105,7 @@
 
 .prrMatrixRiskPurple { background: var(--purple-d); color: var(--purple); }
 
-.prrMatrixRiskMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.prrMatrixRiskMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .prrMatrixXAxis {
   display: grid;
@@ -2120,14 +2180,14 @@
 }
 
 .prrCategoryCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .prrCategoryCardAccent { border-left-color: var(--accent); }
@@ -2164,15 +2224,15 @@
   padding: 12px 14px;
   border-radius: var(--r-sm);
   margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .prrCategoryRowAccent { border-left-color: var(--accent); }
@@ -2200,7 +2260,7 @@
 }
 
 .prrMitigationCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -2266,7 +2326,7 @@
 }
 
 .projOpsLane {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   display: flex;
@@ -2281,7 +2341,7 @@
   justify-content: center;
   gap: 4px;
   padding: 12px 14px;
-  border-right: 1px solid rgba(139, 111, 255, 0.1);
+  border-right: 1px solid rgb(139 111 255 / 10%);
   flex-shrink: 0;
   width: 130px;
 }
@@ -2299,8 +2359,8 @@
 .projOpsLaneItem {
   padding: 10px 12px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(139, 111, 255, 0.1);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(139 111 255 / 10%);
+  background: rgb(255 255 255 / 2%);
   cursor: pointer;
   transition: border-color 0.12s ease;
   flex-shrink: 0;
@@ -2340,7 +2400,7 @@
 
 .projOpsMiniBtn {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   color: var(--muted);
   padding: 3px 10px;
@@ -2363,7 +2423,7 @@
 }
 
 .projOpsDetailCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -2380,7 +2440,7 @@
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.56rem;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   padding: 2px 8px;
   border-radius: var(--r-xs);
 }
@@ -2405,10 +2465,10 @@
 }
 
 .projOpsMetricCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 10px;
   border-radius: var(--r-sm);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   text-align: center;
 }
 
@@ -2428,7 +2488,7 @@
 }
 
 .projOpsFocusCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 14px;
   border-radius: var(--r-sm);
   font-size: 0.75rem;
@@ -2476,7 +2536,7 @@
   margin-bottom: 16px;
   padding: 12px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* ─── Project Portfolio Page ────────────────────────────────────── */
@@ -2538,7 +2598,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pportStatusPurple { background: var(--purple-d); color: var(--purple); }
 
-.pportStatusMuted { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.pportStatusMuted { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .pportRiskStat {
   border-color: var(--red-d);
@@ -2612,7 +2672,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pportCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   background: var(--s2);
   overflow: hidden;
@@ -2670,12 +2730,11 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .pportTrack6 {
   height: 6px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
 }
 
 .pportTrack6 progress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
@@ -2747,7 +2806,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pportExpanded {
   padding: 0 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .pportExpandGrid {
@@ -2805,7 +2864,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 0.75rem;
   padding: 8px 10px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   margin-bottom: 6px;
   border-left: 3px solid var(--red);
   color: var(--muted);
@@ -2830,7 +2889,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* List view */
 
 .pportListCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -2840,7 +2899,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 70px 1.4fr 1fr 80px 100px 70px 60px 90px 60px;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .pportListRow {
@@ -2869,13 +2928,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .pportListTrack {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   overflow: hidden;
   margin-bottom: 3px;
 }
 
 .pportListTrack progress {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
@@ -2912,7 +2970,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pportHealthCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -2966,7 +3024,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pportMetricCard {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   padding: 10px;
   border-radius: var(--r-sm);
   text-align: center;
@@ -3007,7 +3065,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaFilterChip {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   padding: 3px 10px;
   border-radius: var(--r-xs);
@@ -3015,8 +3073,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .qaFilterChipActive {
-  border-color: currentColor;
-  background: rgba(255, 255, 255, 0.04);
+  border-color: currentcolor;
+  background: rgb(255 255 255 / 4%);
 }
 
 .qaFilterChipIdle {
@@ -3025,13 +3083,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaCardTone {
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 .qaCardTone.toneRed    { border-left-color: var(--red);    }
 .qaCardTone.toneAmber  { border-left-color: var(--amber);  }
-.qaCardTone.toneMuted  { border-left-color: rgba(255,255,255,0.1); }
+.qaCardTone.toneMuted  { border-left-color: rgb(255 255 255 / 10%); }
 
 .qaDeliverableRow {
   display: grid;
@@ -3051,7 +3109,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .qaToneTag.toneBlue   { background: var(--blue-d);   color: var(--blue);   }
 .qaToneTag.toneAmber  { background: var(--amber-d);  color: var(--amber);  }
 .qaToneTag.tonePurple { background: var(--purple-d); color: var(--purple); }
-.qaToneTag.toneMuted  { background: rgba(255,255,255,0.05); color: var(--muted); }
+.qaToneTag.toneMuted  { background: rgb(255 255 255 / 5%); color: var(--muted); }
 
 .qaStatusChip {
   display: inline-flex;
@@ -3069,7 +3127,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaExpandedWrap {
   padding: 0 24px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .qaExpandedGrid {
@@ -3145,7 +3203,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 20px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .qaFlex1 {
@@ -3163,17 +3221,16 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .qaFillRound3 {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 6px;
   border: none;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .qaFillRound3::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 3px;
 }
 
@@ -3273,7 +3330,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .resAllocBar {
   height: 28px;
   border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
 }
 
 .resAllocBarSeg {
@@ -3286,7 +3343,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .resAllocBarSeg.toneAccent { background: var(--accent-d); color: var(--accent); }
 .resAllocBarSeg.toneBlue   { background: var(--blue-d);   color: var(--blue);   }
 .resAllocBarSeg.toneAmber  { background: var(--amber-d);  color: var(--amber);  }
-.resAllocBarSeg.toneMuted  { background: rgba(255,255,255,0.06); color: var(--muted); }
+.resAllocBarSeg.toneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .resAllocBarSeg:first-child {
   border-radius: var(--r-xs) 0 0 var(--r-xs);
@@ -3367,9 +3424,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .resAllocProjectCard {
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 .resAllocProjectCard.toneAccent { border-left-color: var(--accent); }
 .resAllocProjectCard.toneBlue   { border-left-color: var(--blue);   }
@@ -3394,17 +3451,16 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* ─── SLA Tracker Page ──────────────────────────────────────────── */
 
 .slaProgressLg {
-  -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 8px;
   border: none;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
 }
 
 .slaProgressLg::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 4px;
 }
 
@@ -3440,7 +3496,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .timelineToneOrange { color: var(--amber); background: var(--amber-d); }
 
-.timelineToneMuted { color: var(--muted); background: rgba(255, 255, 255, 0.06); }
+.timelineToneMuted { color: var(--muted); background: rgb(255 255 255 / 6%); }
 
 .timelineFillAccent { background: var(--accent); }
 
@@ -3457,8 +3513,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineFillMuted { background: var(--muted); }
 
 .timelineScrollShell {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto hidden;
 }
 
 .timelineScrollInner {
@@ -3476,8 +3531,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: center;
   padding: 12px 8px;
-  border-left: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.015);
+  border-left: 1px solid rgb(255 255 255 / 4%);
+  background: rgb(255 255 255 / 1.5%);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -3491,7 +3546,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   width: 220px;
   flex-shrink: 0;
   padding: 12px 16px;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgb(255 255 255 / 4%);
   display: flex;
   align-items: center;
   letter-spacing: 0.06em;
@@ -3509,7 +3564,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgb(255 255 255 / 4%);
 }
 
 .timelineTrackCell {
@@ -3520,12 +3575,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   background:
     repeating-linear-gradient(
       to right,
-      rgba(255, 255, 255, 0.045) 0,
-      rgba(255, 255, 255, 0.045) 1px,
+      rgb(255 255 255 / 4.5%) 0,
+      rgb(255 255 255 / 4.5%) 1px,
       transparent 1px,
       transparent calc(100% / 89)
     ),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.005));
+    linear-gradient(to bottom, rgb(255 255 255 / 1%), rgb(255 255 255 / 0.5%));
 }
 
 .timelineTrackSvg {
@@ -3549,7 +3604,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border: 1px solid color-mix(in srgb, currentcolor 20%, transparent);
 }
 
 .timelineAvatar28 {
@@ -3569,7 +3624,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 7.6px;
   font-weight: 700;
   paint-order: stroke;
-  stroke: rgba(5, 5, 8, 0.52);
+  stroke: rgb(5 5 8 / 52%);
   stroke-width: 0.8px;
 }
 
@@ -3577,12 +3632,12 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-family: var(--font-dm-mono), monospace;
   font-size: 5.6px;
   paint-order: stroke;
-  stroke: rgba(5, 5, 8, 0.52);
+  stroke: rgb(5 5 8 / 52%);
   stroke-width: 0.6px;
 }
 
 .timelineTodayMarkerLine {
-  stroke: rgba(255, 255, 255, 0.14);
+  stroke: rgb(255 255 255 / 14%);
   stroke-width: 0.45;
   stroke-dasharray: 1.2 0.9;
 }
@@ -3599,7 +3654,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   text-transform: uppercase;
   letter-spacing: 0.04em;
   paint-order: stroke;
-  stroke: rgba(5, 5, 8, 0.5);
+  stroke: rgb(5 5 8 / 50%);
   stroke-width: 0.5px;
 }
 
@@ -3617,7 +3672,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineMilestoneItem {
   padding: 12px 16px;
   min-height: 56px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
 }
 
 .timelineMilestoneOverdue {
@@ -3628,8 +3683,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineLegendWrap {
   padding: 12px 16px 16px;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.01);
+  border-top: 1px solid rgb(255 255 255 / 4%);
+  background: rgb(255 255 255 / 1%);
 }
 
 .timelineLegendCompleted {
@@ -3663,7 +3718,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .timelineLegendToday {
   width: 18px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(255 255 255 / 14%);
   border-radius: 1px;
   flex-shrink: 0;
 }
@@ -3692,7 +3747,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .accessAvatar.toneAmber  { background: color-mix(in oklab, var(--amber)  14%, transparent); color: var(--amber);  border-color: color-mix(in oklab, var(--amber)  25%, transparent); }
 .accessAvatar.toneRed    { background: color-mix(in oklab, var(--red)    14%, transparent); color: var(--red);    border-color: color-mix(in oklab, var(--red)    25%, transparent); }
 .accessAvatar.tonePurple { background: color-mix(in oklab, var(--purple) 14%, transparent); color: var(--purple); border-color: color-mix(in oklab, var(--purple) 25%, transparent); }
-.accessAvatar.toneMuted  { background: rgba(255,255,255,0.07); color: var(--muted); border-color: rgba(255,255,255,0.12); }
+.accessAvatar.toneMuted  { background: rgb(255 255 255 / 7%); color: var(--muted); border-color: rgb(255 255 255 / 12%); }
 
 .accessAvatar36 { width: 36px; height: 36px; font-size: 0.65rem; }
 
@@ -3750,10 +3805,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .accessAdminCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 20px;
   cursor: pointer;
@@ -3808,7 +3863,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .accessChipMuted {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--muted);
 }
 
@@ -3864,7 +3919,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 0.72rem;
   color: var(--muted);
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessPermValCell {
@@ -3872,7 +3927,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   place-items: center;
   padding: 10px 0;
   font-size: 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessToggleRow {
@@ -3880,14 +3935,14 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessToggle {
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3916,7 +3971,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 80px 100px 1fr 90px 140px;
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.6rem;
   letter-spacing: 0.1em;
@@ -3931,7 +3986,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .accessAuditRowLast { border-bottom: none; }
@@ -3955,13 +4010,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .accessAuditType.toneAmber  { background: color-mix(in oklab, var(--amber)  12%, transparent); color: var(--amber);  }
 .accessAuditType.toneRed    { background: color-mix(in oklab, var(--red)    12%, transparent); color: var(--red);    }
 .accessAuditType.tonePurple { background: color-mix(in oklab, var(--purple) 12%, transparent); color: var(--purple); }
-.accessAuditType.toneMuted  { background: rgba(255,255,255,0.06); color: var(--muted); }
+.accessAuditType.toneMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .accessInfoCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 18px 20px;
   font-size: 0.78rem;
@@ -3970,10 +4025,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .accessDelegationCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 20px;
 }
@@ -4002,10 +4057,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .accessCreateCard:hover { border-color: var(--muted); color: var(--text); }
 
 .accessKeyCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 20px;
 }
@@ -4063,7 +4118,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .brandSwatch {
   border-radius: var(--r-sm);
   overflow: hidden;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   margin-bottom: 8px;
 }
 
@@ -4084,8 +4139,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandPreviewCard {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  background: rgb(255 255 255 / 2%);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px;
   margin-top: 16px;
@@ -4122,8 +4177,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandTypoCard {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  background: rgb(255 255 255 / 2%);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 16px;
 }
@@ -4142,8 +4197,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandLogoCard {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  background: rgb(255 255 255 / 2%);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   text-align: center;
@@ -4167,10 +4222,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandTemplateCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 16px 20px;
   display: grid;
@@ -4196,7 +4251,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .brandCreateCard:hover { border-color: var(--muted); color: var(--text); }
 
 .brandEmailMockOuter {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--bg);
@@ -4248,10 +4303,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandInfoCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 18px 20px;
   font-size: 0.78rem;
@@ -4260,10 +4315,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .brandDomainCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 20px;
   display: grid;
@@ -4301,10 +4356,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .brandCreateAccentCard:hover { border-color: var(--accent); background: var(--accent-d); }
 
 .brandWhiteLabelCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 24px;
 }
@@ -4346,7 +4401,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .dvtPillBtn {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   color: var(--muted);
   padding: 4px 12px;
@@ -4371,7 +4426,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .dvtMainSplitSingle { grid-template-columns: 1fr; }
 
 .dvtTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -4381,7 +4436,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 72px 32px 1fr 80px 80px 48px 56px 80px 40px;
   gap: 8px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -4395,9 +4450,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   transition: background 0.1s ease;
 }
 
-.dvtRow:hover { background: rgba(255, 255, 255, 0.02); }
+.dvtRow:hover { background: rgb(255 255 255 / 2%); }
 
-.dvtRowSelected { background: rgba(255, 255, 255, 0.04); border-left: 3px solid var(--accent); }
+.dvtRowSelected { background: rgb(255 255 255 / 4%); border-left: 3px solid var(--accent); }
 
 .dvtRowFlagged { background: color-mix(in srgb, var(--red) 4%, transparent); }
 
@@ -4438,13 +4493,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .dvtStatusRejected { background: var(--red-d); color: var(--red); }
 
-.dvtStatusArchived { background: rgba(255, 255, 255, 0.06); color: var(--muted); }
+.dvtStatusArchived { background: rgb(255 255 255 / 6%); color: var(--muted); }
 
 .dvtSideCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 20px;
   position: sticky;
@@ -4464,7 +4519,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.72rem;
 }
 
@@ -4491,16 +4546,14 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .dvtClientCard {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  background: rgb(19 19 30 / 75%);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 20px;
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .dvtClientCardAccent { border-left-color: var(--accent); }
@@ -4535,10 +4588,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .dvtContractsStack { display: flex; flex-direction: column; gap: 12px; }
 
 .dvtContractRow {
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 16px 20px;
   display: grid;
@@ -4582,7 +4635,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   position: fixed;
   inset: 0;
   z-index: 199;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgb(0 0 0 / 55%);
 }
 
 .dvtUploadCenter {
@@ -4598,7 +4651,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .dvtUploadBox {
   background: var(--s2);
   border-radius: var(--r-lg);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   box-shadow: var(--shadow-modal);
   width: 100%;
   max-width: 480px;
@@ -4710,7 +4763,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 16px;
   padding: 10px 16px;
   border-radius: var(--r-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-left: 3px solid transparent;
 }
 
@@ -4727,7 +4780,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdAlertBtn {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   color: var(--muted);
   padding: 4px 12px;
@@ -4751,7 +4804,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 16px;
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .topCardsStack,
   .gridAutoFit,
   .exdKpiGrid {
@@ -4759,30 +4812,28 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .gridAutoFit,
   .exdKpiGrid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .topCardsStack {
     grid-template-columns: 1fr;
   }
 }
 
 .exdKpiCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   padding: 16px 18px;
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .exdKpiLabel {
@@ -4879,7 +4930,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .exdDot {
@@ -4907,7 +4958,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdHealthTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -4918,7 +4968,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .exdHealthTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -4957,7 +5007,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdPulseBlock {
   padding: 14px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .exdPulseHead {
@@ -4986,7 +5036,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .exdRevName {
@@ -4997,7 +5047,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdRevTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -5008,7 +5057,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .exdRevTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -5062,15 +5111,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   align-items: center;
   padding: 14px 18px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .exdClientName {
@@ -5087,7 +5134,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdTrack8 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -5097,7 +5143,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .exdTrack8::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -5169,15 +5215,13 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   justify-content: space-between;
   gap: 16px;
   padding: 14px 18px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   border-left: 3px solid transparent;
-  backdrop-filter: blur(8px) saturate(130%);
   -webkit-backdrop-filter: blur(8px) saturate(130%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px) saturate(130%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .exdAlertLeftBig {
@@ -5204,7 +5248,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .exdAlertBtnBig {
   cursor: pointer;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -5297,7 +5341,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(5, 1fr);
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   font-family: var(--font-dm-mono), monospace;
@@ -5335,7 +5379,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revopsTrackFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -5345,7 +5388,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revopsTrackFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -5394,7 +5437,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revopsTrackBar {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -5404,7 +5446,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revopsTrackBar::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -5465,7 +5507,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   position: relative;
   width: 100%;
   height: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
   overflow: hidden;
 }
@@ -5503,7 +5545,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revopsMetricTile {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 14px;
   background: var(--s2);
@@ -5625,7 +5667,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfChartCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -5663,7 +5705,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfNowRect {
-  fill: rgba(255, 255, 255, 0.08);
+  fill: rgb(255 255 255 / 8%);
 }
 
 .revfStackedBar {
@@ -5691,7 +5733,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfTableCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -5701,7 +5743,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(6, 1fr);
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
 }
 
@@ -5712,7 +5754,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 12px 16px;
   align-items: center;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .revfTableRow {
@@ -5736,7 +5778,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px 24px;
   background: var(--s2);
@@ -5755,7 +5797,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfPipelineCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 18px 20px;
   background: var(--s2);
@@ -5811,7 +5853,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revfProbTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -5821,7 +5862,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfProbTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -5859,7 +5900,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfScenarioCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -5937,7 +5978,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .revfColorDot {
@@ -5967,7 +6008,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .revfAssumeTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -5978,7 +6018,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .revfAssumeTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -6005,16 +6045,16 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
   font-size: 0.75rem;
 }
 
 .revfModelNote {
   margin-top: 20px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-radius: var(--r-sm);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
 }
 
 .revfModelTitle {
@@ -6078,7 +6118,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcClientCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 18px 20px;
   background: var(--s2);
@@ -6122,7 +6162,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcTrack10 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 10px;
   border: none;
@@ -6132,7 +6171,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcTrack10::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -6215,7 +6254,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   padding: 12px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .ppcCostTile {
@@ -6252,7 +6291,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcCard24 {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -6273,7 +6312,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .ppcDot10 {
@@ -6304,7 +6343,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcBar100 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -6315,7 +6353,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcBar100::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -6378,7 +6416,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcLtvCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 20px;
   background: var(--s2);
@@ -6456,7 +6494,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* --- PPC: Margin trends tab --- */
 
 .ppcTrendCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 24px;
   background: var(--s2);
@@ -6489,7 +6527,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcTrendFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 10px;
   border: none;
@@ -6499,7 +6536,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcTrendFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -6546,7 +6583,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .ppcBlendTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 12px;
   border: none;
@@ -6556,7 +6592,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .ppcBlendTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -6611,7 +6647,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pppCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 0;
   background: var(--s2);
@@ -6794,7 +6830,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   padding: 12px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgb(255 255 255 / 4%);
 }
 
 .pppCostBox {
@@ -6825,7 +6861,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* --- PPP: Hours analysis tab --- */
 
 .pppHoursCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 18px 20px;
   background: var(--s2);
@@ -6841,7 +6877,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pppTrack8 {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border: none;
@@ -6851,7 +6886,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pppTrack8::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -6880,7 +6915,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* --- PPP: Collected vs invoiced tab --- */
 
 .pppCollectCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 18px 20px;
   background: var(--s2);
@@ -6906,7 +6941,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pppPortfolioCard {
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-sm);
   padding: 18px 20px;
   background: var(--s2);
@@ -6998,7 +7033,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgb(255 255 255 / 4%);
 }
 
 .pppDot {
@@ -7016,7 +7051,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .pppLineTrack {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border: none;
@@ -7027,7 +7061,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .pppLineTrack::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7133,7 +7167,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .cashFlowStatusBadge.tonePurple { background: var(--purple-d); color: var(--purple); }
 
-.cashFlowStatusBadge.toneMuted { background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+.cashFlowStatusBadge.toneMuted { background: rgb(255 255 255 / 4%); color: var(--muted); }
 
 /* --- Cash Flow: Calendar view --- */
 
@@ -7156,7 +7190,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .cashFlowDayToday {
   border: 1px solid var(--accent-d);
   border-radius: var(--r-sm);
-  background: rgba(167, 139, 250, 0.04);
+  background: rgb(167 139 250 / 4%);
 }
 
 .cashFlowTagOverdue {
@@ -7311,9 +7345,9 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .fyProfitCard {
   text-align: center;
   padding: 28px 24px;
-  background: rgba(19, 19, 30, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgb(19 19 30 / 75%);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--accent-d);
   border-radius: var(--r-md);
 }
@@ -7332,7 +7366,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .fySubRow {
   padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgb(255 255 255 / 3%);
 }
 
 .fyPl16 {
@@ -7390,7 +7424,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 0.56rem;
   color: var(--muted);
   letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   padding: 2px 8px;
   border-radius: 3px;
 }
@@ -7451,7 +7485,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   grid-template-columns: 0.5fr 0.5fr 2fr 0.7fr 0.8fr 0.6fr 0.4fr 0.4fr 0.6fr 0.7fr;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid var(--border);
   font-size: 0.625rem;
   font-family: var(--font-dm-mono), monospace;
@@ -7466,18 +7500,17 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 10px;
   padding: 12px 16px;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgb(255 255 255 / 3%);
 }
 
 .expenseRowFlagged {
-  background: rgba(255, 95, 95, 0.03);
+  background: rgb(255 95 95 / 3%);
   border-left: 3px solid var(--red);
 }
 
 /* --- Expense: Budget cards --- */
 
-.expenseBudgetCard {
-}
+.expenseBudgetCard {}
 
 .expenseBudgetWarn {
   border-color: var(--red-d);
@@ -7492,7 +7525,6 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .expenseBarFill {
   appearance: none;
-  -webkit-appearance: none;
   width: 100%;
   height: 100%;
   border: none;
@@ -7502,7 +7534,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .expenseBarFill::-webkit-progress-bar {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   border-radius: var(--r-xs);
 }
 
@@ -7577,9 +7609,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   color: var(--amber);
 }
 
-
 /* ── Responsive: KPI grids ──────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .exdKpiGrid,
   .msgKpiGrid,
   .notifKpiGrid,
@@ -7588,7 +7619,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .exdKpiGrid,
   .msgKpiGrid,
   .notifKpiGrid,
@@ -7599,7 +7631,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 /* ── Responsive: 2-col splits → 1-col at tablet ─────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .ownerDashSplit,
   .perfIncentiveSplit,
   .pifDbSplit,
@@ -7619,7 +7651,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 /* ── Responsive: 3-col card grids → 2-col at tablet, 1-col mobile ─ */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .pifMiniGrid,
   .projOpsMetricGrid,
   .revfScenarioGrid,
@@ -7631,7 +7663,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .pifMiniGrid,
   .projOpsMetricGrid,
   .revfScenarioGrid,
@@ -7644,7 +7677,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .projOpsSearch {
     width: 100%;
     min-width: 0;
@@ -7652,32 +7685,38 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .projOpsSearch {
     width: 100%;
     min-width: 0;
     flex: 1 1 100%;
   }
+
   .projOpsBoardSplit {
     grid-template-columns: 1fr;
   }
+
   /* Messages: toolbar wraps on mobile */
   .msgToolbar {
     flex-wrap: wrap;
     gap: 6px;
   }
+
   .msgSearchInput {
     width: 100%;
     min-width: 0;
     flex: 1 1 100%;
   }
+
   .msgSubjectInput {
     min-width: 0;
     flex: 1 1 100%;
   }
+
   .msgToolbarDivider {
     display: none;
   }
+
   /* Messages: escalation table rows → compressed columns */
   .msgEscRow {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
@@ -7688,34 +7727,38 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 /* ── Access Control responsive ──────────────────────────────────────────── */
-@media (max-width: 700px) {
+@media (width <= 700px) {
   /* User row grid: collapse from 7 cols to 2-col (identity + role / status + view) */
   .accessAdminGrid {
     grid-template-columns: 1fr auto;
     row-gap: 6px;
   }
+
   .accessIdentityCell {
     grid-column: 1;
     grid-row: 1;
   }
+
   /* Role cell: right side of row 1 */
   .accessAdminGrid > :nth-child(2) {
     grid-column: 2;
     grid-row: 1;
     align-self: center;
   }
+
   /* Hide Last Seen and Created columns */
   .accessAdminGrid > :nth-child(3),
   .accessAdminGrid > :nth-child(4) {
     display: none;
   }
+
   /* Status chip: left of row 2 */
   .accessAdminGrid > :nth-child(5) {
     grid-column: 1;
     grid-row: 2;
-    align-self: center;
-    justify-self: start;
+    place-self: center start;
   }
+
   /* View button: right of row 2 */
   .accessAdminGrid > :nth-child(6) {
     grid-column: 2;
@@ -7724,7 +7767,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   /* Audit log: drop id + date, keep actor / action / type */
   .accessAuditHead,
   .accessAuditRow {
@@ -7732,6 +7775,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
     gap: 8px;
     padding: 10px 12px;
   }
+
   /* Hide id (1st) and date (5th) columns */
   .accessAuditHead > :nth-child(1),
   .accessAuditRow > :nth-child(1),
@@ -7758,7 +7802,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .paTrendLost { background: var(--red, #ef4444); border-radius: 3px 3px 0 0; flex: 1; min-height: 4px; opacity: 0.7; }
 
 /* Pipeline Analytics: funnel tones */
-.paStageNew         { border-top: 3px solid var(--muted, rgba(255,255,255,0.2)); }
+.paStageNew         { border-top: 3px solid var(--muted, rgb(255 255 255 / 20%)); }
 .paStageContacted   { border-top: 3px solid var(--blue, #5b8df8); }
 .paStageQualified   { border-top: 3px solid var(--purple, #8b6fff); }
 .paStageProposal    { border-top: 3px solid var(--amber, #f59e0b); }
@@ -7774,7 +7818,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 .paTrendMonthRow { display: flex; gap: 12px; margin-top: 6px; }
 .paTrendMonthLabel { flex: 1; font-size: 0.62rem; font-family: var(--font-dm-mono), monospace; color: var(--muted); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .paKpiRow { gap: 10px; }
   .paKpiCard { min-width: 100px; }
   .paFunnelStage { min-width: 60px; padding: 12px 4px; }
@@ -7782,6 +7826,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 /* ── Profitability polish ─────────────────────────────────────── */
 .ppcDrillRow { background: var(--s2); animation: ppcDrillFadeIn 0.15s ease; }
+
 @keyframes ppcDrillFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .ppcDrillRow:not(:last-child) { border-bottom: 1px solid var(--b1); }
 .ppcRowExpanded { background: color-mix(in srgb, var(--accent, #8b6fff) 5%, transparent); }
@@ -7808,7 +7853,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   gap: 12px;
   align-items: stretch;
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.12);
+  border: 1px solid rgb(139 111 255 / 12%);
   border-radius: 8px;
   padding: 20px 24px;
   position: relative;
@@ -7866,8 +7911,8 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 .execHeroMiniStat {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 3%);
+  border: 1px solid rgb(255 255 255 / 6%);
   border-radius: 6px;
   padding: 8px 14px;
   min-width: 100px;
@@ -7885,7 +7930,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   font-size: 8px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.2);
+  color: rgb(255 255 255 / 20%);
   margin-bottom: 4px;
 }
 
@@ -7903,10 +7948,10 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   flex-shrink: 0;
 }
 
-.execAlertIconAmber { background: rgba(245, 166, 35, 0.2); }
-.execAlertIconRed   { background: rgba(255, 95, 95, 0.2); }
-.execAlertIconGreen { background: rgba(52, 217, 139, 0.15); }
-.execAlertIconPurple { background: rgba(139, 111, 255, 0.2); }
+.execAlertIconAmber { background: rgb(245 166 35 / 20%); }
+.execAlertIconRed   { background: rgb(255 95 95 / 20%); }
+.execAlertIconGreen { background: rgb(52 217 139 / 15%); }
+.execAlertIconPurple { background: rgb(139 111 255 / 20%); }
 
 .execAlertText {
   font-size: 11px;
@@ -7927,7 +7972,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 /* Row 3: Activity feed card */
 .execActivityCard {
   background: var(--s2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgb(255 255 255 / 5%);
   border-radius: 8px;
   padding: 16px 20px;
 }
@@ -7943,7 +7988,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgb(255 255 255 / 3%);
 }
 
 .execActivityItem:last-child {
@@ -7955,7 +8000,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   height: 12px;
   border-radius: 3px;
   flex-shrink: 0;
-  background: rgba(139, 111, 255, 0.25);
+  background: rgb(139 111 255 / 25%);
 }
 
 .execActivityDesc {
@@ -7975,23 +8020,25 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 }
 
 /* Responsive */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .execHeroStrip {
     grid-template-columns: 1fr;
   }
+
   .execHeroMiniStats {
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-flow: row wrap;
   }
+
   .execKpiStrip {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .execKpiStrip {
     grid-template-columns: 1fr;
   }
+
   .execLayout {
     padding: 12px 16px;
   }
@@ -8011,7 +8058,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   background: var(--s1);
   border: 1px solid var(--accent);
   border-radius: var(--r-lg);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 32%);
   z-index: 500;
   white-space: nowrap;
 }

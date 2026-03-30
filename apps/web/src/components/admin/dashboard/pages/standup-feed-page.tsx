@@ -12,6 +12,7 @@ import {
   loadStandupFeedWithRefresh,
   type AdminStandupEntry,
 } from "../../../../lib/api/admin";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function StandupFeedPage({ session }: { session: AuthSession | null }) {
@@ -60,33 +61,87 @@ export function StandupFeedPage({ session }: { session: AuthSession | null }) {
     );
   }
 
+  const activeBlockers = standups.filter((s) => s.blockers && s.blockers.toLowerCase() !== "none").length;
+  const resolvedThisWeek = 0; // no resolved tracking in current model
+  const responseRate = standups.length > 0 ? 100 : 0;
+
+  // ── Chart data ─────────────────────────────────────────────────────────────
+  const teamCounts = standups.reduce<Record<string, number>>((acc, s) => {
+    const team = s.staff?.role ?? "Unknown";
+    acc[team] = (acc[team] ?? 0) + 1;
+    return acc;
+  }, {});
+  const chartData = Object.entries(teamCounts).map(([name, value]) => ({ name, value }));
+
+  const tableRows = standups.map((s) => ({
+    id: s.id,
+    staff: s.staff?.name ?? `Staff ${s.staffId.slice(0, 6)}`,
+    today: s.today,
+    blockers: s.blockers ?? "None",
+    createdAt: s.createdAt,
+  })) as unknown as Record<string, unknown>[];
+
   return (
     <div className={styles.pageBody}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / GOVERNANCE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / STANDUP</div>
           <h1 className={styles.pageTitle}>Standup Feed</h1>
-          <div className={styles.pageSub}>Aggregated daily stand-ups from all staff — {today}</div>
+          <div className={styles.pageSub}>Daily standups · Blocker tracking · Team pulse — {today}</div>
         </div>
       </div>
 
-      {/* ── Feed ── */}
-      {standups.length === 0 ? (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <div className={styles.emptyTitle}>No standups today</div>
-          <div className={styles.emptySub}>Staff standups for today haven&apos;t been submitted yet. Check back once your team has logged their daily updates.</div>
-        </div>
-      ) : (
-        <div className={cx("flexCol", "gap16")}>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Standups Today" value={standups.length} tone="accent" sparkData={[3, 4, 5, 4, 6, 5, 7, standups.length]} />
+        <StatWidget label="Blockers Active" value={activeBlockers} tone={activeBlockers > 0 ? "red" : "green"} progressValue={standups.length > 0 ? Math.round((activeBlockers / standups.length) * 100) : 0} />
+        <StatWidget label="Resolved This Week" value={resolvedThisWeek} tone="green" progressValue={0} />
+        <StatWidget label="Response Rate" value={`${responseRate}%`} sub="submitted today" />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Standups by Team"
+          type="bar"
+          data={chartData.length > 0 ? chartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Blocker Severity"
+          stages={[
+            { label: "Clear", count: standups.length - activeBlockers, total: standups.length, color: "#34d98b" },
+            { label: "Blocked", count: activeBlockers, total: standups.length, color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Today's Standups"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No standups submitted yet today."
+          columns={[
+            { key: "staff", header: "Staff", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.staff ?? "")}</span> },
+            { key: "today", header: "Today's Update", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{String(row.today ?? "").slice(0, 60)}{String(row.today ?? "").length > 60 ? "…" : ""}</span> },
+            { key: "blockers", header: "Blockers", align: "right", render: (_v, row) => {
+              const b = String(row.blockers ?? "None");
+              const isBlocked = b.toLowerCase() !== "none";
+              return <span className={cx("badge", isBlocked ? "badgeRed" : "badgeGreen")}>{isBlocked ? "Blocked" : "Clear"}</span>;
+            }},
+            { key: "createdAt", header: "Time", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{new Date(String(row.createdAt ?? "")).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}</span> },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Detail cards below ── */}
+      {standups.length > 0 && (
+        <div className={cx("flexCol", "gap16", "mt16")}>
           {standups.map((s) => {
             const name     = s.staff?.name ?? `Staff ${s.staffId.slice(0, 6)}`;
             const role     = s.staff?.role ?? "Staff";
@@ -113,9 +168,7 @@ export function StandupFeedPage({ session }: { session: AuthSession | null }) {
                     <div className={cx("text12", "mt4")}>{s.today}</div>
                   </div>
                   <div>
-                    <span className={cx("text10", "uppercase", "tracking", (blockers === "None" || blockers === "none") ? "colorGreen" : "colorRed", "fw700")}>
-                      Blockers
-                    </span>
+                    <span className={cx("text10", "uppercase", "tracking", (blockers === "None" || blockers === "none") ? "colorGreen" : "colorRed", "fw700")}>Blockers</span>
                     <div className={cx("text12", "mt4")}>{blockers}</div>
                   </div>
                 </div>

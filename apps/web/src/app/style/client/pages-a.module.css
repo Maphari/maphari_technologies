@@ -9,8 +9,8 @@
   gap: 0;
   margin-bottom: 28px;
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 4px;
@@ -88,8 +88,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   cursor: pointer;
   transition: border-color 0.14s ease, background 0.14s ease;
   padding: 16px;
@@ -193,8 +193,8 @@
   padding: 32px;
   text-align: center;
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: var(--muted);
   cursor: pointer;
   display: flex;
@@ -244,7 +244,7 @@
   padding: 14px 16px;
   border-radius: var(--r-sm);
   background: var(--lime-d);
-  border: 1px solid rgba(200, 241, 53, 0.2);
+  border: 1px solid rgb(200 241 53 / 20%);
   margin-bottom: 16px;
   color: var(--accent);
   font-size: 0.72rem;
@@ -906,7 +906,7 @@
 
 .clientDashRowCardDanger {
   background: var(--s3);
-  border: 1px solid rgba(255, 95, 95, 0.2);
+  border: 1px solid rgb(255 95 95 / 20%);
 }
 
 .clientDashRowDot {
@@ -972,8 +972,8 @@
 }
 
 .clientDashBlockerCard {
-  background: rgba(255, 95, 95, 0.04);
-  border: 1px solid rgba(255, 95, 95, 0.12);
+  background: rgb(255 95 95 / 4%);
+  border: 1px solid rgb(255 95 95 / 12%);
 }
 
 .clientDashBetweenRow {
@@ -1109,8 +1109,8 @@
 .contractsDocPreview {
   padding: 16px;
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-sm);
   border: 1px solid var(--border);
   font-size: 0.76rem;
@@ -1140,8 +1140,8 @@
   align-items: center;
   padding: 8px 12px;
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-xs);
   border: 1px solid var(--border);
 }
@@ -1173,10 +1173,9 @@
 
 .contractsToolbar {
   display: flex;
-  flex-direction: row;
+  flex-flow: row wrap;
   gap: 12px;
   align-items: center;
-  flex-wrap: wrap;
 }
 
 .contractsSearch {
@@ -1248,8 +1247,8 @@
 
 .quoteBuilderHero {
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 30px;
@@ -1260,7 +1259,7 @@
 .quoteBuilderHero::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 0 auto;
   height: 2px;
   background: linear-gradient(90deg, var(--accent), var(--purple));
 }
@@ -1334,8 +1333,8 @@
 
 .quoteBuilderTable {
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   overflow: hidden;
@@ -1502,7 +1501,8 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -1513,8 +1513,8 @@
   border-radius: var(--r-md);
   border: 1px solid var(--border2);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -1555,8 +1555,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 12px 14px;
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.61rem;
@@ -1623,8 +1623,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 12px 0;
   height: fit-content;
   position: sticky;
@@ -1659,7 +1659,7 @@
 
 .depositPaySideItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .depositPaySideItemActive {
@@ -1685,8 +1685,8 @@
   margin: 0 12px;
   border: 1px solid var(--border);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-sm);
   padding: 12px 14px;
 }
@@ -1695,8 +1695,8 @@
   margin: 12px 0 14px;
   border: 1px solid var(--border);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-sm);
   padding: 12px 14px;
 }
@@ -1934,8 +1934,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 16px 18px;
   margin-bottom: 18px;
   font-family: var(--font-dm-mono), monospace;
@@ -2020,7 +2020,8 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -2031,8 +2032,8 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -2073,8 +2074,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.62rem;
   color: var(--muted);
@@ -2246,8 +2247,8 @@
   display: inline-block;
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(0, 0, 0, 0.3);
-  border-top-color: currentColor;
+  border: 2px solid rgb(0 0 0 / 30%);
+  border-top-color: currentcolor;
   border-radius: 50%;
   animation: psSpinAnim 0.6s linear infinite;
 }
@@ -2256,7 +2257,7 @@
   to { transform: rotate(360deg); }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .psProjectHead {
     flex-direction: column;
     gap: 12px;
@@ -2294,8 +2295,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 12px 0;
   height: fit-content;
   position: sticky;
@@ -2329,7 +2330,7 @@
 
 .legalAgSideItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .legalAgSideItemActive {
@@ -2357,8 +2358,8 @@
   padding: 12px 14px;
   border: 1px solid var(--border);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .legalAgStatusInline {
@@ -2439,8 +2440,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .legalAgDocItem:hover {
@@ -2480,8 +2481,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 24px 26px;
   max-height: 420px;
   overflow-y: auto;
@@ -2541,8 +2542,8 @@
   border: 2px dashed var(--border2);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   text-align: center;
   padding: 24px;
 }
@@ -2569,7 +2570,8 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -2580,8 +2582,8 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -2621,8 +2623,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 12px 14px;
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.6rem;
@@ -2660,8 +2662,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 16px;
   text-align: center;
 }
@@ -2688,8 +2690,7 @@
   justify-content: flex-end;
 }
 
-@media (max-width: 920px) {
-
+@media (width <= 920px) {
   .depositPayLayout,
   .legalAgLayout {
     flex-direction: column;
@@ -2706,8 +2707,7 @@
   }
 }
 
-@media (max-width: 720px) {
-
+@media (width <= 720px) {
   .depositPayMethods,
   .legalAgDocActions {
     flex-direction: column;
@@ -2882,14 +2882,14 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 16px 18px;
 }
 
 .reportsStatBar {
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 0 auto;
   height: 2px;
 }
 
@@ -3034,8 +3034,8 @@
   inset: 16px;
   border-radius: 50%;
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   display: grid;
   place-items: center;
@@ -3229,8 +3229,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 14px 16px;
 }
 
@@ -3266,8 +3266,7 @@
   color: var(--muted);
 }
 
-@media (max-width: 1200px) {
-
+@media (width <= 1200px) {
   .reportsStatGrid,
   .reportsGrid3 {
     grid-template-columns: 1fr 1fr;
@@ -3278,7 +3277,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .reportsToolbar {
     padding: 10px;
     gap: 10px;
@@ -3711,7 +3710,7 @@
 
 .projectsSuccessBtn {
   background: var(--green-d);
-  border: 1px solid rgba(52, 217, 139, 0.2);
+  border: 1px solid rgb(52 217 139 / 20%);
   color: var(--green);
 }
 
@@ -4049,8 +4048,8 @@
   gap: 0;
   margin-bottom: 24px;
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-md);
   padding: 4px;
   border: 1px solid var(--border);
@@ -4297,8 +4296,8 @@
 .billingInvSidebar {
   border: 1px solid var(--border);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-md);
   padding: 14px 0;
   height: 100%;
@@ -4334,7 +4333,7 @@
 
 .billingInvSidebarItem:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .billingInvSidebarItemActive {
@@ -4415,7 +4414,7 @@
 }
 
 .billingInvBadgeMuted {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   color: var(--muted);
 }
 
@@ -4470,8 +4469,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 18px 20px;
   flex: 1;
 }
@@ -4503,7 +4502,7 @@
   width: 100%;
   height: 6px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   border-radius: 999px;
   margin-bottom: 12px;
 }
@@ -4564,8 +4563,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 11px 14px;
 }
 
@@ -4591,7 +4590,7 @@
 .billingInvScheduleBarWrap {
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -4635,8 +4634,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 10px 12px;
   margin: 16px 0 12px;
   flex-wrap: wrap;
@@ -4718,6 +4717,7 @@
 
 .billingInvTableWrap {
   --billingInvTableCols: repeat(6, minmax(0, 1fr));
+
   padding: 8px 0 18px;
 }
 
@@ -4755,8 +4755,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   margin-bottom: 8px;
   padding: 14px 16px;
   animation: billingInvRowIn 0.3s cubic-bezier(0.23, 1, 0.32, 1) both;
@@ -4880,7 +4880,7 @@
 }
 
 .billingInvChipDraft {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   color: var(--muted);
 }
 
@@ -4959,7 +4959,8 @@
   position: fixed;
   inset: 0;
   z-index: 90;
-  background: rgba(5, 5, 8, 0.85);
+  background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -4973,8 +4974,8 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   overflow: hidden;
 }
 
@@ -5222,8 +5223,8 @@
   border: 1px solid var(--accent);
   border-radius: var(--r-sm);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 14px 20px;
 }
 
@@ -5292,7 +5293,7 @@
   }
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .billingInvStats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5311,7 +5312,7 @@
   }
 }
 
-@media (max-width: 980px) {
+@media (width <= 980px) {
   .billingInvStats {
     grid-template-columns: 1fr;
   }
@@ -5372,8 +5373,8 @@
   justify-content: space-between;
   gap: 12px;
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 12px 16px;
@@ -5485,8 +5486,8 @@
 .approvalsTextarea {
   width: 100%;
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: var(--r-xs);
   padding: 8px 12px;
@@ -5597,7 +5598,7 @@
   flex-wrap: wrap;
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .approvalsFilterRow {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -5611,7 +5612,7 @@
 
 .approvalsFilterActive {
   background: var(--lime-d);
-  border: 1px solid rgba(200, 241, 53, 0.2);
+  border: 1px solid rgb(200 241 53 / 20%);
   color: var(--accent);
 }
 
@@ -6018,8 +6019,8 @@
   font-size: 0.62rem;
   color: var(--muted);
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 2px 8px;
@@ -6237,8 +6238,8 @@
   padding: 10px 14px;
   border-radius: var(--r-lg) var(--r-lg) var(--r-lg) var(--r-xxs);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border);
   font-size: 0.78rem;
   line-height: 1.55;
@@ -6247,7 +6248,7 @@
 .messagesBubbleMineBg {
   border-radius: var(--r-lg) var(--r-lg) var(--r-xxs) var(--r-lg);
   background: var(--lime-d);
-  border-color: rgba(200, 241, 53, 0.2);
+  border-color: rgb(200 241 53 / 20%);
 }
 
 .messagesAttachStack {
@@ -6294,8 +6295,8 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: var(--text);
   font-family: var(--font-syne), sans-serif;
   font-size: 0.82rem;
@@ -6378,7 +6379,7 @@
 
 .messagesRecipientRowActive {
   background: var(--lime-d);
-  border-color: rgba(200, 241, 53, 0.3);
+  border-color: rgb(200 241 53 / 30%);
 }
 
 .messagesRecipientName {
@@ -6408,8 +6409,8 @@
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6429,7 +6430,7 @@
 }
 
 .messagesSelectedPill {
-  border: 1px solid rgba(200, 241, 53, 0.2);
+  border: 1px solid rgb(200 241 53 / 20%);
   background: var(--lime-d);
   color: var(--accent);
   border-radius: 99px;
@@ -6736,8 +6737,8 @@
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .feedbackPinDot {
@@ -6775,8 +6776,8 @@
   font-size: 0.62rem;
   border: 1px solid var(--border);
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: 99px;
   padding: 3px 8px;
 }
@@ -6827,8 +6828,8 @@
   font-size: 0.58rem;
   border: 1px solid var(--border);
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: 99px;
   padding: 1px 6px;
 }
@@ -6969,8 +6970,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-xxs);
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7025,8 +7026,8 @@
   width: 100%;
   border: 1px solid var(--border);
   background: var(--s3);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: inherit;
   text-align: left;
   border-radius: 10px;
@@ -7107,7 +7108,6 @@
 
 .schedSideButton,
 .schedQuickButton {
-  width: 100%;
   border: none;
   border-left: 2px solid transparent;
   background: transparent;
@@ -7130,7 +7130,7 @@
 .schedSideButton:hover,
 .schedQuickButton:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .schedSideButtonActive {
@@ -7376,8 +7376,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 14px;
   transition: border-color 0.16s ease, transform 0.16s ease;
 }
@@ -7509,8 +7509,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 14px;
   transition: border-color 0.16s ease, transform 0.16s ease;
 }
@@ -7553,7 +7553,7 @@
 .schedTeamSkill {
   border-radius: 99px;
   padding: 2px 7px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--muted);
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.52rem;
@@ -7572,7 +7572,8 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 8, 0.84);
+  background: rgb(5 5 8 / 84%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -7587,8 +7588,8 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   box-shadow: var(--shadow-modal);
 }
 
@@ -7732,8 +7733,8 @@
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -7808,7 +7809,7 @@
   color: var(--amber);
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .schedLayout {
     grid-template-columns: 1fr;
   }
@@ -7818,7 +7819,7 @@
   }
 }
 
-@media (max-width: 980px) {
+@media (width <= 980px) {
   .schedCalendarGrid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
@@ -7970,7 +7971,7 @@
 
 .profSideButton:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .profSideButtonActive {
@@ -8265,8 +8266,8 @@
   height: 28px;
   border: 1px solid var(--border);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-xs);
   display: flex;
   align-items: center;
@@ -8306,8 +8307,8 @@
   border: 1px solid var(--border);
   border-radius: var(--r-xs);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 8px 6px;
   display: flex;
   flex-direction: column;
@@ -8336,8 +8337,8 @@
   border-left: 2px solid var(--muted2);
   border-radius: var(--r-xs);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .profWidgetGrid {
@@ -8522,8 +8523,8 @@
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   background: var(--surface);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   box-shadow: var(--shadow-card);
   display: flex;
   align-items: center;
@@ -8556,7 +8557,7 @@
   color: var(--muted);
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .profLayout {
     grid-template-columns: 1fr;
   }
@@ -8566,7 +8567,7 @@
   }
 }
 
-@media (max-width: 980px) {
+@media (width <= 980px) {
   .profNotifHead {
     display: none;
   }
@@ -8698,32 +8699,34 @@
 /* ─── Missing page-specific classes ───────────────────────────────── */
 
 /* ── Responsive: KPI grids ──────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .reportsStatGrid,
   .billingInvStats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .reportsStatGrid,
   .billingInvStats {
     grid-template-columns: 1fr;
   }
 }
 
-
 /* ── Responsive: layout splits and card grids ───────────────────── */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .feedbackLayout,
   .meetingsNotesLayout {
     grid-template-columns: 1fr;
   }
+
   .projectRequestServicesGrid,
   .billingInvMethodGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
+
+@media (width <= 480px) {
   .projectRequestServicesGrid,
   .billingInvMethodGrid,
   .billingInvModalRow,
@@ -8738,7 +8741,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(5, 5, 8, 0.95);
+  background: rgb(5 5 8 / 95%);
   display: flex;
   flex-direction: column;
 }
@@ -8912,20 +8915,24 @@
   margin-bottom: 16px;
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .ctCard {
     flex-wrap: wrap;
   }
+
   .ctCardActions {
     width: 100%;
     flex-wrap: wrap;
   }
+
   .ctViewerHeader {
     padding: 12px 16px;
   }
+
   .ctViewerContent {
     padding: 24px 16px;
   }
+
   .ctSignFooter {
     padding: 16px;
   }
@@ -8943,6 +8950,7 @@
 
 /* ── Approvals polish ────────────────────────────────────────── */
 .apvTabContent { animation: apvTabFadeIn 0.15s ease; }
+
 @keyframes apvTabFadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 .apvChevron { display: inline-flex; align-items: center; transition: transform 0.2s; color: var(--text-muted); margin-right: 6px; }
 .apvChevronOpen { transform: rotate(90deg); }
@@ -8953,6 +8961,7 @@
 /* ── NPS star colours ────────────────────────────────────────── */
 .starFilled { color: var(--lime, #c8f135); }
 .starEmpty  { color: var(--b3); }
+
 /* Step indicator ───────────────────────────────────────────────────────────── */
 .prqStepper {
   display: flex;
@@ -9034,7 +9043,9 @@
   text-align: left;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+
   --svc-color: var(--lime);
+
   width: 100%;
   position: relative;
 }
@@ -9351,7 +9362,7 @@
 }
 
 /* Responsive ───────────────────────────────────────────────────────────────── */
-@media (max-width: 620px) {
+@media (width <= 620px) {
   .prqSvcGrid {
     grid-template-columns: 1fr;
   }
@@ -9544,7 +9555,6 @@
 }
 
 @keyframes prqRecoPulse {
-
   0%,
   100% {
     opacity: 1;
@@ -9624,6 +9634,7 @@
   background: var(--lime);
   border-color: var(--lime);
 }
+
 /* Trust strip ──────────────────────────────────────────────────────────────── */
 .prqTrustStrip {
   display: flex;
@@ -9647,7 +9658,6 @@
   height: 12px;
   background: var(--b2);
 }
-
 
 /* ── Missing prq classes (new component additions) ─────────────────────────── */
 

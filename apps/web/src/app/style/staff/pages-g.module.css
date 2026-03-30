@@ -37,7 +37,7 @@
 
 .itgFilterBtnActive {
   background: var(--accent-d);
-  border-color: rgba(249,115,22,0.3);
+  border-color: rgb(249 115 22 / 30%);
   color: var(--accent);
 }
 
@@ -123,10 +123,10 @@
   width: fit-content;
 }
 
-.itgCatProductivity { background: var(--green-d); border-color: rgba(34,197,94,0.25); color: var(--green); }
-.itgCatCommunication { background: var(--blue-d); border-color: rgba(59,130,246,0.25); color: var(--blue); }
-.itgCatDesign { background: var(--purple-d); border-color: rgba(168,85,247,0.25); color: var(--purple); }
-.itgCatDevelopment { background: var(--amber-d); border-color: rgba(234,179,8,0.25); color: var(--amber); }
+.itgCatProductivity { background: var(--green-d); border-color: rgb(34 197 94 / 25%); color: var(--green); }
+.itgCatCommunication { background: var(--blue-d); border-color: rgb(59 130 246 / 25%); color: var(--blue); }
+.itgCatDesign { background: var(--purple-d); border-color: rgb(168 85 247 / 25%); color: var(--purple); }
+.itgCatDevelopment { background: var(--amber-d); border-color: rgb(234 179 8 / 25%); color: var(--amber); }
 
 .itgCardDesc {
   font-size: 12px;
@@ -174,18 +174,18 @@
   letter-spacing: 0.02em;
 }
 
-.itgConnectBtn:hover { background: var(--accent-d); border-color: rgba(249,115,22,0.3); color: var(--accent); }
+.itgConnectBtn:hover { background: var(--accent-d); border-color: rgb(249 115 22 / 30%); color: var(--accent); }
 
 .itgConnectBtnDone {
   background: var(--green-d);
-  border-color: rgba(34,197,94,0.3);
+  border-color: rgb(34 197 94 / 30%);
   color: var(--green);
   cursor: default;
 }
 
 .itgConnectBtnDone:hover {
   background: var(--green-d);
-  border-color: rgba(34,197,94,0.3);
+  border-color: rgb(34 197 94 / 30%);
   color: var(--green);
 }
 
@@ -255,11 +255,11 @@
   gap: 10px;
 }
 
-@media (max-width: 980px) {
+@media (width <= 980px) {
   .itgStatsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-@media (max-width: 560px) {
+@media (width <= 560px) {
   .itgStatsGrid { grid-template-columns: 1fr; }
 }
 
@@ -646,12 +646,12 @@
 .ksToneOrange { color: #ea7e22; }
 .ksTonePurple { color: var(--purple); }
 
-.ksSurfaceAccent { background: var(--accent-d); border: 1px solid rgba(249,115,22,0.15); }
-.ksSurfaceAmber { background: var(--amber-d); border: 1px solid rgba(234,179,8,0.15); }
-.ksSurfaceBlue { background: var(--blue-d); border: 1px solid rgba(59,130,246,0.15); }
+.ksSurfaceAccent { background: var(--accent-d); border: 1px solid rgb(249 115 22 / 15%); }
+.ksSurfaceAmber { background: var(--amber-d); border: 1px solid rgb(234 179 8 / 15%); }
+.ksSurfaceBlue { background: var(--blue-d); border: 1px solid rgb(59 130 246 / 15%); }
 .ksSurfaceMuted { background: var(--s2); border: 1px solid var(--b1); }
-.ksSurfaceOrange { background: rgba(234,126,34,0.1); border: 1px solid rgba(234,126,34,0.2); }
-.ksSurfacePurple { background: var(--purple-d); border: 1px solid rgba(168,85,247,0.15); }
+.ksSurfaceOrange { background: rgb(234 126 34 / 10%); border: 1px solid rgb(234 126 34 / 20%); }
+.ksSurfacePurple { background: var(--purple-d); border: 1px solid rgb(168 85 247 / 15%); }
 
 .ksLineAccent { background: var(--accent); }
 .ksLineAmber { background: var(--amber); }
@@ -852,7 +852,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: var(--accent-d);
-  border: 1px solid rgba(249,115,22,0.3);
+  border: 1px solid rgb(249 115 22 / 30%);
   color: var(--accent);
 }
 
@@ -872,7 +872,7 @@
 
 .stgv2StatusCardActive {
   background: var(--accent-d);
-  border: 1px solid rgba(249,115,22,0.3);
+  border: 1px solid rgb(249 115 22 / 30%);
   border-radius: var(--r-sm);
   padding: 10px 12px;
   display: flex;
@@ -901,7 +901,7 @@
 
 .stgv2KanbanOptActive {
   background: var(--accent-d);
-  border: 1px solid rgba(249,115,22,0.3);
+  border: 1px solid rgb(249 115 22 / 30%);
   border-radius: var(--r-sm);
   padding: 10px 12px;
 }
@@ -948,8 +948,15 @@
   border-right: 1px solid var(--b1);
 }
 
-.stgv2TagAccent { background: var(--accent-d); border: 1px solid rgba(249,115,22,0.3); color: var(--accent); border-radius: var(--r-xs); padding: 2px 7px; font-size: 10px; font-family: var(--font-dm-mono); font-weight: 700; }
-.stgv2TagAmber { background: var(--amber-d); border: 1px solid rgba(234,179,8,0.3); color: var(--amber); border-radius: var(--r-xs); padding: 2px 7px; font-size: 10px; font-family: var(--font-dm-mono); font-weight: 700; }
+.stgv2TagAccent { background: var(--accent-d); border: 1px solid rgb(249 115 22 / 30%); color: var(--accent); border-radius: var(--r-xs); padding: 2px 7px; font-size: 10px; font-family: var(--font-dm-mono); font-weight: 700; }
+.stgv2TagAmber { background: var(--amber-d); border: 1px solid rgb(234 179 8 / 30%); color: var(--amber); border-radius: var(--r-xs); padding: 2px 7px; font-size: 10px; font-family: var(--font-dm-mono); font-weight: 700; }
+
+/* Notification icon tone variants (used by stgv2NotifIcoWrap in settings-page.tsx) */
+.stgv2NotifToneAccent { background: var(--accent-d);  color: var(--accent);  }
+.stgv2NotifToneBlue   { background: var(--blue-d);    color: var(--blue);    }
+.stgv2NotifToneAmber  { background: var(--amber-d);   color: var(--amber);   }
+.stgv2NotifToneGreen  { background: var(--green-d);   color: var(--green);   }
+.stgv2NotifTonePurple { background: var(--purple-d);  color: var(--purple);  }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    TEAM PERFORMANCE  (tpm*)
@@ -1010,11 +1017,11 @@
   flex-shrink: 0;
 }
 
-.tpmAvatarAccent { background: var(--accent-d); color: var(--accent); border-color: rgba(249,115,22,0.2); }
-.tpmAvatarAmber { background: var(--amber-d); color: var(--amber); border-color: rgba(234,179,8,0.2); }
-.tpmAvatarBlue { background: var(--blue-d); color: var(--blue); border-color: rgba(59,130,246,0.2); }
-.tpmAvatarGreen { background: var(--green-d); color: var(--green); border-color: rgba(34,197,94,0.2); }
-.tpmAvatarPurple { background: var(--purple-d); color: var(--purple); border-color: rgba(168,85,247,0.2); }
+.tpmAvatarAccent { background: var(--accent-d); color: var(--accent); border-color: rgb(249 115 22 / 20%); }
+.tpmAvatarAmber { background: var(--amber-d); color: var(--amber); border-color: rgb(234 179 8 / 20%); }
+.tpmAvatarBlue { background: var(--blue-d); color: var(--blue); border-color: rgb(59 130 246 / 20%); }
+.tpmAvatarGreen { background: var(--green-d); color: var(--green); border-color: rgb(34 197 94 / 20%); }
+.tpmAvatarPurple { background: var(--purple-d); color: var(--purple); border-color: rgb(168 85 247 / 20%); }
 
 .tpmNameRow { display: flex; flex-direction: column; gap: 2px; }
 
@@ -1048,6 +1055,89 @@
 
 .tpmMetricSep { width: 1px; height: 20px; background: var(--b1); }
 
+/* ── Team Performance — self-row, util bar, sort pills ────────────────────── */
+
+.tpmSelfRow {
+  background: rgb(249 115 22 / 5%);
+  border-top: 1px solid rgb(249 115 22 / 10%);
+  border-bottom: 1px solid rgb(249 115 22 / 10%);
+}
+
+.tpmSelfBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  background: var(--accent-d);
+  border: 1px solid rgb(249 115 22 / 20%);
+  border-radius: 3px;
+  font-size: 8px;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.tpmUtilCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.tpmUtilTrack {
+  width: 60px;
+  height: 4px;
+  background: var(--b1);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.tpmUtilFill {
+  height: 100%;
+  border-radius: 2px;
+
+  /* width set inline as a % — capped to 100 in component */
+
+  /* background color applied via bgGreen / bgAmber / bgRed from core.module.css */
+}
+
+.tpmSortPill {
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 9px;
+  font-family: var(--font-dm-mono), monospace;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.tpmSortPill:hover {
+  background: var(--s3);
+  border-color: var(--b3);
+  color: var(--text);
+}
+
+.tpmSortPillActive {
+  background: var(--accent-d);
+  border-color: rgb(249 115 22 / 25%);
+  color: var(--accent);
+}
+
+.tpmSortPillActive:hover {
+  background: var(--accent-d);
+  border-color: rgb(249 115 22 / 40%);
+}
+
+.tpmSortPills { display: flex; gap: 4px; }
+
 /* ══════════════════════════════════════════════════════════════════════════════
    WORKLOAD HEATMAP  (wlh*)
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -1072,11 +1162,14 @@
   position: sticky;
   left: 0;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.wlhStaffName { font-size: 12px; font-weight: 600; font-family: var(--font-syne); color: var(--text); }
+.wlhStaffName { display: block; font-size: 12px; font-weight: 600; font-family: var(--font-syne); color: var(--text); }
 
-.wlhStaffRole { font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); }
+.wlhStaffRole { display: block; font-size: 10px; font-family: var(--font-dm-mono); color: var(--muted); }
 
 .wlhHeaderCell {
   padding: 8px 10px;
@@ -1097,9 +1190,12 @@
   padding: 8px 6px;
   border-bottom: 1px solid var(--b1);
   border-right: 1px solid var(--b1);
-  text-align: center;
   position: relative;
   transition: background 0.1s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
 }
 
 .wlhCell:hover .wlhCellTip { display: block; }
@@ -1123,6 +1219,7 @@
 }
 
 .wlhHours {
+  display: block;
   font-size: 10px;
   font-weight: 700;
   font-family: var(--font-dm-mono);
@@ -1130,20 +1227,22 @@
 }
 
 .wlhPct {
+  display: block;
   font-size: 9px;
   font-family: var(--font-dm-mono);
   color: var(--muted2);
 }
 
-.wlhGreen { background: rgba(34,197,94,0.12); }
-.wlhAmber { background: rgba(234,179,8,0.12); }
-.wlhRed { background: rgba(239,68,68,0.14); }
+.wlhGreen { background: rgb(34 197 94 / 12%); }
+.wlhAmber { background: rgb(234 179 8 / 12%); }
+.wlhRed { background: rgb(239 68 68 / 14%); }
 
 .wlhLegend {
   display: flex;
   align-items: center;
   gap: 14px;
   padding-top: 10px;
+  margin-bottom: 16px;
 }
 
 .wlhLegendDot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
@@ -1156,5 +1255,54 @@
   font-size: 10px;
   font-family: var(--font-dm-mono);
   color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.wlhToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.wlhSegBar {
+  display: flex;
+  gap: 4px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-sm);
+  padding: 3px;
+}
+
+.wlhSegBtn {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: var(--font-dm-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--r-sm) - 2px);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+
+.wlhSegBtn:hover:not(:disabled) { color: var(--text); background: var(--s3); }
+.wlhSegBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* NOTE: wlhSegBtnActive MUST appear after wlhSegBtn:hover in source order.
+   CSS Modules uses source order for cascade — this ensures the accent fill
+   is never overridden by the hover rule above. */
+.wlhSegBtnActive {
+  color: var(--bg);
+  background: var(--accent);
+}
+.wlhSegBtnActive:hover:not(:disabled) { background: var(--accent); color: var(--bg); }
+
+.wlhTimestamp {
+  font-size: 10px;
+  font-family: var(--font-dm-mono);
+  color: var(--muted2);
   letter-spacing: 0.04em;
 }

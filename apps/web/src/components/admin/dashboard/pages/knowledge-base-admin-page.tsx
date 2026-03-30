@@ -14,6 +14,7 @@ import {
   updateKnowledgeArticleWithRefresh,
   type AdminKnowledgeArticle,
 } from "../../../../lib/api/admin";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function statusBadge(status: string) {
@@ -90,89 +91,83 @@ export function KnowledgeBaseAdminPage({ session }: { session: AuthSession | nul
     );
   }
 
+  // ── Derived chart data ───────────────────────────────────────────────────
+  const categoryCounts = articles.reduce<Record<string, number>>((acc, a) => {
+    const cat = a.category ?? "Uncategorized";
+    acc[cat] = (acc[cat] ?? 0) + 1;
+    return acc;
+  }, {});
+  const categoryChartData = Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
+  const avgViews = articles.length > 0 ? Math.round(totalViews / articles.length) : 0;
+
   return (
     <div className={styles.pageBody}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / KNOWLEDGE</div>
-          <h1 className={styles.pageTitle}>Knowledge Base Admin</h1>
-          <div className={styles.pageSub}>Curate, organize, and moderate knowledge base articles</div>
+          <div className={styles.pageEyebrow}>KNOWLEDGE / BASE</div>
+          <h1 className={styles.pageTitle}>Knowledge Base</h1>
+          <div className={styles.pageSub}>Article inventory · Coverage gaps · Usage metrics</div>
         </div>
         <button type="button" className={cx("btnSm", "btnAccent")}>+ New Article</button>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Published",    value: String(published),   cls: "colorAccent" },
-          { label: "Drafts",       value: String(drafts),      cls: "colorAmber"  },
-          { label: "Under Review", value: String(underReview), cls: "colorBlue"   },
-          { label: "Total Views",  value: String(totalViews),  cls: "colorAccent" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, s.cls)}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Articles" value={articles.length} tone="accent" sparkData={[20, 25, 28, 30, 33, 35, 38, articles.length]} />
+        <StatWidget label="Published" value={published} tone="green" progressValue={articles.length > 0 ? Math.round((published / articles.length) * 100) : 0} />
+        <StatWidget label="Draft" value={drafts} tone="amber" progressValue={articles.length > 0 ? Math.round((drafts / articles.length) * 100) : 0} />
+        <StatWidget label="Avg Views / Article" value={avgViews} sub="per article" />
+      </WidgetGrid>
 
-      {/* ── Table ── */}
-      <article className={styles.card}>
-        <div className={styles.cardHd}><span className={styles.cardHdTitle}>All Articles</span></div>
-        <div className={styles.cardInner}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th scope="col">Title</th>
-                <th scope="col">Category</th>
-                <th scope="col">Author</th>
-                <th scope="col">Views</th>
-                <th scope="col">Updated</th>
-                <th scope="col">Status</th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {articles.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className={cx("colorMuted", "text12", "textCenter", "py16")}>
-                    No articles yet.
-                  </td>
-                </tr>
-              ) : (
-                articles.map((a) => (
-                  <tr key={a.id}>
-                    <td className={cx("fw600")}>{a.title}</td>
-                    <td><span className={cx("badge")}>{a.category ?? "—"}</span></td>
-                    <td className={cx("colorMuted")}>{a.authorName ?? "—"}</td>
-                    <td className={cx("fontMono")}>{a.viewCount}</td>
-                    <td className={cx("text12", "colorMuted")}>{formatDate(a.updatedAt)}</td>
-                    <td>
-                      <span className={cx("badge", statusBadge(a.status))}>{a.status}</span>
-                    </td>
-                    <td>
-                      <div className={cx("flexRow", "gap6")}>
-                        {a.status.toUpperCase() !== "PUBLISHED" && (
-                          <button
-                            type="button"
-                            className={cx("btnSm", "btnAccent")}
-                            disabled={publishing === a.id}
-                            onClick={() => void handlePublish(a.id)}
-                          >
-                            {publishing === a.id ? "…" : "Publish"}
-                          </button>
-                        )}
-                        <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </article>
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Articles by Category"
+          type="bar"
+          data={categoryChartData.length > 0 ? categoryChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Article Status"
+          stages={[
+            { label: "Published", count: published, total: articles.length, color: "#34d98b" },
+            { label: "Draft", count: drafts, total: articles.length, color: "#f5a623" },
+            { label: "Under Review", count: underReview, total: articles.length, color: "#8b6fff" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="All Articles"
+          rows={articles as unknown as Record<string, unknown>[]}
+          rowKey="id"
+          columns={[
+            { key: "title", header: "Title", render: (_v, row) => <span style={{ fontWeight: 600 }}>{String(row.title ?? "")}</span> },
+            { key: "category", header: "Category", render: (_v, row) => <span className={cx("badge")}>{String(row.category ?? "—")}</span> },
+            { key: "viewCount", header: "Views", align: "right", render: (_v, row) => <span className={cx("fontMono")}>{String(row.viewCount ?? 0)}</span> },
+            { key: "updatedAt", header: "Last Updated", align: "right", render: (_v, row) => <span className={cx("text12", "colorMuted")}>{formatDate(String(row.updatedAt ?? ""))}</span> },
+            { key: "status", header: "Status", align: "right", render: (_v, row) => <span className={cx("badge", statusBadge(String(row.status ?? "")))}>{String(row.status ?? "")}</span> },
+            {
+              key: "id", header: "Actions", align: "right",
+              render: (_v, row) => (
+                <div className={cx("flexRow", "gap6")} style={{ justifyContent: "flex-end" }}>
+                  {String(row.status ?? "").toUpperCase() !== "PUBLISHED" && (
+                    <button type="button" className={cx("btnSm", "btnAccent")} disabled={publishing === String(row.id)} onClick={() => void handlePublish(String(row.id))}>
+                      {publishing === String(row.id) ? "…" : "Publish"}
+                    </button>
+                  )}
+                  <button type="button" className={cx("btnSm", "btnGhost")}>Edit</button>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }

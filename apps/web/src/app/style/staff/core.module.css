@@ -6,34 +6,34 @@
   --bg: #04040a;
 
   /* ── Surfaces — white-glass like client ── */
-  --s1: rgba(255, 255, 255, 0.04);
-  --s2: rgba(255, 255, 255, 0.07);
-  --s3: rgba(255, 255, 255, 0.10);
-  --s4: rgba(255, 255, 255, 0.14);
+  --s1: rgb(255 255 255 / 4%);
+  --s2: rgb(255 255 255 / 7%);
+  --s3: rgb(255 255 255 / 10%);
+  --s4: rgb(255 255 255 / 14%);
 
   /* ── Borders ── */
-  --b1: rgba(255, 255, 255, 0.06);
-  --b2: rgba(255, 255, 255, 0.10);
-  --b3: rgba(255, 255, 255, 0.16);
-  --b-top: rgba(255, 255, 255, 0.10);
+  --b1: rgb(255 255 255 / 6%);
+  --b2: rgb(255 255 255 / 10%);
+  --b3: rgb(255 255 255 / 16%);
+  --b-top: rgb(255 255 255 / 10%);
 
   /* ── Accent — ember orange, staff identity ── */
   --accent: #f97316;
-  --accent-d: rgba(249, 115, 22, 0.14);
-  --accent-g: rgba(249, 115, 22, 0.07);
+  --accent-d: rgb(249 115 22 / 14%);
+  --accent-g: rgb(249 115 22 / 7%);
   --accent2: #fb923c;
 
   /* ── Semantic palette ── */
-  --green: #22c55e;    --green-d: rgba(34, 197, 94, 0.12);
-  --amber: #eab308;    --amber-d: rgba(234, 179, 8, 0.12);
-  --red: #ef4444;      --red-d: rgba(239, 68, 68, 0.12);
-  --purple: #a855f7;   --purple-d: rgba(168, 85, 247, 0.12);
-  --blue: #3b82f6;     --blue-d: rgba(59, 130, 246, 0.12);
+  --green: #22c55e;    --green-d: rgb(34 197 94 / 12%);
+  --amber: #eab308;    --amber-d: rgb(234 179 8 / 12%);
+  --red: #ef4444;      --red-d: rgb(239 68 68 / 12%);
+  --purple: #a855f7;   --purple-d: rgb(168 85 247 / 12%);
+  --blue: #3b82f6;     --blue-d: rgb(59 130 246 / 12%);
 
   /* ── Text ── */
   --text: #ede9e3;
-  --muted: rgba(237, 233, 227, 0.50);
-  --muted2: rgba(237, 233, 227, 0.28);
+  --muted: rgb(237 233 227 / 50%);
+  --muted2: rgb(237 233 227 / 28%);
 
   /* ── Radius — rounder, matching client ── */
   --r-xxs: 4px;
@@ -44,9 +44,9 @@
   --r-xl:  28px;
 
   /* ── Shadows ── */
-  --shadow-card:   0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 var(--b-top);
-  --shadow-island: 0 16px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
-  --shadow-modal:  0 24px 64px rgba(0,0,0,0.65);
+  --shadow-card:   0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 var(--b-top);
+  --shadow-island: 0 16px 48px rgb(0 0 0 / 55%), inset 0 1px 0 rgb(255 255 255 / 8%);
+  --shadow-modal:  0 24px 64px rgb(0 0 0 / 65%);
 
   /* ── Layout ── */
   --edge:     16px;
@@ -71,9 +71,9 @@
   height: 100dvh;
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 800px 600px at 12% 30%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 600px 500px at 85% 80%, rgba(249, 115, 22, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 500px 400px at 55% 105%, rgba(249, 115, 22, 0.03) 0%, transparent 55%);
+    radial-gradient(ellipse 800px 600px at 12% 30%, rgb(249 115 22 / 8%) 0%, transparent 60%),
+    radial-gradient(ellipse 600px 500px at 85% 80%, rgb(249 115 22 / 4%) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 400px at 55% 105%, rgb(249 115 22 / 3%) 0%, transparent 55%);
   color: var(--text);
   font-family: var(--font-syne), system-ui, sans-serif;
   overflow: hidden;
@@ -83,10 +83,7 @@
 /* Body — floating island area below topbar, right of rail */
 .body {
   position: fixed;
-  top: calc(var(--edge) + var(--topbar-h) + var(--gap));
-  left: calc(var(--edge) + var(--rail-w) + var(--gap));
-  right: var(--edge);
-  bottom: var(--edge);
+  inset: calc(var(--edge) + var(--topbar-h) + var(--gap)) var(--edge) var(--edge) calc(var(--edge) + var(--rail-w) + var(--gap));
   display: flex;
   gap: var(--gap);
   z-index: 5;
@@ -114,9 +111,9 @@
   border-top: 2px solid var(--accent);
   border-radius: var(--r-md);
   background: var(--s2);
-  backdrop-filter: blur(var(--glass-lg));
   -webkit-backdrop-filter: blur(var(--glass-lg));
-  box-shadow: 0 10px 28px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(var(--glass-lg));
+  box-shadow: 0 10px 28px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 6%);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -129,7 +126,7 @@
   content: "";
   position: absolute;
   top: 0; left: 20px; right: 20px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgb(249 115 22 / 18%), transparent);
   pointer-events: none;
 }
 
@@ -185,7 +182,7 @@
   font-size: 9px;
   font-family: var(--font-dm-mono), monospace;
   color: var(--muted2);
-  background: rgba(255,255,255,0.05);
+  background: rgb(255 255 255 / 5%);
   border: 1px solid var(--b2);
   padding: 1px 5px;
   border-radius: 3px;
@@ -231,7 +228,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  border: 2px solid rgba(8,8,18,0.8);
+  border: 2px solid rgb(8 8 18 / 80%);
 }
 
 .topbarAddBtn {
@@ -325,10 +322,10 @@
   bottom: var(--edge);
   width: var(--rail-w);
   background: var(--s2);
-  backdrop-filter: blur(var(--glass-md));
   -webkit-backdrop-filter: blur(var(--glass-md));
+  backdrop-filter: blur(var(--glass-md));
   border-radius: var(--r-lg);
-  box-shadow: 0 10px 28px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 38%), inset 0 1px 0 rgb(255 255 255 / 6%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -342,7 +339,7 @@
   content: "";
   position: absolute;
   top: 0; left: 10px; right: 10px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.20), transparent);
+  background: linear-gradient(90deg, transparent, rgb(249 115 22 / 20%), transparent);
   pointer-events: none;
 }
 
@@ -352,7 +349,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--r-xs);
-  background: rgba(249,115,22,0.16);
+  background: rgb(249 115 22 / 16%);
   color: var(--accent);
   font-family: var(--font-syne), sans-serif;
   font-size: 18px;
@@ -365,7 +362,7 @@
   letter-spacing: -0.03em;
   user-select: none;
   cursor: default;
-  box-shadow: 0 0 16px rgba(249,115,22,0.15);
+  box-shadow: 0 0 16px rgb(249 115 22 / 15%);
 }
 
 .railLogoImg { display: none; }
@@ -393,7 +390,7 @@
   transition: color 120ms;
 }
 
-.railCollapseBtn:hover { color: var(--muted); background: rgba(255,255,255,0.06); }
+.railCollapseBtn:hover { color: var(--muted); background: rgb(255 255 255 / 6%); }
 
 .railAvatar {
   width: 28px;
@@ -443,9 +440,10 @@
   flex-shrink: 0;
 }
 
-.railIconBtn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.railIconBtn:hover { background: rgb(255 255 255 / 4%); color: var(--text); }
 .railIconBtnActive { background: var(--accent-d) !important; color: var(--accent) !important; }
 .railIconBtnCurrent { color: var(--accent); }
+
 .railIconBtnCurrent::after {
   content: "";
   position: absolute;
@@ -486,11 +484,11 @@
   flex-shrink: 0;
 }
 
-.navIcon:hover { background: rgba(255,255,255,0.05); color: var(--muted); }
+.navIcon:hover { background: rgb(255 255 255 / 5%); color: var(--muted); }
 
 .navIconActive {
   color: var(--accent);
-  background: rgba(249, 115, 22, 0.18);
+  background: rgb(249 115 22 / 18%);
 }
 
 .navIconDot {
@@ -501,7 +499,7 @@
   height: 5px;
   border-radius: 50%;
   background: var(--accent);
-  border: 1.5px solid rgba(8,8,18,0.8);
+  border: 1.5px solid rgb(8 8 18 / 80%);
 }
 
 /* ── 6. Flyout panel — floating island ───────────────────────────────── */
@@ -509,10 +507,10 @@
   width: 200px;
   flex-shrink: 0;
   background: var(--s2);
-  backdrop-filter: blur(var(--glass-md));
   -webkit-backdrop-filter: blur(var(--glass-md));
+  backdrop-filter: blur(var(--glass-md));
   border-radius: var(--r-lg);
-  box-shadow: 0 10px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(255 255 255 / 6%);
   display: flex;
   flex-direction: column;
   padding: 8px 0;
@@ -527,7 +525,7 @@
   content: "";
   position: absolute;
   top: 0; left: 14px; right: 14px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgb(249 115 22 / 15%), transparent);
   pointer-events: none;
   flex-shrink: 0;
 }
@@ -570,10 +568,10 @@
   transition: background 120ms, color 120ms;
 }
 
-.flyoutPageBtn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.flyoutPageBtn:hover { background: rgb(255 255 255 / 6%); color: var(--text); }
 
 .flyoutPageBtnActive {
-  background: rgba(249, 115, 22, 0.12);
+  background: rgb(249 115 22 / 12%);
   color: var(--text);
   font-weight: 700;
 }
@@ -597,9 +595,6 @@
 .drawer {
   position: fixed;
   inset: 0;
-  left: 0;
-  top: 0;
-  bottom: 0;
   width: 260px;
   background: var(--s1);
   border-right: 1px solid var(--b2);
@@ -617,8 +612,9 @@
 .drawerBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgb(0 0 0 / 60%);
   z-index: 99;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
@@ -749,7 +745,7 @@
 .badgeRed    { background: var(--red-d);    color: var(--red);    }
 .badgeAmber  { background: var(--amber-d);  color: var(--amber);  }
 .badgePurple { background: var(--purple-d); color: var(--purple); }
-.badgeMuted  { background: rgba(255,255,255,0.06); color: var(--muted); }
+.badgeMuted  { background: rgb(255 255 255 / 6%); color: var(--muted); }
 .badgeAccent { background: var(--accent-d); color: var(--accent); }
 
 .bgGreen  { background: var(--green-d);  }
@@ -834,7 +830,7 @@
 .btnSecondary {
   height: 32px;
   padding: 0 14px;
-  background: rgba(255,255,255,0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--text);
   border: 1px solid var(--b2);
   border-radius: var(--r-sm);
@@ -846,7 +842,7 @@
   gap: 5px;
 }
 
-.btnSecondary:hover { background: rgba(255,255,255,0.09); }
+.btnSecondary:hover { background: rgb(255 255 255 / 9%); }
 
 /* ── 11. Empty state ──────────────────────────────────────────────────── */
 .emptyState {
@@ -935,6 +931,7 @@
 
 .homeAlertText { font-size: 13px; color: var(--text); }
 .homeAlertMeta { font-size: 11px; color: var(--muted); }
+
 .homeAlertJoin {
   height: 26px;
   padding: 0 10px;
@@ -984,7 +981,7 @@
 
 .homeFocusProgressBar {
   height: 4px;
-  background: rgba(255,255,255,0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -1026,7 +1023,7 @@
 .homeFocusOpenBtn {
   height: 30px;
   padding: 0 12px;
-  background: rgba(255,255,255,0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--text);
   border: 1px solid var(--b2);
   border-radius: var(--r-sm);
@@ -1134,9 +1131,9 @@
 .cmdOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 4, 10, 0.82);
-  backdrop-filter: blur(14px);
+  background: rgb(4 4 10 / 82%);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   z-index: 9999;
   display: flex;
   align-items: flex-start;
@@ -1159,7 +1156,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 28px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow: 0 28px 80px rgb(0 0 0 / 85%), 0 0 0 1px rgb(255 255 255 / 4%);
   animation: cmdSlideIn 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -1197,7 +1194,7 @@
   padding: 0;
   caret-color: var(--accent);
   letter-spacing: -0.01em;
-  -webkit-appearance: none;
+  appearance: none;
 }
 
 .cmdInput:focus,
@@ -1215,7 +1212,7 @@
   font-size: 9px;
   font-family: var(--font-dm-mono), monospace;
   color: var(--muted2);
-  background: rgba(255,255,255,0.05);
+  background: rgb(255 255 255 / 5%);
   border: 1px solid var(--b2);
   border-radius: 4px;
   padding: 2px 6px;
@@ -1256,10 +1253,10 @@
   transition: background 60ms;
 }
 
-.cmdItem:hover { background: rgba(255,255,255,0.025); }
+.cmdItem:hover { background: rgb(255 255 255 / 2.5%); }
 
 .cmdItemActive {
-  background: rgba(249,115,22,0.07) !important;
+  background: rgb(249 115 22 / 7%) !important;
   border-left-color: var(--accent) !important;
 }
 
@@ -1291,7 +1288,7 @@
   font-family: var(--font-dm-mono), monospace;
   color: var(--muted2);
   flex-shrink: 0;
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
   padding: 2px 7px;
   border-radius: 3px;
   border: 1px solid var(--b1);
@@ -1345,7 +1342,7 @@
 .cmdKbd {
   display: inline-flex;
   align-items: center;
-  background: rgba(255,255,255,0.05);
+  background: rgb(255 255 255 / 5%);
   border: 1px solid var(--b2);
   border-radius: 3px;
   padding: 1px 5px;
@@ -1423,7 +1420,7 @@
   border: 1px solid var(--b2);
   border-radius: var(--r-md);
   background: var(--s1);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
   z-index: 50;
   padding: 8px;
   animation: topbarDropdownIn 120ms ease;
@@ -1472,15 +1469,15 @@
   background: var(--s2);
 }
 
+.topbarUserDivider { height: 1px; background: var(--b1); margin: 4px 0; }
+
 .topbarSignOut {
   color: #f87171;
-  margin-top: 4px;
-  border-top: 1px solid var(--b1);
   padding-top: 10px;
 }
 
 .topbarSignOut:hover {
-  background: rgba(248, 113, 113, 0.08);
+  background: rgb(248 113 113 / 8%);
 }
 
 /* ── 18. Welcome Modal (FTUE) ──────────────────────────────────────────── */
@@ -1488,7 +1485,8 @@
 .welcomeModalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
@@ -1585,7 +1583,7 @@
 }
 
 /* ── 19. Responsive ───────────────────────────────────────────────────── */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .rail { display: none; }
   .topbarHamburger { display: flex; }
   .drawerBackdrop { display: block; }

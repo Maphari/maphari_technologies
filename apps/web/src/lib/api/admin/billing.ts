@@ -205,6 +205,93 @@ export async function fetchRevenueSeries(
   });
 }
 
+// ── Cash Flow Scenarios ────────────────────────────────────────────────────────
+
+export interface CashFlowScenario {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string | null;
+  adjustments: unknown[];
+  isBaseline: boolean;
+  createdByAdminId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function loadCashFlowScenariosWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<CashFlowScenario[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<CashFlowScenario[]>(
+      "/cash-flow/scenarios",
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "SCENARIOS_FETCH_FAILED",
+          response.payload.error?.message ?? "Unable to load cash flow scenarios."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function createCashFlowScenarioWithRefresh(
+  session: AuthSession,
+  input: { name: string; description?: string; adjustments?: unknown[]; isBaseline?: boolean }
+): Promise<AuthorizedResult<CashFlowScenario>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<CashFlowScenario>(
+      "/cash-flow/scenarios",
+      accessToken,
+      { method: "POST", body: input }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "SCENARIO_CREATE_FAILED",
+          response.payload.error?.message ?? "Unable to create scenario."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function deleteCashFlowScenarioWithRefresh(
+  session: AuthSession,
+  id: string
+): Promise<AuthorizedResult<void>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<{ id: string }>(
+      `/cash-flow/scenarios/${id}`,
+      accessToken,
+      { method: "DELETE" }
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "SCENARIO_DELETE_FAILED",
+          response.payload.error?.message ?? "Unable to delete scenario."
+        )
+      };
+    }
+    return { unauthorized: false, data: undefined, error: null };
+  });
+}
+
 // ── Cash Flow Events ──────────────────────────────────────────────────────────
 
 export interface CashFlowEvent {
@@ -235,6 +322,37 @@ export async function fetchCashFlowEvents(
         error: toGatewayError(
           response.payload.error?.code ?? "CASH_FLOW_FETCH_FAILED",
           response.payload.error?.message ?? "Unable to load cash flow events."
+        )
+      };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+// ── MRR History ────────────────────────────────────────────────────────────────
+
+export interface MrrHistoryPoint {
+  month: string;   // "YYYY-MM"
+  total: number;   // sum of amountCents for paid invoices in that month
+}
+
+export async function loadMrrHistoryWithRefresh(
+  session: AuthSession,
+  months = 6
+): Promise<AuthorizedResult<MrrHistoryPoint[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<MrrHistoryPoint[]>(
+      `/analytics/mrr-history?months=${months}`,
+      accessToken
+    );
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return {
+        unauthorized: false,
+        data: null,
+        error: toGatewayError(
+          response.payload.error?.code ?? "MRR_HISTORY_FAILED",
+          response.payload.error?.message ?? "Unable to load MRR history."
         )
       };
     }

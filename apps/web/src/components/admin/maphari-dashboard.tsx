@@ -65,6 +65,9 @@ import { AdminAnalyticsPageClient } from "./dashboard/pages/admin-analytics-page
 import { AdminAuditPageClient } from "./dashboard/pages/admin-audit-page-client";
 import { AdminAutomationPageClient } from "./dashboard/pages/admin-automation-page-client";
 import { AdminIntegrationsPageClient } from "./dashboard/pages/admin-integrations-page-client";
+import { IntegrationRequestsPage } from "./dashboard/pages/integration-requests-page";
+import { IntegrationConnectionsPage } from "./dashboard/pages/integration-connections-page";
+import { IntegrationProvidersPage } from "./dashboard/pages/integration-providers-page";
 import { AdminReportsPageClient } from "./dashboard/pages/admin-reports-page-client";
 import { AdminSettingsPageClient } from "./dashboard/pages/admin-settings-page-client";
 import { AdminStubPage } from "./dashboard/pages/admin-stub-page";
@@ -454,6 +457,8 @@ export function MaphariDashboard() {
   const email = session?.user.email ?? "";
   const isAdmin = session?.user.role === "ADMIN";
   const unreadNotificationsCount = notificationJobs.filter((job) => !job.readAt).length;
+  // Prefer displayName from settings; fall back to the email prefix (before @)
+  const adminDisplayName = email.split("@")[0] ?? "Admin";
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -500,6 +505,7 @@ export function MaphariDashboard() {
             title={title}
             unreadNotificationsCount={unreadNotificationsCount}
             email={email}
+            displayName={adminDisplayName}
             loggingOut={loggingOut}
             onOpenNotifications={() => setPage("notifications")}
             onOpenMessages={() => setPage("messages")}
@@ -564,7 +570,7 @@ export function MaphariDashboard() {
             {page === "vendors" ? <VendorCostControlPage session={session} /> : null}
             {page === "platform" ? <PlatformInfrastructurePage session={session} onNotify={pushToast} /> : null}
             {page === "brand" ? <BrandControlPage /> : null}
-            {page === "owner" ? <OwnersWorkspacePage /> : null}
+            {page === "owner" ? <OwnersWorkspacePage snapshot={snapshot} /> : null}
             {page === "market" ? <CompetitorMarketIntelPage session={session} /> : null}
             {page === "portfolio" ? <ProjectPortfolioPage /> : null}
             {page === "resources" ? <ResourceAllocationPage session={session} onNotify={pushToast} /> : null}
@@ -729,6 +735,9 @@ export function MaphariDashboard() {
             {page === "communityModeration" ? <AdminCommunityModerationPage session={session} /> : null}
             {page === "communityFeatureRequests" ? <AdminCommunityFeatureRequestsPage session={session} /> : null}
             {page === "proposedActions" ? <ProposedActionsPage session={session} /> : null}
+            {page === "integrationRequests" ? <IntegrationRequestsPage session={session} onNotify={pushToast} /> : null}
+            {page === "integrationConnections" ? <IntegrationConnectionsPage session={session} onNotify={pushToast} /> : null}
+            {page === "integrationProviders" ? <IntegrationProvidersPage session={session} onNotify={pushToast} /> : null}
             </DashboardErrorBoundary>
           </section>
         </main>

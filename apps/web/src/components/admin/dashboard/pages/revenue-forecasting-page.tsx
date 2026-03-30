@@ -9,12 +9,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
-import { colorClass } from "./admin-page-utils";
 import { formatMoneyK } from "@/lib/utils/format-money";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import type { AdminInvoice } from "../../../../lib/api/admin/types";
 import { loadAdminSnapshotWithRefresh } from "../../../../lib/api/admin/clients";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Tab = "6-month forecast" | "monthly breakdown" | "outstanding";
@@ -121,9 +121,56 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const forecastMonths = months.filter((m) => futureKeys.includes(m.key));
-  const maxForecastBar = Math.max(...forecastMonths.map((m) => m.actual + m.projected), 1);
 
   const outstandingInvoices = invoices.filter((i) => i.status === "ISSUED" || i.status === "OVERDUE");
+
+  // ── Forecast accuracy: pct of previous months that were fully collected ─────
+  const historicMonths = months.filter((m) => !futureKeys.includes(m.key) && (m.actual + m.projected) > 0);
+  const accuracyPct = historicMonths.length > 0
+    ? Math.round(historicMonths.reduce((s, m) => {
+        const total = m.actual + m.projected;
+        return s + (total > 0 ? m.actual / total : 0);
+      }, 0) / historicMonths.length * 100)
+    : 0;
+
+  // ── Best / worst case for next 6 months ───────────────────────────────────
+  const bestCase  = forecastMonths.reduce((s, m) => s + m.actual + m.projected, 0);
+  const worstCase = Math.round(bestCase * 0.7);
+
+  // ── Chart: actual vs forecast ─────────────────────────────────────────────
+  const chartData = forecastMonths.map((m) => ({
+    label:     m.label,
+    actual:    Math.round(m.actual / 100),
+    forecast:  Math.round(m.projected / 100),
+  }));
+
+  // ── Forecast scenarios pipeline ───────────────────────────────────────────
+  const maxScenario = Math.max(bestCase, 1);
+  const scenarioStages = [
+    { label: "Best Case",  count: Math.round(bestCase / 100),  total: Math.round(maxScenario / 100), color: "#34d98b" },
+    { label: "Base Case",  count: Math.round(bestCase * 0.85 / 100), total: Math.round(maxScenario / 100), color: "#8b6fff" },
+    { label: "Worst Case", count: Math.round(worstCase / 100), total: Math.round(maxScenario / 100), color: "#ff5f5f" },
+  ];
+
+  // ── Table rows ─────────────────────────────────────────────────────────────
+  const tableRows = forecastMonths.map((m) => {
+    const totalCents = m.actual + m.projected;
+    const invoiceCount = invoices.filter((inv) => {
+      const dateField = inv.status === "PAID" ? inv.paidAt : inv.dueAt;
+      return monthKey(dateField) === m.key;
+    }).length;
+    const variance = m.actual > 0 && m.projected > 0
+      ? `${Math.round(((m.actual - m.projected) / m.projected) * 100)}%`
+      : "—";
+    return {
+      period:    m.label,
+      projected: m.projected > 0 ? formatMoneyK(m.projected) : "—",
+      actual:    m.actual > 0 ? formatMoneyK(m.actual) : "—",
+      variance,
+      invoices:  invoiceCount,
+      total:     totalCents > 0 ? formatMoneyK(totalCents) : "—",
+    };
+  }) as Record<string, unknown>[];
 
   if (loading) {
     return (
@@ -150,201 +197,135 @@ export function RevenueForecastingPage({ session, onNotify }: Props) {
   }
 
   return (
-    <div className={cx(styles.pageBody, styles.revfRoot, "rdStudioPage")}>
+    <div className={cx(styles.pageBody)}>
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / REPORTING &amp; INTELLIGENCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / FORECASTING</div>
           <h1 className={styles.pageTitle}>Revenue Forecasting</h1>
-          <div className={styles.pageSub}>6-month MRR projection - Invoice pipeline - Collected vs outstanding</div>
+          <div className={styles.pageSub}>Revenue projections · Scenario analysis · Forecast accuracy</div>
         </div>
         <div className={styles.pageActions}>
+          <select
+            title="View"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as Tab)}
+            className={styles.filterSelect}
+          >
+            {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
           <button type="button" className={cx("btnSm", "btnAccent")}>Export Forecast</button>
         </div>
       </div>
 
-      {/* ── KPI cards ── */}
-      <div className={cx("topCardsStack", "mb28")}>
-        {[
-          { label: "Total Collected", value: formatMoneyK(totalPaid), color: "var(--accent)", sub: "Paid invoices" },
-          { label: "Outstanding", value: formatMoneyK(totalOutstanding), color: totalOutstanding > 0 ? "var(--amber)" : "var(--accent)", sub: "Issued but unpaid" },
-          { label: "Draft Pipeline", value: formatMoneyK(totalDraft), color: "var(--blue)", sub: "Not yet issued" },
-          { label: "Overdue", value: String(overdueInvoices.length), color: overdueInvoices.length > 0 ? "var(--red)" : "var(--accent)", sub: "Past due date" }
-        ].map((s) => (
-          <div key={s.label} className={cx(styles.statCard, "rdStudioCard")}>
-            <div className={cx(styles.statLabel, "rdStudioLabel")}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color), "rdStudioMetric", s.color === "var(--accent)" ? "rdStudioMetricPos" : s.color === "var(--red)" ? "rdStudioMetricNeg" : s.color === "var(--amber)" ? "rdStudioMetricWarn" : "")}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Projected Revenue"
+          value={formatMoneyK(bestCase)}
+          sub="Next 6 months (best case)"
+          tone="accent"
+        />
+        <StatWidget
+          label="Forecast Accuracy"
+          value={`${accuracyPct}%`}
+          sub="Historical collection rate"
+          tone={accuracyPct >= 80 ? "green" : accuracyPct >= 60 ? "amber" : "red"}
+          progressValue={accuracyPct}
+        />
+        <StatWidget
+          label="Best Case"
+          value={formatMoneyK(bestCase)}
+          sub="100% collection on projected"
+          tone="green"
+        />
+        <StatWidget
+          label="Worst Case"
+          value={formatMoneyK(worstCase)}
+          sub="70% collection scenario"
+          tone="red"
+        />
+      </WidgetGrid>
 
-      {/* ── Tab bar ── */}
-      <div className={styles.filterRow}>
-        <select
-          title="View"
-          value={activeTab}
-          onChange={(e) => setActiveTab(e.target.value as Tab)}
-          className={styles.filterSelect}
-        >
-          {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Actual vs Forecast"
+          data={chartData.length > 0 ? chartData : [{ label: "No data", actual: 0, forecast: 0 }]}
+          dataKey={["actual", "forecast"]}
+          type="line"
+          color={["#8b6fff", "#34d98b"]}
+          legend={[
+            { key: "actual",   label: "Collected" },
+            { key: "forecast", label: "Projected" },
+          ]}
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Forecast Scenarios"
+          stages={scenarioStages}
+        />
+      </WidgetGrid>
 
-      {/* ── 6-month forecast ── */}
-      {activeTab === "6-month forecast" && (
-        <div className={styles.revfStack20}>
-          <div className={cx(styles.revfChartCard, "rdStudioCard")}>
-            <div className={cx(styles.revfSectionTitle, "rdStudioSection")}>6-Month Revenue Forecast</div>
-            <div className={cx("text11", "colorMuted", "mb24")}>
-              Lime bars = collected (PAID) · Blue bars = projected (ISSUED/DRAFT)
-            </div>
-            {forecastMonths.length === 0 ? (
-              <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No invoice data for forecast window.</div>
-            ) : (
-              <div className={styles.revfBarRow}>
-                {forecastMonths.map((m) => {
-                  const totalH = ((m.actual + m.projected) / maxForecastBar) * 140;
-                  const actH = m.actual > 0 ? (m.actual / (m.actual + m.projected || 1)) * totalH : 0;
-                  const projH = totalH - actH;
-                  return (
-                    <div key={m.key} className={styles.revfBarCol}>
-                      <div className={cx("fontMono", "text10", "colorAccent")}>
-                        {formatMoneyK(m.actual + m.projected)}
-                      </div>
-                      <svg className={styles.revfStackedBar} viewBox="0 0 10 140" preserveAspectRatio="none" aria-hidden="true">
-                        {projH > 0 && (
-                          <rect x="0" y={140 - projH} width="10" height={projH} className={styles.revfExpansion} />
-                        )}
-                        {actH > 0 && (
-                          <rect x="0" y={140 - actH - projH} width="10" height={actH} className={styles.revfRetained} />
-                        )}
-                      </svg>
-                      <span className={styles.revfBarMonth}>{m.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+      {/* ── Row 3: Forecast table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Forecast Items"
+          rows={tableRows}
+          rowKey="period"
+          emptyMessage="No forecast data available."
+          columns={[
+            { key: "period",    header: "Period",    align: "left" },
+            { key: "projected", header: "Projected", align: "right" },
+            { key: "actual",    header: "Collected", align: "right" },
+            { key: "variance",  header: "Variance",  align: "right" },
+            { key: "total",     header: "Total",     align: "right" },
+          ]}
+        />
+      </WidgetGrid>
 
-          {/* ── Table ── */}
-          <div className={styles.revfTableCard}>
-            <div className={cx(styles.revfTableHead, "fontMono", "text10", "colorMuted", "uppercase")}>
-              {"Month|Collected|Projected|Total|Invoices".split("|").map((h) => <span key={h}>{h}</span>)}
-            </div>
-            {forecastMonths.map((m, i) => {
-              const total = m.actual + m.projected;
-              const invoiceCount = invoices.filter((inv) => {
-                const dateField = inv.status === "PAID" ? inv.paidAt : inv.dueAt;
-                return monthKey(dateField) === m.key;
-              }).length;
-              return (
-                <div key={m.key} className={cx(styles.revfTableRow, i < forecastMonths.length - 1 && "borderB", "rdStudioRow")}>
-                  <span className={cx("fontMono", "fw700", "rdStudioLabel")}>{m.label}</span>
-                  <span className={cx("fontMono", "colorAccent")}>{m.actual > 0 ? formatMoneyK(m.actual) : "—"}</span>
-                  <span className={cx("fontMono", "colorBlue")}>{m.projected > 0 ? formatMoneyK(m.projected) : "—"}</span>
-                  <span className={cx("fontMono", "fw800", "text14", "colorAccent", "rdStudioMetric", "rdStudioMetricPos")}>{total > 0 ? formatMoneyK(total) : "—"}</span>
-                  <span className={cx("text12", "colorMuted")}>{invoiceCount}</span>
+      {/* ── Outstanding sub-view ── */}
+      {activeTab === "outstanding" && outstandingInvoices.length > 0 ? (
+        <div className={cx("card", "p24", "mt16")}>
+          <div className={cx("text13", "fw700", "mb16")}>Outstanding Receivables — {formatMoneyK(totalOutstanding)}</div>
+          <div className={cx("flexCol", "gap10")}>
+            {outstandingInvoices.slice(0, 10).map((inv) => (
+              <div key={inv.id} className={cx("flexBetween", "borderB", "py8")}>
+                <div>
+                  <div className={cx("text12", "fw600")}>{inv.number}</div>
+                  <div className={cx("text11", "colorMuted")}>Due {inv.dueAt ? new Date(inv.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }) : "—"}</div>
                 </div>
-              );
-            })}
+                <span className={cx(inv.status === "OVERDUE" ? "badgeRed" : "badgeAmber")}>{inv.status}</span>
+                <span className={cx("fontMono", "fw700", "colorAccent")}>{formatMoneyK(inv.amountCents)}</span>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* ── Monthly breakdown ── */}
-      {activeTab === "monthly breakdown" && (
-        <div className={styles.revfStack14}>
-          {months.length === 0 && (
-            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No invoice data available.</div>
-          )}
-          {months.filter((m) => m.actual + m.projected > 0).map((m) => {
-            const total = m.actual + m.projected;
-            const actPct = total > 0 ? Math.round((m.actual / total) * 100) : 0;
-            return (
-              <div key={m.key} className={styles.revfPipelineCard}>
-                <div className={styles.revfPipelineGrid}>
-                  <div>
-                    <div className={cx(styles.revfPipelineName, "colorAccent")}>{m.label}</div>
-                    <div className={cx("text10", "colorMuted")}>
-                      {invoices.filter((i) => monthKey(i.status === "PAID" ? i.paidAt : i.dueAt) === m.key).length} invoice(s)
-                    </div>
-                  </div>
-                  <div>
-                    <div className={styles.revfMiniLabel}>Collected</div>
-                    <div className={cx("fontMono", "fw700", "colorAccent")}>{m.actual > 0 ? formatMoneyK(m.actual) : "—"}</div>
-                  </div>
-                  <div>
-                    <div className={styles.revfMiniLabel}>Projected</div>
-                    <div className={cx("fontMono", "fw700", "colorBlue")}>{m.projected > 0 ? formatMoneyK(m.projected) : "—"}</div>
-                  </div>
-                  <div>
-                    <div className={styles.revfProbHead}>
-                      <span className={styles.revfMiniLabel}>Collected rate</span>
-                      <span className={cx("fontMono", "text11", actPct >= 60 ? "colorAccent" : "colorAmber")}>{actPct}%</span>
-                    </div>
-                    <progress
-                      className={cx(styles.revfProbTrack, actPct >= 60 ? styles.revfProgressAccent : styles.revfProgressAmber)}
-                      max={100}
-                      value={actPct}
-                      aria-label={`${m.label} collected rate ${actPct}%`}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Outstanding ── */}
-      {activeTab === "outstanding" && (
-        <div className={styles.revfStack14}>
-          <div className={styles.revfPipelineSummary}>
+      {/* ── KPI sub-summary for monthly breakdown ── */}
+      {activeTab !== "outstanding" ? (
+        <div className={cx("card", "p24", "mt16")}>
+          <div className={cx("flexBetween")}>
             <div>
-              <div className={styles.revfSummaryTitle}>Outstanding Receivables</div>
-              <div className={cx("text11", "colorMuted")}>Issued + overdue invoices</div>
+              <div className={cx("text12", "colorMuted")}>Total Collected</div>
+              <div className={cx("fontMono", "fw700", "colorAccent")}>{formatMoneyK(totalPaid)}</div>
             </div>
-            <div className={styles.revfSummaryValue}>{formatMoneyK(totalOutstanding)}</div>
+            <div>
+              <div className={cx("text12", "colorMuted")}>Outstanding</div>
+              <div className={cx("fontMono", "fw700", totalOutstanding > 0 ? "colorAmber" : "colorAccent")}>{formatMoneyK(totalOutstanding)}</div>
+            </div>
+            <div>
+              <div className={cx("text12", "colorMuted")}>Draft Pipeline</div>
+              <div className={cx("fontMono", "fw700", "colorBlue")}>{formatMoneyK(totalDraft)}</div>
+            </div>
+            <div>
+              <div className={cx("text12", "colorMuted")}>Overdue</div>
+              <div className={cx("fontMono", "fw700", overdueInvoices.length > 0 ? "colorRed" : "colorAccent")}>{overdueInvoices.length}</div>
+            </div>
           </div>
-          {outstandingInvoices.length === 0 && (
-            <div className={cx("p24", "colorMuted", "text12", "textCenter")}>No outstanding invoices.</div>
-          )}
-          {outstandingInvoices.map((inv) => (
-            <div key={inv.id} className={styles.revfPipelineCard}>
-              <div className={styles.revfPipelineGrid}>
-                <div>
-                  <div className={cx(styles.revfPipelineName, inv.status === "OVERDUE" ? "colorRed" : "colorAccent")}>
-                    {inv.number}
-                  </div>
-                  <div className={cx("text10", "colorMuted")}>Client: {inv.clientId}</div>
-                </div>
-                <div>
-                  <div className={styles.revfMiniLabel}>Status</div>
-                  <span className={cx(
-                    styles.revfStageTag,
-                    inv.status === "OVERDUE" ? styles.revfStageAmber : styles.revfStageBlue
-                  )}>
-                    {inv.status}
-                  </span>
-                </div>
-                <div className={styles.revfCenterCol}>
-                  <div className={styles.revfTinyLabel}>Amount</div>
-                  <div className={cx("fontMono", "fw700", "colorAccent")}>{formatMoneyK(inv.amountCents)}</div>
-                </div>
-                <div className={styles.revfCenterCol}>
-                  <div className={styles.revfTinyLabel}>Due</div>
-                  <div className={cx("fontMono", inv.status === "OVERDUE" ? "colorRed" : "")}>
-                    {inv.dueAt ? new Date(inv.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }) : "—"}
-                  </div>
-                </div>
-                <button type="button" className={cx("btnSm", "btnGhost")}>Chase</button>
-              </div>
-            </div>
-          ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

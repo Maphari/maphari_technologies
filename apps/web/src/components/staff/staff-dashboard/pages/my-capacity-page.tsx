@@ -135,6 +135,7 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
   const [reqFeedback, setReqFeedback] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [overloadFlagging, setOverloadFlagging] = useState(false);
   const [overloadFlagged, setOverloadFlagged]   = useState(false);
+  const [overloadFeedback, setOverloadFeedback] = useState<{ tone: "success" | "info"; text: string } | null>(null);
   const [upcomingEvents,   setUpcomingEvents]   = useState<CalendarEvent[]>([]);
   const [eventsLoading,    setEventsLoading]    = useState(false);
   const [approvedLeave,    setApprovedLeave]    = useState<StaffLeaveRecord[]>([]);
@@ -211,13 +212,10 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
     setReqSubmitting(false);
   }
 
-  async function handleFlagOverload() {
-    setOverloadFlagging(true);
-    // Placeholder: alert manager — replace with intervention API when clientId context is available
-    await new Promise<void>((resolve) => setTimeout(resolve, 400));
-    window.alert(`Overload flagged! (${utilizationPct}% utilization this week). Your manager has been notified.`);
+  function handleFlagOverload() {
+    // Note: No backend alert-manager endpoint available yet — UI acknowledges locally.
     setOverloadFlagged(true);
-    setOverloadFlagging(false);
+    setOverloadFeedback({ tone: "info", text: `Overload flagged (${utilizationPct}% utilization). Your manager will be notified once this feature is fully enabled.` });
   }
 
   const weeklyHours        = capacity?.weeklyHours         ?? 40;
@@ -280,6 +278,11 @@ export function MyCapacityPage({ isActive, session }: MyCapacityPageProps) {
             <div className={cx("mcOverloadFlagged")}>
               <Ic n="check" sz={13} c="inherit" />
               Overload flagged
+            </div>
+          )}
+          {overloadFeedback && (
+            <div className={cx("text12", overloadFeedback.tone === "success" ? "colorAccent" : "colorMuted")}>
+              {overloadFeedback.text}
             </div>
           )}
         </div>

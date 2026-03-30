@@ -7,6 +7,7 @@ import type { DashboardToast } from "../../../shared/dashboard-core";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { EmptyState, formatDate, toneClass } from "./admin-page-utils";
 import { cx, styles } from "../style";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 export function AdminIntegrationsPageClient({
   keys,
@@ -83,20 +84,30 @@ export function AdminIntegrationsPageClient({
         <button type="button" onClick={() => void onRefreshKeys()} className={cx("btnSm", "btnGhost")}>Refresh Keys</button>
       </div>
 
-      <div className={cx("topCardsStack")}>
-        {[
-          { label: "Total Keys", value: `${enrichedKeys.length}`, color: "var(--accent)", sub: "Active integration keys" },
-          { label: "High Rotation Risk", value: `${highRiskKeys}`, color: highRiskKeys > 0 ? "var(--red)" : "var(--accent)", sub: "Older than 180 days" },
-          { label: "Client-Bound Keys", value: `${clientBoundKeys}`, color: "var(--blue)", sub: `${globalKeys} global keys` },
-          { label: "Last Key Issued", value: newestKeyAt ? formatDate(newestKeyAt) : "N/A", color: "var(--amber)", sub: "Most recent credential event" }
-        ].map((kpi) => (
-          <div key={kpi.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{kpi.label}</div>
-            <div className={cx(styles.statValue, styles.integrationsToneText, toneClass(kpi.color))}>{kpi.value}</div>
-            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="Total Keys"          value={enrichedKeys.length}               sub="Active integration keys"         tone="accent" />
+        <StatWidget label="High Rotation Risk"  value={highRiskKeys}                       sub="Older than 180 days"             tone={highRiskKeys > 0 ? "red" : "green"} />
+        <StatWidget label="Client-Bound Keys"   value={clientBoundKeys}                    sub={`${globalKeys} global keys`}     tone="accent" />
+        <StatWidget label="Last Key Issued"     value={newestKeyAt ? formatDate(newestKeyAt) : "N/A"} sub="Most recent credential event" tone="amber" />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <PipelineWidget
+          label="Key Risk Distribution"
+          stages={[
+            { label: "Low Risk",    count: enrichedKeys.filter((k) => k.risk === "low").length,    total: enrichedKeys.length || 1, color: "#34d98b" },
+            { label: "Medium Risk", count: enrichedKeys.filter((k) => k.risk === "medium").length, total: enrichedKeys.length || 1, color: "#f5a623" },
+            { label: "High Risk",   count: enrichedKeys.filter((k) => k.risk === "high").length,   total: enrichedKeys.length || 1, color: "#ff5f5f" },
+          ]}
+        />
+        <PipelineWidget
+          label="Key Scope Breakdown"
+          stages={[
+            { label: "Client-Bound", count: clientBoundKeys, total: enrichedKeys.length || 1, color: "#8b6fff" },
+            { label: "Global",       count: globalKeys,      total: enrichedKeys.length || 1, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>

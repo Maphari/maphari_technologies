@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AdminPageHeader, AdminSectionCard, AdminEmptyState } from "../../admin-primitives";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
-import styles from "@/app/style/admin.module.css";
-import { cx } from "../style";
-import { styles as dashboardStyles } from "../style";
+import { cx, styles } from "../style";
+import { formatStatus } from "@/lib/utils/format-status";
 import type { AuthSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Churn risk response shape ─────────────────────────────────────────────
 
@@ -51,46 +50,150 @@ function ChurnRiskBadge({ clientId, session }: { clientId: string; session: Auth
 
   useEffect(() => { void load(); }, [load]);
 
-  const cls = data?.level === "HIGH" ? "churnBadgeHigh" : data?.level === "MEDIUM" ? "churnBadgeMedium" : data?.level === "LOW" ? "churnBadgeLow" : "churnBadgeLoading";
+  const cls = data?.level === "HIGH" ? cx("badgeRed") : data?.level === "MEDIUM" ? cx("badgeAmber") : data?.level === "LOW" ? cx("badgeGreen") : cx("badgeMuted");
   const label = data?.level ?? "…";
 
-  return <span ref={ref} className={cx(cls)} title={data?.signals?.join("; ") ?? "Loading…"}>{label}</span>;
+  return <span ref={ref} className={cls} title={data?.signals?.join("; ") ?? "Loading…"}>{label}</span>;
 }
 
 // ── Page component ────────────────────────────────────────────────────────
 
 export function AdminClientsPageClient() {
   const { snapshot, loading, session } = useAdminWorkspaceContext();
+  const clients = snapshot.clients;
+
+  const total = clients.length;
+  const activeClients = clients.filter((c) => c.status === "ACTIVE").length;
+  const atRisk = clients.filter((c) => c.status === "AT_RISK").length;
+  const churned = clients.filter((c) => c.status === "CHURNED").length;
+
+  // Tier distribution for pipeline widget
+  const enterprise = clients.filter((c) => c.tier === "ENTERPRISE").length;
+  const growth = clients.filter((c) => c.tier === "GROWTH").length;
+  const starter = clients.filter((c) => c.tier === "STARTER").length;
+
+  // Health over time — approximate from status (area chart needs time-series; use tier counts as proxy)
+  const healthChartData = [
+    { label: "Starter", count: starter },
+    { label: "Growth", count: growth },
+    { label: "Enterprise", count: enterprise },
+  ];
+
+  const tableRows = clients.map((client) => ({
+    id: client.id,
+    name: client.name,
+    tier: client.tier,
+    status: formatStatus(client.status),
+    _statusRaw: client.status,
+    joined: client.contractStartAt ? client.contractStartAt.slice(0, 10) : "—",
+  }));
+
+  if (loading) {
+    return (
+      <div className={styles.pageBody}>
+        <div className={cx("flexCol", "gap12")}>
+          <div className={cx("skeletonBlock", "skeleH68")} />
+          <div className={cx("skeletonBlock", "skeleH80")} />
+          <div className={cx("skeletonBlock", "skeleH68")} />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={dashboardStyles.pageBody}>
-      <section className={styles.dashboard}>
-        <AdminPageHeader title="Clients" subtitle="Manage client accounts and account health." />
-        <AdminSectionCard title="Client Directory" subtitle="All client records from core service.">
-          {loading ? <AdminEmptyState message="Loading clients..." /> : null}
-          {!loading && snapshot.clients.length === 0 ? <AdminEmptyState message="No clients found." /> : null}
-          {!loading && snapshot.clients.length > 0 ? (
-            <div className={styles.table}>
-              <div className={styles.tableRowHead}>
-                <span>Name</span>
-                <span>Status</span>
-                <span>Churn Risk</span>
-                <span>Client ID</span>
-              </div>
-              {snapshot.clients.map((client) => (
-                <div key={client.id} className={styles.tableRow}>
-                  <span>{client.name}</span>
-                  <span>{client.status}</span>
-                  <span>
-                    <ChurnRiskBadge clientId={client.id} session={session} />
-                  </span>
-                  <span className={styles.mono}>{client.id.slice(0, 8)}</span>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </AdminSectionCard>
-      </section>
+    <div className={styles.pageBody}>
+      <div className={styles.pageHeader}>
+        <div>
+          <div className={styles.pageEyebrow}>OPERATIONS / CLIENTS</div>
+          <h1 className={styles.pageTitle}>Clients</h1>
+          <div className={styles.pageSub}>Client portfolio · Health overview · Tier distribution</div>
+        </div>
+      </div>
+
+      {/* Row 1 — 4 stat widgets */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Clients"
+          value={total}
+          sub={`${activeClients} active`}
+          tone="accent"
+        />
+        <StatWidget
+          label="Active"
+          value={activeClients}
+          sub="Currently engaged"
+          tone={activeClients > 0 ? "green" : "default"}
+        />
+        <StatWidget
+          label="At Risk"
+          value={atRisk}
+          sub="Needs attention"
+          tone={atRisk > 0 ? "amber" : "default"}
+        />
+        <StatWidget
+          label="Churned"
+          value={churned}
+          sub="No longer active"
+          tone={churned > 0 ? "red" : "default"}
+        />
+      </WidgetGrid>
+
+      {/* Row 2 — area chart + pipeline by tier */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Clients by Tier"
+          data={healthChartData}
+          dataKey="count"
+          type="area"
+          color="#8b6fff"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Clients by Tier"
+          stages={[
+            { label: "Enterprise", count: enterprise || 0, total: total || 1, color: "#8b6fff" },
+            { label: "Growth", count: growth || 0, total: total || 1, color: "#34d98b" },
+            { label: "Starter", count: starter || 0, total: total || 1, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* Row 3 — clients table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Client Directory"
+          rows={tableRows as Record<string, unknown>[]}
+          rowKey="id"
+          emptyMessage="No clients found."
+          columns={[
+            { key: "name", header: "Name", align: "left" },
+            { key: "tier", header: "Tier", align: "left" },
+            {
+              key: "status",
+              header: "Status",
+              align: "left",
+              render: (_v, row) => {
+                const raw = (row as { _statusRaw: string })._statusRaw;
+                const badgeCls =
+                  raw === "ACTIVE" ? cx("badgeGreen")
+                  : raw === "AT_RISK" ? cx("badgeAmber")
+                  : raw === "CHURNED" ? cx("badgeRed")
+                  : cx("badgeMuted");
+                return <span className={badgeCls}>{String(_v)}</span>;
+              },
+            },
+            {
+              key: "id",
+              header: "Churn Risk",
+              align: "right",
+              render: (val) => (
+                <ChurnRiskBadge clientId={String(val)} session={session} />
+              ),
+            },
+            { key: "joined", header: "Joined", align: "right" },
+          ]}
+        />
+      </WidgetGrid>
     </div>
   );
 }

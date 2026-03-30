@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import { Readable } from "node:stream";
 import type { ApiResponse } from "@maphari/contracts";
 import { registerServiceRateLimit, ServiceMetrics } from "@maphari/platform";
 import { registerPublicApiRoutes } from "./routes/public-api.js";
@@ -31,6 +32,22 @@ export async function createPublicApiApp(): Promise<FastifyInstance> {
   ]);
   metrics.registerCounter("public_api_auth_failures_total", "Total public API auth failures");
   metrics.registerCounter("public_api_requests_total", "Total authenticated public API requests");
+
+  app.addHook(
+    "preParsing",
+    async (_request, _reply, payload) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of payload) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string));
+      }
+      const raw = Buffer.concat(chunks);
+      (_request as typeof _request & { rawBody?: Buffer }).rawBody = raw;
+      const stream = new Readable();
+      stream.push(raw);
+      stream.push(null);
+      return stream;
+    }
+  );
 
   app.addHook("onRequest", async (request) => {
     (request as typeof request & { __start?: number }).__start = Date.now();

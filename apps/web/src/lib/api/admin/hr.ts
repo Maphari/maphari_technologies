@@ -405,3 +405,86 @@ export async function rejectTimesheetEntryWithRefresh(
     return { unauthorized: false, data: response.payload.data, error: null };
   });
 }
+
+// ── L&D Budget ────────────────────────────────────────────────────────────────
+
+export interface AdminLearningBudget {
+  id: string;
+  staffId: string;
+  fiscalYear: number;
+  budgetZAR: number;
+  spentZAR: number;
+  staff: { name: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function loadLearningBudgetsWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<AdminLearningBudget[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminLearningBudget[]>("/hr/learning-budgets", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return { unauthorized: false, data: [], error: toGatewayError(response.payload.error?.code ?? "LEARNING_BUDGETS_FETCH_FAILED", response.payload.error?.message ?? "Unable to load learning budgets.") };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function updateLearningBudgetWithRefresh(
+  session: AuthSession,
+  staffId: string,
+  data: { budgetZAR: number; spentZAR: number; fiscalYear?: number }
+): Promise<AuthorizedResult<AdminLearningBudget>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminLearningBudget>(`/hr/learning-budgets/${staffId}`, accessToken, { method: "PUT", body: data });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "LEARNING_BUDGET_UPDATE_FAILED", response.payload.error?.message ?? "Unable to update learning budget.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+// ── Skill Proficiency ─────────────────────────────────────────────────────────
+
+export interface AdminSkillProficiency {
+  id: string;
+  staffId: string;
+  skill: string;
+  level: number;
+  certifiedAt: string | null;
+  staff: { name: string };
+  updatedAt: string;
+}
+
+export async function loadSkillProficiencyWithRefresh(
+  session: AuthSession
+): Promise<AuthorizedResult<AdminSkillProficiency[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminSkillProficiency[]>("/hr/skill-proficiency", accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return { unauthorized: false, data: [], error: toGatewayError(response.payload.error?.code ?? "SKILL_PROFICIENCY_FETCH_FAILED", response.payload.error?.message ?? "Unable to load skill proficiency.") };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}
+
+export async function updateSkillProficiencyWithRefresh(
+  session: AuthSession,
+  staffId: string,
+  skill: string,
+  level: number,
+  certifiedAt?: string | null
+): Promise<AuthorizedResult<AdminSkillProficiency>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<AdminSkillProficiency>(`/hr/skill-proficiency/${staffId}/${encodeURIComponent(skill)}`, accessToken, { method: "PUT", body: { level, certifiedAt } });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "SKILL_PROFICIENCY_UPDATE_FAILED", response.payload.error?.message ?? "Unable to update skill proficiency.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}

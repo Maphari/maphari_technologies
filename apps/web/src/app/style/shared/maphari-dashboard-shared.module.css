@@ -1,4 +1,4 @@
-@import "../dashboard-token-scale.css";
+@import url("../dashboard-token-scale.css");
 
 /* ─── Shared Dashboard Module ──────────────────────────────────────────
    Single source of truth for all 3 dashboards (Admin, Client, Staff).
@@ -15,6 +15,7 @@
   overflow: hidden;
   position: relative;
   font-family: var(--font-syne), sans-serif;
+
   --scrollbar-size: 10px;
   --scrollbar-track: color-mix(in oklab, var(--surface) 92%, #000 8%);
   --scrollbar-thumb: color-mix(in oklab, var(--accent) 26%, var(--border2));
@@ -126,8 +127,8 @@
   top: 12px;
   left: 12px;
   bottom: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 9%);
   border-radius: var(--r-lg); /* 20px */
   display: flex;
   flex-direction: column;
@@ -136,8 +137,8 @@
   gap: 4px;
   z-index: 20;
   box-shadow: var(--shadow-island);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   overflow: visible;
   transition: none;
 }
@@ -150,7 +151,7 @@
   left: 16px;
   right: 16px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 14%), transparent);
   pointer-events: none;
 }
 
@@ -178,7 +179,7 @@
   border-radius: 10px;
   clip-path: none;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(200, 241, 53, 0.3);
+  box-shadow: 0 4px 16px rgb(200 241 53 / 30%);
 }
 
 /* Hide text logo — icon-only sidebar */
@@ -214,7 +215,7 @@
 .navSectionDivider {
   width: 24px;
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   margin: 5px 0;
   flex-shrink: 0;
 }
@@ -232,7 +233,7 @@
   cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease;
   text-decoration: none;
-  color: rgba(240, 237, 232, 0.45);
+  color: rgb(240 237 232 / 45%);
   background: transparent;
   border: none;
   padding: 0;
@@ -240,14 +241,14 @@
 }
 
 .navItem:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(240, 237, 232, 0.75);
+  background: rgb(255 255 255 / 6%);
+  color: rgb(240 237 232 / 75%);
 }
 
 .navItemActive,
 .navItem[data-active="true"] {
-  background: rgba(200, 241, 53, 0.13);
-  box-shadow: 0 0 0 1px rgba(200, 241, 53, 0.22);
+  background: rgb(200 241 53 / 13%);
+  box-shadow: 0 0 0 1px rgb(200 241 53 / 22%);
   color: var(--lime);
 }
 
@@ -266,10 +267,10 @@
   left: calc(100% + 12px);
   top: 50%;
   transform: translateY(-50%) translateX(-6px);
-  background: rgba(4, 3, 10, 0.92);
-  backdrop-filter: blur(16px);
+  background: rgb(4 3 10 / 92%);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(200, 241, 53, 0.22);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgb(200 241 53 / 22%);
   border-left: 2px solid var(--lime);
   color: var(--text);
   font-size: 10px;
@@ -283,7 +284,7 @@
   opacity: 0;
   transition: opacity 160ms ease, transform 160ms ease;
   z-index: 200;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 55%), inset 0 1px 0 rgb(255 255 255 / 7%);
 }
 
 .navItem:hover .navTooltip {
@@ -324,11 +325,6 @@
 
 .navBadgeAmber {
   background: var(--amber);
-}
-
-.navBadgeRed {
-  background: var(--red);
-  box-shadow: 0 0 6px rgba(255, 95, 95, 0.5);
 }
 
 /* ─── Project picker — hidden in icon rail ──────────────────────────── */
@@ -419,7 +415,7 @@
   transform: translateX(0);
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .sidebar {
     transform: translateX(calc(-1 * (var(--sw) + 24px)));
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -472,19 +468,6 @@
 .dashboardChip,
 .adminChip,
 .portalChip,
-.staffChip {
-  align-self: flex-end;
-  background: var(--accent-dim);
-  color: var(--accent);
-  border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
-  border-radius: var(--r-xs);
-  font-family: var(--font-dm-mono), monospace;
-  font-size: 0.52rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  padding: 2px 7px;
-}
 
 /* Sidebar footer + user card */
 
@@ -560,14 +543,6 @@
 
 /* Nav chevron */
 
-.navChevron {
-  width: 12px;
-  height: 12px;
-  margin-left: auto;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
 .navChevronExpanded {
   transform: rotate(180deg);
 }
@@ -603,7 +578,7 @@
 .navPopupBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 60%);
   -webkit-backdrop-filter: blur(6px) saturate(1.05);
   backdrop-filter: blur(6px) saturate(1.05);
   z-index: 40;
@@ -616,6 +591,7 @@
   from {
     transform: translateY(14px) scale(0.98);
   }
+
   to {
     transform: translateY(0) scale(1);
   }
@@ -634,8 +610,8 @@
   color: var(--text);
   border: 1px solid var(--b2);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.03),
-    0 24px 80px rgba(0, 0, 0, 0.48);
+    0 0 0 1px rgb(255 255 255 / 3%),
+    0 24px 80px rgb(0 0 0 / 48%);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -912,7 +888,7 @@
   border-color: var(--b2);
   border-left-color: var(--b3);
   background: var(--s3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
 }
 
 .navPageTile:hover .navPageTileIcon {
@@ -1112,8 +1088,8 @@
 
 .topbar {
   height: 56px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 1px solid rgba(255, 255, 255, 0.08); /* no accent stripe */
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-top: 1px solid rgb(255 255 255 / 8%); /* no accent stripe */
   position: fixed;
   top: 12px;
   left: calc(var(--sw) + 28px); /* island width + gap */
@@ -1123,10 +1099,10 @@
   align-items: center;
   gap: 12px;
   padding: 0 14px;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
+  background: rgb(255 255 255 / 4%);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 28%), inset 0 1px 0 rgb(255 255 255 / 8%);
   border-radius: 14px;
 }
 
@@ -1138,7 +1114,7 @@
   left: 18px;
   right: 18px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.11), transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 11%), transparent);
   pointer-events: none;
 }
 
@@ -1148,7 +1124,7 @@
   font-size: 7.5px;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: rgba(240, 237, 232, 0.30);
+  color: rgb(240 237 232 / 30%);
   line-height: 1;
   white-space: nowrap;
 }
@@ -1208,7 +1184,6 @@
   position: relative;
   border-radius: var(--r-sm);
   appearance: none;
-  -webkit-appearance: none;
 }
 
 /* topbarIcon is applied directly to the SVG inside the iconBtn button */
@@ -1216,13 +1191,13 @@
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  fill: currentColor;
-  color: rgba(240, 237, 232, 0.55);
+  fill: currentcolor;
+  color: rgb(240 237 232 / 55%);
 }
 
 .iconBtn:hover .topbarIcon,
 .iconButton:hover .topbarIcon {
-  color: rgba(240, 237, 232, 0.9);
+  color: rgb(240 237 232 / 90%);
 }
 
 /* Search bar pill */
@@ -1231,8 +1206,8 @@
   align-items: center;
   gap: 8px;
   width: 120px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 4%);
   padding: 6px 10px;
   border-radius: 10px;
   cursor: pointer;
@@ -1240,7 +1215,7 @@
 }
 
 .searchBar:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgb(255 255 255 / 14%);
 }
 
 .searchBar input {
@@ -1248,14 +1223,14 @@
   border: none;
   outline: none;
   background: transparent;
-  color: rgba(240, 237, 232, 0.25);
+  color: rgb(240 237 232 / 25%);
   font-family: var(--font-dm-mono), monospace;
   font-size: 9px;
   letter-spacing: 0.02em;
 }
 
 .searchBar input::placeholder {
-  color: rgba(240, 237, 232, 0.25);
+  color: rgb(240 237 232 / 25%);
 }
 
 .searchIcon,
@@ -1310,11 +1285,11 @@
   right: 0;
   min-width: 238px;
   background: #0b0c12;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 16px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: none;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 32%), inset 0 1px 0 rgb(255 255 255 / 6%);
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   z-index: 100;
   overflow: hidden;
   isolation: isolate;
@@ -1350,7 +1325,7 @@
 
 .topbarDropdownId {
   padding: 14px 14px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1413,7 +1388,7 @@
 
 .topbarDropdownSection {
   padding: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
 }
 
 .topbarDropdownFooter {
@@ -1486,7 +1461,7 @@
 }
 
 /* Global button normalization */
-.root button:not(.navItem):not(.iconBtn):not(.iconButton):not(.navPageTile):not(.navPopupClose):not(.navPopupClear):not(.btnXs):not(.btnXxs):not(.card):not(.msguTabBtn):not(.msguThreadItem):not(.msguReaction):not(.msguComposeBtn):not(.msguSendBtn):not(.msguIconBtn):not(.msguPriorityBtn):not(.msguFileDownload):not(.topbarUserBtn):not(.topbarUserItem) {
+.root button:not(.navItem, .iconBtn, .iconButton, .navPageTile, .navPopupClose, .navPopupClear, .btnXs, .btnXxs, .card, .msguTabBtn, .msguThreadItem, .msguReaction, .msguComposeBtn, .msguSendBtn, .msguIconBtn, .msguPriorityBtn, .msguFileDownload, .topbarUserBtn, .topbarUserItem) {
   font-family: var(--font-syne), sans-serif;
   font-size: 0.72rem;
   font-weight: 600;
@@ -1499,15 +1474,15 @@
   transition: filter 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
 }
 
-.root button:not(.navItem):not(.iconBtn):not(.navPageTile):not(.navPopupClose):not(.navPopupClear):not(.msguTabBtn):not(.msguThreadItem):not(.msguReaction):not(.msguComposeBtn):not(.msguSendBtn):not(.msguIconBtn):not(.msguPriorityBtn):not(.msguFileDownload):not(.topbarUserBtn):not(.topbarUserItem):hover {
+.root button:not(.navItem, .iconBtn, .navPageTile, .navPopupClose, .navPopupClear, .msguTabBtn, .msguThreadItem, .msguReaction, .msguComposeBtn, .msguSendBtn, .msguIconBtn, .msguPriorityBtn, .msguFileDownload, .topbarUserBtn, .topbarUserItem):hover {
   filter: brightness(1.05);
 }
 
-.root button:not(.navItem):not(.iconBtn):not(.navPageTile):not(.navPopupClose):not(.navPopupClear):not(.msguTabBtn):not(.msguThreadItem):not(.msguReaction):not(.msguComposeBtn):not(.msguSendBtn):not(.msguIconBtn):not(.msguPriorityBtn):not(.msguFileDownload):not(.topbarUserBtn):not(.topbarUserItem):active {
+.root button:not(.navItem, .iconBtn, .navPageTile, .navPopupClose, .navPopupClear, .msguTabBtn, .msguThreadItem, .msguReaction, .msguComposeBtn, .msguSendBtn, .msguIconBtn, .msguPriorityBtn, .msguFileDownload, .topbarUserBtn, .topbarUserItem):active {
   transform: translateY(1px);
 }
 
-.root button:not(.navItem):not(.iconBtn):not(.navPageTile):not(.navPopupClose):not(.navPopupClear):not(.msguTabBtn):not(.msguThreadItem):not(.msguReaction):not(.msguComposeBtn):not(.msguSendBtn):not(.msguIconBtn):not(.msguPriorityBtn):not(.msguFileDownload):not(.topbarUserBtn):not(.topbarUserItem):disabled {
+.root button:not(.navItem, .iconBtn, .navPageTile, .navPopupClose, .navPopupClear, .msguTabBtn, .msguThreadItem, .msguReaction, .msguComposeBtn, .msguSendBtn, .msguIconBtn, .msguPriorityBtn, .msguFileDownload, .topbarUserBtn, .topbarUserItem):disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -1637,22 +1612,6 @@
   opacity: 1;
 }
 
-.navSearchKbd {
-  font-family: var(--font-dm-mono), monospace;
-  font-size: 0.54rem;
-  padding: 2px 5px;
-  background: var(--s2);
-  border: 1px solid var(--b2);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  color: var(--muted2);
-  flex-shrink: 0;
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-width var(--duration-slow) var(--ease-ui), opacity 0.2s;
-}
-
 .sidebar:not(.sidebarCollapsed) .navSearchKbd {
   max-width: 40px;
   opacity: 1;
@@ -1751,21 +1710,6 @@
   color: var(--muted2);
 }
 
-.sidebarPlanBadge {
-  margin-left: auto;
-  font-family: var(--font-dm-mono), monospace;
-  font-size: 0.52rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 2px 7px;
-  border-radius: 99px;
-  background: color-mix(in oklab, var(--accent) 10%, var(--s2));
-  border: 1px solid color-mix(in oklab, var(--accent) 24%, transparent);
-  color: var(--accent);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
 /* ─── Page visibility (for render-all-toggle-visibility pattern) ──── */
 
 .page {
@@ -1803,11 +1747,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 .statCard {
   background: var(--s2);
-  border: 1px solid rgba(139, 111, 255, 0.1);
+  border: 1px solid rgb(139 111 255 / 10%);
   padding: 20px;
   position: relative;
   min-width: 0;
@@ -1859,6 +1805,8 @@
   letter-spacing: -0.03em;
   line-height: 1;
   margin-bottom: 8px;
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings: "zero" 1, "tnum" 1;
 }
 
 /* Fallback KPI color hierarchy for top stat containers across pages.
@@ -1919,8 +1867,8 @@
   overflow: clip;
   min-width: 0;
   border-radius: var(--r-md);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   box-shadow: var(--shadow-card);
   position: relative;
 }
@@ -2215,7 +2163,7 @@
 }
 
 .badgeCyan {
-  background: var(--cyan-d, rgba(61, 217, 214, 0.12));
+  background: var(--cyan-d, rgb(61 217 214 / 12%));
   color: var(--cyan, #3dd9d6);
 }
 
@@ -2224,7 +2172,7 @@
 }
 
 .badgeMuted {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--muted);
 }
 
@@ -2243,7 +2191,7 @@
   min-width: 80px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgb(255 255 255 / 7%);
   overflow: hidden;
 }
 
@@ -2372,8 +2320,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid rgba(200, 241, 53, 0.15);
-  background: rgba(200, 241, 53, 0.03);
+  border: 1px solid rgb(200 241 53 / 15%);
+  background: rgb(200 241 53 / 3%);
   display: grid;
   place-items: center;
 }
@@ -2584,12 +2532,6 @@
 
 .feedbackLogCard {
   margin-top: 24px;
-}
-
-.formTextarea {
-  min-height: 96px;
-  resize: vertical;
-  grid-column: 1 / -1;
 }
 
 .checkboxRow {
@@ -2983,7 +2925,7 @@
   width: 40px;
   height: 22px;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   position: relative;
   flex-shrink: 0;
 }
@@ -3006,11 +2948,6 @@
   background: #050508;
 }
 
-.switchThumbOff {
-  left: 3px;
-  background: var(--muted);
-}
-
 .toastStack {
   position: fixed;
   right: 20px;
@@ -3028,7 +2965,7 @@
   padding: 12px 14px;
   font-size: 0.78rem;
   line-height: 1.4;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
 }
 
 .toastSuccess {
@@ -3057,8 +2994,7 @@
   white-space: pre-wrap;
 }
 
-@media (max-width: 1200px) {
-
+@media (width <= 1200px) {
   .grid4,
   .grid3 {
     grid-template-columns: 1fr 1fr;
@@ -3108,7 +3044,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (width <= 700px) {
   .statsRowTight {
     grid-template-columns: 1fr;
   }
@@ -3142,7 +3078,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .main {
     margin-left: 0;
     padding-top: 72px;
@@ -3156,7 +3092,7 @@
   }
 
   .content {
-    padding: 12px 12px 12px 12px;
+    padding: 12px;
   }
 
   .searchBar {
@@ -3239,18 +3175,16 @@
   gap: 16px;
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .grid3,
   .grid4,
   .topCardsStack {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .pageHeader  { flex-wrap: wrap; gap: 12px; }
-  .pageActions { width: 100%; justify-content: flex-start; }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .grid2,
   .grid3,
   .grid4,
@@ -3259,7 +3193,7 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .grid2,
   .grid3,
   .grid4 {
@@ -3878,7 +3812,7 @@
 .progressMeter {
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
@@ -4098,9 +4032,9 @@
 .cmdOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  background: rgb(0 0 0 / 50%);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   z-index: 50;
   display: grid;
   place-items: start center;
@@ -4115,7 +4049,7 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--r-lg, 16px);
-  box-shadow: var(--shadow-modal, 0 16px 40px rgba(0, 0, 0, 0.38));
+  box-shadow: var(--shadow-modal, 0 16px 40px rgb(0 0 0 / 38%));
   overflow: hidden;
   padding: 8px 0 0;
 }
@@ -4197,6 +4131,7 @@
   cursor: pointer;
   transition: background 0.15s;
 }
+
 .cmdHistoryChip:hover {
   background: var(--s3);
   color: var(--text);
@@ -4211,6 +4146,7 @@
   border: none;
   padding: 0 4px;
 }
+
 .cmdClear:hover {
   color: var(--text);
 }
@@ -4221,7 +4157,7 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgb(0 0 0 / 80%);
   display: grid;
   place-items: center;
 }
@@ -4233,7 +4169,7 @@
   text-align: center;
   max-width: 400px;
   border-radius: var(--r-lg, 16px);
-  box-shadow: var(--shadow-modal, 0 16px 40px rgba(0, 0, 0, 0.38));
+  box-shadow: var(--shadow-modal, 0 16px 40px rgb(0 0 0 / 38%));
 }
 
 .sessionTitle {
@@ -4261,7 +4197,7 @@
   z-index: 40;
   max-width: 300px;
   border-radius: var(--r-md, 12px);
-  box-shadow: var(--shadow-modal, 0 16px 40px rgba(0, 0, 0, 0.38));
+  box-shadow: var(--shadow-modal, 0 16px 40px rgb(0 0 0 / 38%));
 }
 
 .shortcutsPanelTitle {
@@ -4281,7 +4217,7 @@
 }
 
 .shortcutKey {
-  background: var(--s3, rgba(255, 255, 255, 0.04));
+  background: var(--s3, rgb(255 255 255 / 4%));
   padding: 2px 6px;
   font-family: var(--font-dm-mono), monospace;
   font-size: 0.6rem;
@@ -4336,12 +4272,8 @@
 
 .cardGrid4,
 .stats4,
-.statsRowCols4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
 
-@media (max-width: 960px) {
-
+@media (width <= 960px) {
   .topCardsStack,
   .cardGrid4,
   .stats4,
@@ -4355,8 +4287,7 @@
   }
 }
 
-@media (max-width: 600px) {
-
+@media (width <= 600px) {
   .topCardsStack,
   .grid2,
   .grid3,
@@ -4385,7 +4316,7 @@
 
 .table thead tr {
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .table thead th {
@@ -4410,7 +4341,7 @@
 }
 
 .table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .table tbody td {
@@ -4468,7 +4399,7 @@
 }
 
 .tableRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .tableCellCenter {
@@ -4512,7 +4443,7 @@
 }
 
 .filterChip:hover {
-  border-color: var(--border2, rgba(255, 255, 255, 0.12));
+  border-color: var(--border2, rgb(255 255 255 / 12%));
   color: var(--text);
 }
 
@@ -4568,8 +4499,8 @@
 .emptyStateIcon {
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border2, rgba(255,255,255,0.10));
+  background: rgb(255 255 255 / 3%);
+  border: 1px solid var(--border2, rgb(255 255 255 / 10%));
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -4614,9 +4545,9 @@
   border-radius: 6px;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.09) 50%,
-    rgba(255, 255, 255, 0.04) 75%
+    rgb(255 255 255 / 4%) 25%,
+    rgb(255 255 255 / 9%) 50%,
+    rgb(255 255 255 / 4%) 75%
   );
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
@@ -4626,9 +4557,9 @@
   border-radius: 8px;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.09) 50%,
-    rgba(255, 255, 255, 0.04) 75%
+    rgb(255 255 255 / 4%) 25%,
+    rgb(255 255 255 / 9%) 50%,
+    rgb(255 255 255 / 4%) 75%
   );
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
@@ -4655,8 +4586,8 @@
 .errorStateIcon {
   width: 44px;
   height: 44px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.22);
+  background: rgb(239 68 68 / 8%);
+  border: 1px solid rgb(239 68 68 / 22%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -4683,7 +4614,7 @@
 
 .input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 12px;
@@ -4720,7 +4651,7 @@
 
 .select {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 12px;
@@ -4739,7 +4670,7 @@
 
 .textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 12px;
@@ -4762,7 +4693,7 @@
 
 .search {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 9px 14px 9px 36px;
@@ -4783,21 +4714,8 @@
 
 /* ─── List Row ────────────────────────────────────────────────────── */
 
-.listRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 20px;
-  border-bottom: 1px solid var(--border);
-  transition: background var(--duration-fast);
-}
-
-.listRow:last-child {
-  border-bottom: none;
-}
-
 .listRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* ─── Field (form field variant) ──────────────────────────────────── */
@@ -4819,7 +4737,7 @@
 
 .fieldInput {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgb(255 255 255 / 3%);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 14px;
@@ -4867,7 +4785,7 @@
 }
 
 .itemRow:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 .itemDot {
@@ -4937,6 +4855,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Focus-visible states for interactive components ──────────────── */
+
 /* Ensures 2px outline with 3:1 contrast (WCAG 2.4.13 Level AAA)     */
 
 .filterChip:focus-visible,
@@ -4976,7 +4895,6 @@
 /* ── Reduced motion: respect user preferences ─────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-
   .root,
   .root * {
     animation-duration: 0.01ms !important;
@@ -5022,9 +4940,6 @@
 
 .listRow:hover,
 .tableRow:hover,
-.itemRow:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
 
 /* ── Minimum touch target sizes (WCAG 2.5.8 — 24x24px minimum) ──── */
 
@@ -5040,14 +4955,16 @@
 }
 
 /* ── Ensure sufficient color contrast for muted text ──────────────── */
+
 /* var(--muted) is rgba(240,237,232,0.55) on #050508 bg                */
+
 /* Contrast: ~7.3:1 — meets WCAG AAA for normal text                   */
 
 /* ── Mobile hamburger nav ─────────────────────────────────────────── */
 
 /* Sidebar mobile open override — must be inside the same breakpoint so it
    wins over the display:none rule that fires at ≤900px */
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .sidebarMobileOpen {
     display: flex !important;
     top: 0;
@@ -5055,7 +4972,7 @@
     bottom: 0;
     border-radius: 0 var(--r-lg) var(--r-lg) 0;
     z-index: 150;
-    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.6);
+    box-shadow: 4px 0 32px rgb(0 0 0 / 60%);
   }
 }
 
@@ -5063,8 +4980,9 @@
 .mobileOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 60%);
   z-index: 19; /* below rail island (z:20) — island stays visible on mobile open */
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   cursor: pointer;
   animation: overlayFadeIn 0.2s ease forwards;
@@ -5086,13 +5004,13 @@
   z-index: 200;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 50%);
   transition: transform 80ms ease, box-shadow 80ms ease;
 }
 
 .hamburgerBtn:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 60%);
 }
 
 .hamburgerBtn:active { transform: scale(0.96); }
@@ -5120,12 +5038,11 @@
   border-color: var(--border2);
 }
 
-@media (max-width: 768px) {
-  .topbarHamburger { display: flex; }
-}
 
 /* ─── Topbar secondary icon-button identifiers ────────────────────── */
+
 /* Used to selectively hide non-essential actions on narrow viewports.  */
+
 /* Applied alongside .iconBtn on specific buttons in each topbar.       */
 
 /* Search shortcut button (⌘K) */
@@ -5146,7 +5063,7 @@
 .topbarSep {
   width: 1px;
   height: 20px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / 8%);
   flex-shrink: 0;
   margin: 0 2px;
 }
@@ -5174,21 +5091,19 @@
 }
 
 /* At ≤ 640px hide secondary topbar buttons — keep notif + messages + profile */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .topbarOnlinePill { display: none; }
   .topbarAppsBtn    { display: none; }
   .topbarHelpBtn    { display: none; }
   .topbarQuickMenu  { display: none; }
-  .topbarSep        { display: none; }
+
   /* Client portal secondary icons — match admin's clean mobile strip */
   .topbarSearch     { display: none; }
   .topbarApps       { display: none; }
-  .topbarActions    { gap: 4px; }
-  .topbar           { gap: 8px; }
 }
 
 /* Page header stacks vertically at ≤ 600px */
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .pageHeader {
     flex-direction: column;
     align-items: flex-start;
@@ -5206,12 +5121,12 @@
 }
 
 /* Topbar breadcrumb label — hidden at ≤ 480px (icon-only strip) */
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .topbarLabel { display: none; }
+
   /* Hide secondary topbar actions text at small sizes */
-  .topbarUserLabel { display: none; }
+
   /* Collapse topbar search bar */
-  .searchBar { display: none; }
 
   /* Tighten content area padding on small phones */
   .content {
@@ -5235,11 +5150,13 @@
   .pageTitle {
     font-size: 1.05rem;
   }
+
   .pageSub {
     font-size: 0.78rem;
   }
 
   /* Hide non-essential topbar icon buttons on very small screens     */
+
   /* Notifications and profile always stay visible.                   */
   .topbarSearch,
   .topbarApps {
@@ -5252,7 +5169,7 @@
   }
 }
 
-@media (max-width: 380px) {
+@media (width <= 380px) {
   /* On the smallest phones also hide messages to save space          */
   .topbarMsg {
     display: none;
@@ -5277,14 +5194,10 @@
 }
 
 /* ── Responsive: topbar + sidebar ────────────────────────────────── */
+
 /* .topbarTitle overflow + .topbarActions flex-shrink merged into primary definitions above */
 
 /* Mobile sidebar: allow scrolling when nav exceeds viewport height */
-.sidebarMobileOpen {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  max-height: 100dvh;
-}
 
 /* ── Accessibility utilities ──────────────────────────────────────── */
 
@@ -5303,7 +5216,7 @@
 
 /* ── Mobile touch targets (WCAG 2.5.5 — min 44px on touch devices) ── */
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .button,
   .buttonAccent,
   .buttonGhost,
@@ -5317,8 +5230,11 @@
 }
 
 /* ── Refined Data Studio — hero page additive classes ────────────────────── */
+
 /* Applied via cx() on 15 hero pages. Purely additive — no existing class     */
+
 /* is renamed or removed. maphari-dashboard-shared.module.css is already      */
+
 /* spread into all 3 style.ts files so no new imports are needed.             */
 
 /* Page root — sets tabular-nums and tighter tracking for the whole page */
@@ -5347,6 +5263,7 @@
 .rdStudioMetricPos  { color: var(--green);  } /* positive / achieved */
 .rdStudioMetricNeg  { color: var(--red);    } /* negative / over-budget */
 .rdStudioMetricWarn { color: var(--amber);  } /* warning / at-risk */
+
 /* neutral: omit variant — inherits --text */
 
 /* Primary data cards — accent identity stripe + tighter chrome */
@@ -5396,7 +5313,7 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(200,241,53,0.06), transparent 70%);
+  background: radial-gradient(circle, rgb(200 241 53 / 6%), transparent 70%);
   pointer-events: none;
 }
 
@@ -5438,7 +5355,7 @@
   left: 0;
   right: 0;
   height: 60%;
-  background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(200,241,53,0.08), transparent);
+  background: radial-gradient(ellipse 100% 100% at 50% 0%, rgb(200 241 53 / 8%), transparent);
   pointer-events: none;
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import {
   createConversationEscalationWithRefresh,
   createConversationNoteWithRefresh,
@@ -47,6 +48,30 @@ function formatDate(value: string): string {
 
 function clientName(clients: AdminClient[], clientId: string): string {
   return clients.find((client) => client.id === clientId)?.name ?? "Unknown client";
+}
+
+/**
+ * Renders a message body safely.
+ * Messages that start with CALL_ROOM:: contain a LiveKit call URL with an
+ * embedded JWT token — render these as a "Join Call" button instead of
+ * exposing the raw token string.
+ */
+function renderMessageBody(content: string, joinCallClass: string): React.ReactNode {
+  if (content.startsWith("CALL_ROOM::")) {
+    const url = content.replace("CALL_ROOM::", "");
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={joinCallClass}
+        onClick={(e) => e.stopPropagation()}
+      >
+        Join Call
+      </a>
+    );
+  }
+  return <span>{content}</span>;
 }
 
 function toneForEscalationStatus(status: string): string {
@@ -373,33 +398,54 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
     );
   }
 
+  // ── Channel + chart data ──────────────────────────────────────────────────
+  const channelCounts = conversations.reduce<Record<string, number>>((acc, c) => {
+    const ch = (((c as unknown as Record<string, string>).channel) ?? "Portal").toUpperCase();
+    acc[ch] = (acc[ch] ?? 0) + 1;
+    return acc;
+  }, {});
+  const msgChartData = Object.entries(channelCounts).map(([name, value]) => ({ name, value }));
+
   return (
     <div className={cx(styles.pageBody, styles.msgRoot)}>
-      <div className={cx("flexBetween", "mb28")}>
+      <div className={cx("flexBetween", "mb16")}>
         <div>
-          <div className={cx("pageEyebrow")}>ADMIN / CLIENT MANAGEMENT</div>
+          <div className={cx("pageEyebrow")}>COMMUNICATION / MESSAGES</div>
           <h1 className={cx("pageTitle")}>Messages</h1>
-          <div className={cx("pageSub")}>Thread ownership &middot; Reply execution &middot; Escalation control</div>
+          <div className={cx("pageSub")}>Message volume · Response times · Channel overview</div>
         </div>
         <button type="button" onClick={() => void handleCreateConversation()} disabled={!canEdit} className={cx("btnSm", "btnAccent", "fontMono", !canEdit && "opacity60")}>
           + New Thread
         </button>
       </div>
 
-      <div className={styles.msgKpiGrid}>
-        {[
-          { label: "Active Threads", value: filteredConversations.length.toString(), sub: "Sorted by latest activity", color: "var(--accent)" },
-          { label: "Unread Client Messages", value: unreadClientCount.toString(), sub: "Pending review in selected thread", color: unreadClientCount > 0 ? "var(--amber)" : "var(--accent)" },
-          { label: "Open Escalations", value: openEscalationsCount.toString(), sub: "Needs owner action", color: openEscalationsCount > 0 ? "var(--red)" : "var(--accent)" },
-          { label: "Assigned Threads", value: conversations.filter((c) => Boolean(c.assigneeUserId)).length.toString(), sub: "Ownership coverage", color: "var(--blue)" }
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.msgKpiCard, toneClass(k.color))}>
-            <div className={styles.msgKpiLabel}>{k.label}</div>
-            <div className={cx(styles.msgKpiValue, styles.msgToneText, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.msgKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Messages" value={conversations.length} tone="accent" sparkData={[5, 7, 8, 10, 12, 14, 15, conversations.length]} />
+        <StatWidget label="Unread" value={unreadClientCount} tone={unreadClientCount > 0 ? "amber" : "default"} sub="client messages" />
+        <StatWidget label="Avg Response Time" value="—" sub="no data" />
+        <StatWidget label="Overdue Threads" value={openEscalationsCount} tone={openEscalationsCount > 0 ? "red" : "default"} sub="open escalations" />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Messages by Channel"
+          type="bar"
+          data={msgChartData.length > 0 ? msgChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="By Channel"
+          stages={[
+            { label: "Portal", count: channelCounts["PORTAL"] ?? conversations.length, total: conversations.length, color: "#8b6fff" },
+            { label: "Email", count: channelCounts["EMAIL"] ?? 0, total: conversations.length, color: "#34d98b" },
+            { label: "Slack", count: channelCounts["SLACK"] ?? 0, total: conversations.length, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.msgToolbar}>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search thread or client" className={cx("formInput", "fontMono", "text12", styles.msgSearchInput)} />
@@ -506,7 +552,9 @@ export function MessagesPage({ snapshot, session, onNotify }: MessagesPageProps)
                               {sentiment === "POSITIVE" && <span className={cx(styles.sentimentPill, styles.sentimentPositive)}>Positive</span>}
                               {sentiment === "NEGATIVE" && <span className={cx(styles.sentimentPill, styles.sentimentNegative)}>Negative</span>}
                             </div>
-                            <div className={cx("text12", styles.msgLine15)}>{message.content}</div>
+                            <div className={cx("text12", styles.msgLine15)}>
+                              {renderMessageBody(message.content, cx(styles.joinCallBtn))}
+                            </div>
                           </div>
                         </div>
                       );

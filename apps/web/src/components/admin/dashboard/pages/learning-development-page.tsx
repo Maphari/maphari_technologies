@@ -8,9 +8,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { cx, styles } from "../style";
 import { colorClass } from "./admin-page-utils";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { AdminTabs } from "./shared";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { loadAllTrainingWithRefresh, loadAllStaffWithRefresh, type AdminTrainingRecord, type AdminStaffProfile } from "../../../../lib/api/admin";
+import { loadLearningBudgetsWithRefresh, loadSkillProficiencyWithRefresh, type AdminLearningBudget, type AdminSkillProficiency } from "../../../../lib/api/admin/hr";
 import { saveSession } from "../../../../lib/auth/session";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -85,19 +87,21 @@ function mapApiCourse(t: AdminTrainingRecord): Course {
   };
 }
 
-function buildStaffMembers(staff: AdminStaffProfile[], training: AdminTrainingRecord[]): StaffMember[] {
+function buildStaffMembers(staff: AdminStaffProfile[], training: AdminTrainingRecord[], budgets: AdminLearningBudget[]): StaffMember[] {
+  const budgetByStaffId = new Map(budgets.map((b) => [b.staffId, b]));
   return staff.map((s) => {
     const initials = s.avatarInitials ?? s.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
     const color = s.avatarColor ?? "var(--accent)";
     const staffCourses = training.filter((t) => t.staffId === s.id).map(mapApiCourse);
+    const budget = budgetByStaffId.get(s.id);
     return {
       id: s.id,
       name: s.name,
       role: s.role,
       avatar: initials,
       color,
-      ldBudget: 0,
-      ldSpent: 0,
+      ldBudget: budget?.budgetZAR ?? 0,
+      ldSpent: budget?.spentZAR ?? 0,
       courses: staffCourses,
     };
   });
@@ -157,6 +161,8 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
   const [expanded, setExpanded] = useState<string>("");
   const [apiStaff, setApiStaff] = useState<AdminStaffProfile[]>([]);
   const [apiTraining, setApiTraining] = useState<AdminTrainingRecord[]>([]);
+  const [apiBudgets, setApiBudgets] = useState<AdminLearningBudget[]>([]);
+  const [apiSkills, setApiSkills] = useState<AdminSkillProficiency[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -164,15 +170,23 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
     if (!session) { setLoading(false); return; }
     setLoading(true);
     setError(null);
-    void Promise.all([loadAllStaffWithRefresh(session), loadAllTrainingWithRefresh(session)]).then(([sr, tr]) => {
+    void Promise.all([
+      loadAllStaffWithRefresh(session),
+      loadAllTrainingWithRefresh(session),
+      loadLearningBudgetsWithRefresh(session),
+      loadSkillProficiencyWithRefresh(session),
+    ]).then(([sr, tr, br, skillr]) => {
       if (sr.nextSession) saveSession(sr.nextSession);
       else if (tr.nextSession) saveSession(tr.nextSession);
+      else if (br.nextSession) saveSession(br.nextSession);
       if (sr.error) setError(sr.error.message ?? "Failed to load.");
       else if (sr.data) {
         setApiStaff(sr.data);
         setExpanded(sr.data[0]?.id ?? "");
       }
       if (!tr.error && tr.data) setApiTraining(tr.data);
+      if (!br.error && br.data) setApiBudgets(br.data);
+      if (!skillr.error && skillr.data) setApiSkills(skillr.data);
       setLoading(false);
     }).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Failed to load.");
@@ -181,8 +195,8 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
   }, [session]);
 
   const staff = useMemo<StaffMember[]>(
-    () => buildStaffMembers(apiStaff, apiTraining),
-    [apiStaff, apiTraining]
+    () => buildStaffMembers(apiStaff, apiTraining, apiBudgets),
+    [apiStaff, apiTraining, apiBudgets]
   );
 
   const totalBudget = staff.reduce((s, m) => s + m.ldBudget, 0);
@@ -194,11 +208,18 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
   const inProgress = allCourses.filter((c) => c.status === "in-progress").length;
   const completed = allCourses.filter((c) => c.status === "complete").length;
 
-  // Static skill map — not yet in API, kept as placeholder zeros
-  const skillMap: Record<string, Record<Skill, number>> = useMemo(() =>
-    Object.fromEntries(staff.map((m) => [m.name, Object.fromEntries(skills.map((s) => [s, 0])) as Record<Skill, number>])),
-    [staff]
-  );
+  // Build skill map from API proficiency data, falling back to 0 where not set
+  const skillMap: Record<string, Record<Skill, number>> = useMemo(() => {
+    const profByStaffId = new Map<string, Map<string, number>>();
+    for (const p of apiSkills) {
+      if (!profByStaffId.has(p.staffId)) profByStaffId.set(p.staffId, new Map());
+      profByStaffId.get(p.staffId)!.set(p.skill, p.level);
+    }
+    return Object.fromEntries(staff.map((m) => {
+      const profMap = profByStaffId.get(m.id) ?? new Map<string, number>();
+      return [m.name, Object.fromEntries(skills.map((s) => [s, profMap.get(s) ?? 0])) as Record<Skill, number>];
+    }));
+  }, [staff, apiSkills]);
 
   if (loading) {
     return (
@@ -228,7 +249,7 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
     <div className={cx(styles.pageBody, styles.lndRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / STAFF</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / LEARNING & DEVELOPMENT</div>
           <h1 className={styles.pageTitle}>Learning & Development</h1>
           <div className={styles.pageSub}>Courses, budget, skills matrix, and progress tracking</div>
         </div>
@@ -237,20 +258,21 @@ export function LearningDevelopmentPage({ session }: { session: AuthSession | nu
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "gap16", "mb16")}>
-        {[
-          { label: "L&D Budget (FY2026)", value: `R${(totalBudget / 1000).toFixed(0)}k`, color: "var(--accent)", sub: `R${(totalSpent / 1000).toFixed(1)}k spent` },
-          { label: "Budget Utilisation", value: `${Math.round((totalSpent / Math.max(totalBudget, 1)) * 100)}%`, color: "var(--blue)", sub: `R${((totalBudget - totalSpent) / 1000).toFixed(1)}k remaining` },
-          { label: "Courses In Progress", value: inProgress.toString(), color: "var(--blue)", sub: `${completed} completed FY2026` },
-          { label: "Staff with 0 L&D Spend", value: staff.filter((m) => m.ldSpent === 0).length.toString(), color: "var(--amber)", sub: "Budget not yet used" }
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, colorClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="L&D Budget (FY2026)" value={`R${(totalBudget / 1000).toFixed(0)}k`} sub={`R${(totalSpent / 1000).toFixed(1)}k spent`} tone="accent" />
+        <StatWidget label="Budget Utilisation"  value={`${Math.round((totalSpent / Math.max(totalBudget, 1)) * 100)}%`} sub={`R${((totalBudget - totalSpent) / 1000).toFixed(1)}k remaining`} tone="accent" />
+        <StatWidget label="Courses In Progress" value={inProgress} sub={`${completed} completed`} tone="accent" />
+        <StatWidget label="Zero L&D Spend"      value={staff.filter((m) => m.ldSpent === 0).length} sub="Budget not yet used" tone={staff.filter((m) => m.ldSpent === 0).length > 0 ? "amber" : "green"} />
+      </WidgetGrid>
+
+      <PipelineWidget
+          label="Course Status Breakdown"
+          stages={[
+            { label: "Completed",   count: completed,  total: allCourses.length || 1, color: "#34d98b" },
+            { label: "In Progress", count: inProgress, total: allCourses.length || 1, color: "#8b6fff" },
+            { label: "Planned",     count: allCourses.filter((c) => c.status === "planned").length, total: allCourses.length || 1, color: "#f5a623" },
+          ]}
+        />
 
       <AdminTabs
         tabs={tabs}

@@ -18,11 +18,17 @@ export function useCursorTrail(
     let ry = 0;
     let frameId: number;
 
+    let revealed = false;
     const moveCursor = (event: MouseEvent) => {
       mx = event.clientX;
       my = event.clientY;
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate(${mx - options.cursorOffset}px, ${my - options.cursorOffset}px)`;
+        if (!revealed) {
+          cursorRef.current.style.opacity = "1";
+          if (ringRef.current) ringRef.current.style.opacity = "1";
+          revealed = true;
+        }
       }
     };
 

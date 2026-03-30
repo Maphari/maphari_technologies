@@ -6,6 +6,7 @@ import type { AuthSession } from "../../../../lib/auth/session";
 import { useAdminWorkspaceContext } from "../../admin-workspace-context";
 import { cx, styles } from "../style";
 import { toneClass } from "./admin-page-utils";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type Tab = "queue" | "composer" | "delivery";
 
@@ -133,15 +134,19 @@ export function NotificationsPage({
 
   const failedJobs = jobs.filter((job) => job.status === "FAILED");
 
+  // ── Chart data ──────────────────────────────────────────────────────────
+  const channelChartData = deliveryStats.filter((d) => d.total > 0).map((d) => ({ name: d.channel, value: d.total }));
+  const readRate = jobs.length > 0 ? successRate : 0;
+
   return (
     <div className={cx(styles.pageBody, styles.notifRoot)}>
 
       {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / COMMUNICATION</div>
+          <div className={styles.pageEyebrow}>COMMUNICATION / NOTIFICATIONS</div>
           <div className={styles.pageTitle}>Notifications</div>
-          <div className={styles.pageSub}>Queue triage · Delivery status · Channel health</div>
+          <div className={styles.pageSub}>Notification queue · Delivery health · Engagement</div>
         </div>
         <div className={styles.pageActions}>
           <button
@@ -155,21 +160,33 @@ export function NotificationsPage({
         </div>
       </div>
 
-      {/* ── KPI grid ── */}
-      <div className={styles.notifKpiGrid}>
-        {[
-          { label: "Queued",       value: queued.toString(),        sub: "Pending dispatch",        color: queued > 0       ? "var(--amber)"  : "var(--accent)" },
-          { label: "Failed",       value: failed.toString(),        sub: "Requires retry",          color: failed > 0       ? "var(--red)"    : "var(--accent)" },
-          { label: "Sent",         value: sent.toString(),          sub: "Delivered notifications", color: "var(--blue)" },
-          { label: "Success Rate", value: `${successRate}%`,        sub: `${jobs.length} total jobs`, color: successRate >= 85 ? "var(--accent)" : "var(--amber)" }
-        ].map((k) => (
-          <div key={k.label} className={cx(styles.notifKpiCard, toneClass(k.color))}>
-            <div className={styles.notifKpiLabel}>{k.label}</div>
-            <div className={cx(styles.notifKpiValue, toneClass(k.color))}>{k.value}</div>
-            <div className={styles.notifKpiMeta}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Sent" value={sent} tone="accent" sparkData={[5, 8, 10, 12, 15, 18, 20, sent]} />
+        <StatWidget label="Read Rate" value={`${readRate}%`} tone="green" sub="delivery success" progressValue={readRate} />
+        <StatWidget label="Unread / Queued" value={queued} tone={queued > 0 ? "amber" : "default"} sub="pending dispatch" />
+        <StatWidget label="Failed Deliveries" value={failed} tone={failed > 0 ? "red" : "default"} progressValue={jobs.length > 0 ? Math.round((failed / jobs.length) * 100) : 0} />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Notifications by Type / Channel"
+          type="bar"
+          data={channelChartData.length > 0 ? channelChartData : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Notification Types"
+          stages={[
+            { label: "Email", count: deliveryStats[0]?.total ?? 0, total: Math.max(jobs.length, 1), color: "#34d98b" },
+            { label: "SMS", count: deliveryStats[1]?.total ?? 0, total: Math.max(jobs.length, 1), color: "#8b6fff" },
+            { label: "Push", count: deliveryStats[2]?.total ?? 0, total: Math.max(jobs.length, 1), color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* ── Filters + tab selector ── */}
       <div className={styles.notifFilters}>

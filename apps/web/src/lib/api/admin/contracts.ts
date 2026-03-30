@@ -65,3 +65,46 @@ export async function loadAdminContractsWithRefresh(
     return { unauthorized: false, data: response.payload.data ?? [], error: null };
   });
 }
+
+// ── Renewal Proposals ─────────────────────────────────────────────────────────
+
+export interface ContractRenewalProposal {
+  id: string;
+  contractId: string;
+  sentAt: string;
+  sentByAdminId: string | null;
+  proposedTerms: unknown | null;
+  status: string;
+  clientNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function createRenewalProposalWithRefresh(
+  session: AuthSession,
+  contractId: string,
+  data?: { proposedTerms?: unknown }
+): Promise<AuthorizedResult<ContractRenewalProposal>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ContractRenewalProposal>(`/contracts/${contractId}/renewal-proposals`, accessToken, { method: "POST", body: data ?? {} });
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success || !response.payload.data) {
+      return { unauthorized: false, data: null, error: toGatewayError(response.payload.error?.code ?? "RENEWAL_PROPOSAL_CREATE_FAILED", response.payload.error?.message ?? "Unable to send renewal proposal.") };
+    }
+    return { unauthorized: false, data: response.payload.data, error: null };
+  });
+}
+
+export async function loadRenewalProposalsWithRefresh(
+  session: AuthSession,
+  contractId: string
+): Promise<AuthorizedResult<ContractRenewalProposal[]>> {
+  return withAuthorizedSession(session, async (accessToken) => {
+    const response = await callGateway<ContractRenewalProposal[]>(`/contracts/${contractId}/renewal-proposals`, accessToken);
+    if (isUnauthorized(response)) return { unauthorized: true, data: null, error: null };
+    if (!response.payload.success) {
+      return { unauthorized: false, data: [], error: toGatewayError(response.payload.error?.code ?? "RENEWAL_PROPOSALS_FETCH_FAILED", response.payload.error?.message ?? "Unable to load renewal proposals.") };
+    }
+    return { unauthorized: false, data: response.payload.data ?? [], error: null };
+  });
+}

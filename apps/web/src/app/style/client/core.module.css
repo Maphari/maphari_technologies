@@ -1,44 +1,48 @@
 /* ─── Design Tokens — .clientRoot ───────────────────────────────────── */
+
 /* This block MUST live here because core.module.css is imported into       */
+
 /* style.ts and its class names are accessible as styles.clientRoot.        */
+
 /* maphari-client-dashboard.module.css is NOT imported — its tokens don't   */
+
 /* reach the component tree. Update tokens here, not in the monolith.       */
 
 .clientRoot {
   /* ─── Background & surfaces ───────────────────────────────────────── */
   --bg: var(--palette-bg, #04040a);
-  --s1: rgba(255, 255, 255, 0.04);
-  --s2: rgba(255, 255, 255, 0.07);
-  --s3: rgba(255, 255, 255, 0.10);
-  --s4: rgba(255, 255, 255, 0.13);
+  --s1: rgb(255 255 255 / 4%);
+  --s2: rgb(255 255 255 / 7%);
+  --s3: rgb(255 255 255 / 10%);
+  --s4: rgb(255 255 255 / 13%);
 
   /* ─── Borders ─────────────────────────────────────────────────────── */
-  --b1: rgba(255, 255, 255, 0.06);
-  --b2: rgba(255, 255, 255, 0.10);
-  --b3: rgba(255, 255, 255, 0.16);
-  --b-top: rgba(255, 255, 255, 0.12);
+  --b1: rgb(255 255 255 / 6%);
+  --b2: rgb(255 255 255 / 10%);
+  --b3: rgb(255 255 255 / 16%);
+  --b-top: rgb(255 255 255 / 12%);
 
   /* ─── Accent palette ──────────────────────────────────────────────── */
   --lime: var(--palette-accent, #c8f135);
   --lime2: var(--palette-accent-2, #d6f55a);
   --green: #4dde8f;
-  --green-d: rgba(77, 222, 143, 0.12);
+  --green-d: rgb(77 222 143 / 12%);
   --amber: #f5a623;
-  --amber-d: rgba(245, 166, 35, 0.12);
+  --amber-d: rgb(245 166 35 / 12%);
   --red: #ff5f5f;
-  --red-d: rgba(255, 95, 95, 0.12);
+  --red-d: rgb(255 95 95 / 12%);
   --cyan: #3dd9d6;
-  --cyan-d: rgba(61, 217, 214, 0.12);
+  --cyan-d: rgb(61 217 214 / 12%);
   --purple: #8b6fff;
-  --purple-d: rgba(139, 111, 255, 0.14);
+  --purple-d: rgb(139 111 255 / 14%);
   --blue: #5b9cf5;
-  --blue-d: rgba(91, 156, 245, 0.12);
+  --blue-d: rgb(91 156 245 / 12%);
 
   /* ─── Text ────────────────────────────────────────────────────────── */
   --text: var(--palette-text, #f0ede8);
-  --muted: var(--palette-muted, rgba(240, 237, 232, 0.50));
-  --muted2: var(--palette-muted-2, rgba(240, 237, 232, 0.28));
-  --muted3: rgba(240, 237, 232, 0.08);
+  --muted: var(--palette-muted, rgb(240 237 232 / 50%));
+  --muted2: var(--palette-muted-2, rgb(240 237 232 / 28%));
+  --muted3: rgb(240 237 232 / 8%);
 
   /* ─── Accent aliases ──────────────────────────────────────────────── */
   --accent: var(--palette-accent, var(--lime));
@@ -60,9 +64,9 @@
   --border2: var(--b2);
 
   /* ─── Shadows ─────────────────────────────────────────────────────── */
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.40), inset 0 1px 0 var(--b-top);
-  --shadow-island: 0 16px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.60);
+  --shadow-card: 0 8px 32px rgb(0 0 0 / 40%), inset 0 1px 0 var(--b-top);
+  --shadow-island: 0 16px 48px rgb(0 0 0 / 55%), inset 0 1px 0 rgb(255 255 255 / 8%);
+  --shadow-modal: 0 24px 64px rgb(0 0 0 / 60%);
 
   /* ─── Radius scale (all values rounder than previous) ────────────── */
   --r-xxs: 4px;
@@ -76,14 +80,15 @@
   --sw: 68px; /* sidebar island width */
 
   /* ─── Ambient glow ────────────────────────────────────────────────── */
-  --glow-lime: radial-gradient(ellipse at 30% 10%, rgba(200, 241, 53, 0.07) 0%, transparent 55%);
-  --glow-page: radial-gradient(ellipse at 70% 80%, rgba(91, 156, 245, 0.04) 0%, transparent 50%);
+  --glow-lime: radial-gradient(ellipse at 30% 10%, rgb(200 241 53 / 7%) 0%, transparent 55%);
+  --glow-page: radial-gradient(ellipse at 70% 80%, rgb(91 156 245 / 4%) 0%, transparent 50%);
+
   background-color: var(--bg);
   background-image: var(--glow-lime), var(--glow-page);
 }
 
-
 /* ─── Pill Tabs (used as page-level filter tabs across all pages) ────── */
+
 /* cx("pillTab") falls back to raw string if not in spread — defined here */
 
 .pillTabs {
@@ -113,18 +118,19 @@
 }
 
 .pillTabActive {
-  border-color: rgba(200, 241, 53, 0.40);
-  background: rgba(200, 241, 53, 0.10);
+  border-color: rgb(200 241 53 / 40%);
+  background: rgb(200 241 53 / 10%);
   color: var(--lime);
 }
 
 /* ─── Approval Card ─────────────────────────────────────────────────── */
 
 .approvalCard {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid rgb(255 255 255 / 9%);
   padding: 16px 20px;
   border-radius: var(--r-md);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: var(--shadow-card);
   position: relative;
@@ -138,7 +144,7 @@
   left: 16px;
   right: 16px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 9%), transparent);
 }
 
 .approvalActions {
@@ -203,7 +209,7 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 30%);
   transition: transform 0.14s ease;
 }
 
@@ -212,10 +218,10 @@
 }
 
 .annotationThread {
-  background: rgba(255,255,255,0.07);
+  background: rgb(255 255 255 / 7%);
   padding: 14px;
   margin-top: 8px;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgb(255 255 255 / 6%);
   border-radius: var(--r-sm);
 }
 
@@ -224,14 +230,15 @@
 .tourOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgb(0 0 0 / 70%);
   z-index: 100;
 }
 
 .tourCard {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgb(255 255 255 / 6%);
   padding: 24px;
   max-width: 420px;
   border-radius: var(--r-lg);
@@ -285,15 +292,16 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgb(0 0 0 / 80%);
   display: grid;
   place-items: center;
 }
 
 .sessionCard {
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgb(255 255 255 / 6%);
   padding: 32px;
   text-align: center;
   max-width: 400px;
@@ -307,9 +315,10 @@
   position: fixed;
   right: 16px;
   top: 80px;
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgb(255 255 255 / 6%);
   padding: 16px 20px;
   z-index: 40;
   max-width: 300px;
@@ -341,21 +350,21 @@
 .cmdOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgb(0 0 0 / 72%);
   z-index: 50;
   display: grid;
   place-items: start center;
   padding-top: 10vh;
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .cmdPanel {
-  background: rgba(10, 10, 20, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgb(10 10 20 / 92%);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--r-md);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   box-shadow: var(--shadow-modal);
   border-top: 2px solid var(--accent);
   width: 620px;
@@ -773,13 +782,13 @@
    RESPONSIVE BREAKPOINTS — client dashboard
    ══════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 1100px) {
+@media (width <= 1100px) {
   .cardGrid   { grid-template-columns: repeat(2, 1fr); }
   .grid3      { grid-template-columns: repeat(2, 1fr); }
   .statsRow   { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .pageBody    { padding: 20px 16px; }
   .pageHeader  { flex-wrap: wrap; gap: 12px; }
   .pageActions { width: 100%; justify-content: flex-start; }
@@ -793,7 +802,7 @@
   .sidePanel   { width: 100%; max-width: none; }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .pageBody    { padding: 16px 12px; }
   .statsRow    { grid-template-columns: repeat(2, 1fr); }
   .grid4       { grid-template-columns: repeat(2, 1fr); }
@@ -807,7 +816,7 @@
   .activityFeed { max-height: 320px; }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .statsRow    { grid-template-columns: 1fr; }
   .grid4       { grid-template-columns: 1fr; }
   .pageTitle   { font-size: 1.1rem; }
@@ -819,7 +828,7 @@
   .chip        { font-size: 0.7rem; padding: 2px 7px; }
 }
 
-@media (max-width: 380px) {
+@media (width <= 380px) {
   .pageBody    { padding: 12px 10px; }
   .statsRow    { grid-template-columns: 1fr; }
   .pageTitle   { font-size: 1rem; }
@@ -827,9 +836,8 @@
   .tabBtn      { padding: 4px 6px; font-size: 0.72rem; }
 }
 
-
 /* ── Responsive: command palette suggest grid ────────────────────── */
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .cmdSuggestGrid {
     grid-template-columns: 1fr;
   }
@@ -840,9 +848,10 @@
 .mbFormCard {
   position: relative;
   overflow: hidden;
-  background: rgba(255,255,255,0.04);
+  background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.10);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--r-lg);
   padding: 24px;
 }
@@ -851,7 +860,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(200,241,53,0.06), transparent);
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgb(200 241 53 / 6%), transparent);
   pointer-events: none;
 }
 
@@ -991,8 +1000,8 @@
 
 .cSidebar {
   border: none !important;
-  backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
 }
 
 /* ─── Client Rail + Flyout Navigation ──────────────────────────────────── */
@@ -1015,7 +1024,7 @@
   justify-content: center;
   border-radius: var(--r-sm);
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(255 255 255 / 4%);
   color: var(--muted);
   cursor: pointer;
   position: relative;
@@ -1024,21 +1033,21 @@
 }
 
 .cRailBtn:hover {
-  background: rgba(200, 241, 53, 0.07);
-  border-color: rgba(200, 241, 53, 0.10);
+  background: rgb(200 241 53 / 7%);
+  border-color: rgb(200 241 53 / 10%);
   color: var(--text);
 }
 
 .cRailBtnActive {
-  background: rgba(200, 241, 53, 0.12);
-  border-color: rgba(200, 241, 53, 0.20);
+  background: rgb(200 241 53 / 12%);
+  border-color: rgb(200 241 53 / 20%);
   color: var(--lime);
 }
 
 /* Current page section — subtler lime tint (no flyout open) */
 .cRailBtnCurrent {
-  background: rgba(200, 241, 53, 0.06);
-  border-color: rgba(200, 241, 53, 0.12);
+  background: rgb(200 241 53 / 6%);
+  border-color: rgb(200 241 53 / 12%);
 }
 
 .cRailBtn svg {
@@ -1065,12 +1074,13 @@
   top: calc(var(--layout-topbar-h, 64px) + 24px);
   bottom: 12px;
   width: 220px;
-  background: rgba(200, 241, 53, 0.08);
-  backdrop-filter: blur(24px) saturate(160%);
+  background: rgb(200 241 53 / 8%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 9%);
   border-radius: var(--r-lg);
   z-index: 14;
+
   /* z-index 14 keeps flyout below topbar (z-15) */
   display: flex;
   flex-direction: column;
@@ -1093,7 +1103,7 @@
   text-transform: uppercase;
   color: var(--muted);
   padding: 0 14px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
   margin-bottom: 4px;
   flex-shrink: 0;
 }
@@ -1127,12 +1137,12 @@
 }
 
 .cFlyoutPageBtn:hover {
-  background: rgba(200, 241, 53, 0.06);
+  background: rgb(200 241 53 / 6%);
   color: var(--text);
 }
 
 .cFlyoutPageBtnActive {
-  background: rgba(200, 241, 53, 0.10);
+  background: rgb(200 241 53 / 10%);
   color: var(--lime);
   font-weight: 600;
 }
@@ -1154,7 +1164,8 @@
 .welcomeModalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
@@ -1392,9 +1403,11 @@
 /* ── Onboarding Checklist Modal ─────────────────────────────────────────── */
 .onboardingOverlay {
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  background: rgb(0 0 0 / 60%); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
 }
+
 .onboardingModal {
   background: var(--s1); border: 1px solid var(--b2);
   border-radius: var(--r-lg); padding: 32px; width: 100%; max-width: 420px;
@@ -1405,6 +1418,7 @@
 .onboardingSubtitle { font-size: 13px; color: var(--text-3); margin: 0; }
 .onboardingList { list-style: none; padding: 0; margin: 0 0 24px; display: flex; flex-direction: column; gap: 12px; }
 .onboardingStep { display: flex; align-items: center; gap: 10px; }
+
 .onboardingStepIcon {
   width: 20px; height: 20px; border-radius: 50%;
   border: 2px solid var(--b3); display: flex; align-items: center; justify-content: center;
@@ -1413,6 +1427,7 @@
 .onboardingStepDone .onboardingStepIcon { background: var(--lime); border-color: var(--lime); color: #000; font-weight: 700; }
 .onboardingStepLabel { font-size: 14px; color: var(--text-2); }
 .onboardingStepDone .onboardingStepLabel { color: var(--text-1); }
+
 .onboardingDismiss {
   width: 100%; padding: 10px; background: var(--lime); color: #000;
   font-weight: 600; border: none; border-radius: var(--r-sm); cursor: pointer;

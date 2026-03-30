@@ -8,6 +8,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { colorClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
@@ -105,7 +106,7 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / PIPELINE ANALYTICS</div>
           <h1 className={styles.pageTitle}>Pipeline Analytics</h1>
           <div className={styles.pageSub}>Lead-to-revenue conversion funnel</div>
         </div>
@@ -148,137 +149,69 @@ export function PipelineAnalyticsPage({ session, onNotify }: Props) {
       {data && (
         <>
           {/* ── KPI Row ────────────────────────────────────────────────── */}
-          <div className={styles.paKpiRow}>
-            {[
-              {
-                label: "Avg Deal Size",
-                value: formatZAR(data.avgDealSizeZAR),
-                sub: "Won leads",
-                color: "var(--accent)"
-              },
-              {
-                label: "Avg Sales Cycle",
-                value: `${data.avgSalesCycleDays}d`,
-                sub: "Lead → Won",
-                color: "var(--blue)"
-              },
-              {
-                label: "Won This Month",
-                value: String(data.wonThisMonth),
-                sub: "Closed deals",
-                color: "var(--green)"
-              },
-              {
-                label: "Lost This Month",
-                value: String(data.lostThisMonth),
-                sub: "Churned leads",
-                color: data.lostThisMonth > 0 ? "var(--red)" : "var(--muted)"
-              },
-              {
-                label: "Forecast Next Month",
-                value: formatZAR(data.forecastNextMonth),
-                sub: "Pipeline × avg size",
-                color: "var(--purple)"
-              }
-            ].map((kpi) => (
-              <div key={kpi.label} className={styles.paKpiCard}>
-                <div className={cx("text11", "colorMuted")}>{kpi.label}</div>
-                <div className={cx(styles.statValue, colorClass(kpi.color))}>{kpi.value}</div>
-                <div className={cx("text10", "colorMuted", "mt4")}>{kpi.sub}</div>
-              </div>
-            ))}
-          </div>
+          <WidgetGrid columns={4}>
+            <StatWidget label="Pipeline Value" value={formatZAR(data.forecastNextMonth)} tone="accent" sub="Forecast next month" />
+            <StatWidget label="Total Deals" value={String(data.funnel.reduce((s, f) => s + f.count, 0))} sub="Across all stages" />
+            <StatWidget label="Win Rate" value={`${data.wonThisMonth > 0 ? Math.round((data.wonThisMonth / Math.max(data.wonThisMonth + data.lostThisMonth, 1)) * 100) : 0}%`} tone="green" />
+            <StatWidget label="Avg Deal Size" value={formatZAR(data.avgDealSizeZAR)} sub="Won leads" />
+          </WidgetGrid>
 
-          {/* ── Funnel ─────────────────────────────────────────────────── */}
-          <div className={cx(styles.sectionCard, "mb20")}>
-            <div className={cx(styles.revfSectionTitle, "mb4")}>Conversion Funnel</div>
-            <div className={cx("text11", "colorMuted", "mb12")}>
-              Stage-by-stage lead progression · Counts · Conversion rates
-            </div>
-            <div className={styles.paFunnel}>
-              {data.funnel.map((stage, i) => {
-                const widthPct = maxCount > 0 ? Math.max(20, Math.round((stage.count / maxCount) * 100)) : 20;
-                return (
-                  <div
-                    key={stage.stage}
-                    className={`${styles.paFunnelStage} ${stageToneCls(stage.stage)} ${styles.pfStageBar}`}
-                    style={{ "--stage-w": `${widthPct}%` } as CSSProperties}
-                  >
-                    <div className={styles.paFunnelCount}>{stage.count}</div>
-                    <div className={styles.paFunnelLabel}>{stageLabel(stage.stage)}</div>
-                    <div className={styles.paFunnelRate}>
-                      {i === 0
-                        ? "Entry"
-                        : (
-                          <Tooltip label="Conversion rate from previous stage">
-                            {`${stage.conversionRate}% conv.`}
-                          </Tooltip>
-                        )}
-                    </div>
-                    {i < data.funnel.length - 1 && (
-                      <span className={styles.paFunnelArrow} aria-hidden="true">›</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          {/* ── Charts & Pipeline ───────────────────────────────────────── */}
+          <WidgetGrid columns={2}>
+            <ChartWidget
+              label="Pipeline by Stage"
+              data={data.funnel.map((s) => ({ stage: stageLabel(s.stage), count: s.count }))}
+              dataKey="count"
+              xKey="stage"
+              type="bar"
+              color="#8b6fff"
+            />
+            <PipelineWidget
+              label="Pipeline Stages"
+              stages={[
+                { label: "Prospect", count: data.funnel.find((s) => s.stage === "NEW")?.count ?? 0, total: Math.max(maxCount, 1), color: "#8b6fff" },
+                { label: "Qualified", count: data.funnel.find((s) => s.stage === "QUALIFIED")?.count ?? 0, total: Math.max(maxCount, 1), color: "#f5a623" },
+                { label: "Proposal", count: data.funnel.find((s) => s.stage === "PROPOSAL")?.count ?? 0, total: Math.max(maxCount, 1), color: "#f5a623" },
+                { label: "Won", count: data.funnel.find((s) => s.stage === "WON")?.count ?? 0, total: Math.max(maxCount, 1), color: "#34d98b" },
+                { label: "Lost", count: data.funnel.find((s) => s.stage === "LOST")?.count ?? 0, total: Math.max(maxCount, 1), color: "#ff5f5f" },
+              ]}
+            />
+          </WidgetGrid>
 
-          {/* ── Bottom grid: trend + loss reasons ──────────────────────── */}
-          <div className={cx(styles.revfStack20)}>
-            <div className={cx(styles.revfChartCard)}>
-              <div className={cx(styles.revfSectionTitle, "mb4")}>Monthly Trend — Last 6 Months</div>
-              <div className={cx("text11", "colorMuted", "mb12")}>
-                <span className={cx("colorAccent")}>■</span> Won &nbsp;
-                <span className={cx("colorRed")}>■</span> Lost
-              </div>
-              <div className={styles.paTrendBars}>
-                {data.monthlyTrend.map((m) => {
-                  const wonH = Math.max(4, Math.round((m.won / maxTrend) * 110));
-                  const lostH = Math.max(4, Math.round((m.lost / maxTrend) * 110));
-                  return (
-                    <div key={m.month} className={styles.paTrendGroup}>
-                      <div
-                        className={`${styles.paTrendWon} ${styles.pfTrendBar}`}
-                        style={{ "--bar-h": `${wonH}px` } as CSSProperties}
-                        title={`Won: ${m.won}`}
-                      />
-                      <div
-                        className={`${styles.paTrendLost} ${styles.pfTrendBar}`}
-                        style={{ "--bar-h": `${lostH}px` } as CSSProperties}
-                        title={`Lost: ${m.lost}`}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className={styles.paTrendMonthRow}>
-                {data.monthlyTrend.map((m) => (
-                  <div key={m.month} className={styles.paTrendMonthLabel}>{m.month}</div>
-                ))}
-              </div>
-            </div>
+          {/* ── Deals Table ──────────────────────────────────────────────── */}
+          <TableWidget
+            label="Deal Pipeline"
+            rows={data.funnel}
+            rowKey="stage"
+            emptyMessage="No pipeline data available."
+            columns={[
+              { key: "name", header: "Stage", render: (_, row) => stageLabel(row.stage) },
+              { key: "count", header: "Count", align: "right", render: (_, row) => String(row.count) },
+              { key: "conversion", header: "Conversion Rate", align: "right", render: (_, row) => `${row.conversionRate}%` },
+            ]}
+          />
 
-            {/* ── Top Loss Reasons ──────────────────────────────────── */}
-            <div className={cx(styles.revfTableCard)}>
-              <div className={cx(styles.revfSectionTitle, "mb12")}>Top Loss Reasons</div>
-              {data.topLossReasons.length === 0 ? (
-                <div className={cx("p16", "colorMuted", "text12", "textCenter")}>No lost leads recorded yet.</div>
-              ) : (
-                <div className={cx("stackGap8")}>
-                  {data.topLossReasons.map((item, i) => (
-                    <div key={item.reason} className={styles.paLossItem}>
-                      <div className={cx("flexRow", "gap8", "alignCenter")}>
-                        <span className={cx("fontMono", "text10", "colorMuted")}>#{i + 1}</span>
-                        <span className={styles.paLossReason}>{item.reason}</span>
-                      </div>
-                      <span className={styles.paLossBadge}>{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          {/* ── Monthly Trend ──────────────────────────────────────────── */}
+          <WidgetGrid columns={2}>
+            <ChartWidget
+              label="Monthly Trend — Last 6 Months"
+              data={data.monthlyTrend.map((m) => ({ month: m.month, won: m.won, lost: m.lost }))}
+              dataKey="won"
+              xKey="month"
+              type="bar"
+              color="#34d98b"
+            />
+            <TableWidget
+              label="Top Loss Reasons"
+              rows={data.topLossReasons}
+              rowKey="reason"
+              emptyMessage="No lost leads recorded yet."
+              columns={[
+                { key: "reason", header: "Reason", render: (_, row) => row.reason },
+                { key: "count", header: "Count", align: "right", render: (_, row) => String(row.count) },
+              ]}
+            />
+          </WidgetGrid>
         </>
       )}
     </div>

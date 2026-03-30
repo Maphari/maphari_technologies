@@ -7,7 +7,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatMoneyCents } from "@/lib/i18n/currency";
+import { formatStatus } from "@/lib/utils/format-status";
 import { cx, styles } from "../style";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import {
@@ -342,25 +344,70 @@ export function RequestInboxPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / LIFECYCLE</div>
+          <div className={styles.pageEyebrow}>LIFECYCLE / REQUEST INBOX</div>
           <h1 className={styles.pageTitle}>Request Inbox</h1>
           <div className={styles.pageSub}>Triage incoming project requests — assign, estimate, and approve</div>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Total Requests",  value: String(items.length),          cls: "colorAccent" },
-          { label: "High Priority",   value: String(high),                   cls: "colorRed"    },
-          { label: "Medium Priority", value: String(medium),                 cls: "colorAmber"  },
-          { label: "Pipeline Value",  value: formatBudget(pipelineValue),    cls: "colorAccent" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, s.cls)}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── KPI Row ─────────────────────────────────────────────────────── */}
+      <WidgetGrid columns={4}>
+        <StatWidget label="Total Requests" value={String(items.length)} sub="All incoming" />
+        <StatWidget label="High Priority" value={String(high)} tone="red" sub="Needs immediate attention" />
+        <StatWidget label="Medium Priority" value={String(medium)} tone="amber" sub="Review soon" />
+        <StatWidget label="Pipeline Value" value={formatBudget(pipelineValue)} tone="accent" sub="Estimated total" />
+      </WidgetGrid>
+
+      {/* ── Charts & Pipeline ───────────────────────────────────────────── */}
+      <WidgetGrid columns={2}>
+        <ChartWidget
+          label="Requests by Priority"
+          data={[
+            { priority: "High", count: high },
+            { priority: "Medium", count: medium },
+            { priority: "Low", count: items.filter((r) => r.priority === "LOW").length },
+          ]}
+          dataKey="count"
+          xKey="priority"
+          type="bar"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Request Stages"
+          stages={[
+            { label: "Pending Triage", count: items.length, total: Math.max(items.length, 1), color: "#f5a623" },
+            { label: "High Priority", count: high, total: Math.max(items.length, 1), color: "#ff5f5f" },
+            { label: "Medium Priority", count: medium, total: Math.max(items.length, 1), color: "#8b6fff" },
+            { label: "Low Priority", count: items.filter((r) => r.priority === "LOW").length, total: Math.max(items.length, 1), color: "#34d98b" },
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Requests Table ───────────────────────────────────────────────── */}
+      <TableWidget
+        label="Incoming Requests"
+        rows={items as unknown as Record<string, unknown>[]}
+        rowKey="projectId"
+        emptyMessage="No pending requests found."
+        columns={[
+          { key: "id", header: "ID", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fontMono", "text12")}>{shortId(row.projectId)}</span>; } },
+          { key: "name", header: "Request", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fw600")}>{row.name}</span>; } },
+          { key: "client", header: "Client", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return clientNames[row.clientId] ?? shortId(row.clientId); } },
+          { key: "type", header: "Type", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("badge")}>{row.requestDetails?.serviceType ?? "—"}</span>; } },
+          { key: "value", header: "Value", align: "right", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fontMono", "fw600")}>{formatBudget(row.estimatedBudgetCents)}</span>; } },
+          { key: "priority", header: "Priority", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return (
+            <span className={cx("badge", row.priority === "HIGH" ? "badgeRed" : row.priority === "MEDIUM" ? "badgeAmber" : "badgeMuted")}>
+              {row.priority.charAt(0) + row.priority.slice(1).toLowerCase()}
+            </span>
+          ); } },
+          { key: "received", header: "Received", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return <span className={cx("fontMono", "text11", "colorMuted")}>{formatDate(row.requestedAt)}</span>; } },
+          { key: "action", header: "Action", render: (_, r) => { const row = r as unknown as ProjectRequestQueueItem; return (
+            <button type="button" className={cx("btnSm", "btnGhost")} onClick={() => setSelectedRequest(row)}>
+              Triage
+            </button>
+          ); } },
+        ]}
+      />
 
       {/* ── EFT Verification Panel ──────────────────────────────────────────────── */}
       <section style={{ marginBottom: 32 }}>
@@ -473,7 +520,7 @@ export function RequestInboxPage({
                               </div>
                               <div style={{ display: "flex", justifyContent: "space-between" }}>
                                 <span style={{ fontSize: 12, color: "var(--muted)" }}>Status</span>
-                                <span style={{ fontSize: 12.5, fontWeight: 600, color: isVerified ? "#4ade80" : isRejected ? "#f87171" : "#fbbf24" }}>{item.status}</span>
+                                <span style={{ fontSize: 12.5, fontWeight: 600, color: isVerified ? "#4ade80" : isRejected ? "#f87171" : "#fbbf24" }}>{formatStatus(item.status)}</span>
                               </div>
                             </div>
                           </div>
@@ -520,67 +567,6 @@ export function RequestInboxPage({
           )}
         </div>
       </section>
-
-      <article className={styles.card}>
-        <div className={styles.cardHd}>
-          <span className={styles.cardHdTitle}>Incoming Requests</span>
-          <span className={cx("colorMuted", "text12")}>{items.length} total</span>
-        </div>
-        <div className={styles.cardInner}>
-          {items.length === 0 ? (
-            <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <div className={styles.emptyTitle}>No pending requests</div>
-                <div className={styles.emptySub}>When clients submit new project requests through the portal, they will appear here for triage, estimation, and approval.</div>
-              </div>
-          ) : (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">ID</th>
-                  <th scope="col">Request</th>
-                  <th scope="col">Client</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Value</th>
-                  <th scope="col">Priority</th>
-                  <th scope="col">Received</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((r) => (
-                  <tr key={r.projectId}>
-                    <td className={cx("fontMono", "text12")}>{shortId(r.projectId)}</td>
-                    <td className={cx("fw600")}>{r.name}</td>
-                    <td className={cx("colorMuted")}>{clientNames[r.clientId] ?? shortId(r.clientId)}</td>
-                    <td><span className={cx("badge")}>{r.requestDetails?.serviceType ?? "—"}</span></td>
-                    <td className={cx("fontMono", "fw600")}>{formatBudget(r.estimatedBudgetCents)}</td>
-                    <td>
-                      <span className={cx("badge", r.priority === "HIGH" ? "badgeRed" : r.priority === "MEDIUM" ? "badgeAmber" : "badgeMuted")}>
-                        {r.priority.charAt(0) + r.priority.slice(1).toLowerCase()}
-                      </span>
-                    </td>
-                    <td className={cx("fontMono", "text11", "colorMuted")}>{formatDate(r.requestedAt)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className={cx("btnSm", "btnGhost")}
-                        onClick={() => setSelectedRequest(r)}
-                      >
-                        Triage
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </article>
 
       {selectedRequest && (
         <TriageModal

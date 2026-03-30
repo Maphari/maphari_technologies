@@ -16,6 +16,7 @@ import {
   type ChaseStage,
 } from "../../../../lib/api/admin/billing";
 import { cx, styles } from "../style";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
 import { Tooltip } from "@/components/shared/ui/tooltip";
 import { Alert } from "@/components/shared/ui/alert";
@@ -163,7 +164,7 @@ export function InvoiceChasingPage({
     <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCE</div>
+          <div className={styles.pageEyebrow}>FINANCE / INVOICE CHASING</div>
           <h1 className={styles.pageTitle}>Invoice Chasing</h1>
           <div className={styles.pageSub}>Automated payment reminders for overdue invoices</div>
         </div>
@@ -184,6 +185,25 @@ export function InvoiceChasingPage({
           onRetry={() => { setLoadError(null); void load(); }}
         />
       )}
+
+      {/* ── Widget stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Overdue Invoices"  value={invoices.length}  sub="All overdue"              tone={invoices.length > 0 ? "red" : "green"} />
+        <StatWidget label="Total Outstanding" value={totalOutstanding > 0 ? formatMoneyCents(totalOutstanding, { currency: "ZAR", maximumFractionDigits: 0 }) : "R0"} sub="Unpaid balance" tone={totalOutstanding > 0 ? "red" : "green"} />
+        <StatWidget label="Sequences Running" value={running}          sub="Active chase sequences"   tone={running > 0 ? "amber" : "default"} />
+        <StatWidget label="Stage 14d"         value={invoices.filter((i) => i.chaseStage === "CHASE_14D").length} sub="Escalated invoices" tone={invoices.filter((i) => i.chaseStage === "CHASE_14D").length > 0 ? "red" : "green"} />
+      </WidgetGrid>
+
+      <PipelineWidget
+          label="Chase Stage Distribution"
+          stages={[
+            { label: "None",    count: invoices.filter((i) => i.chaseStage === "NONE").length,     total: invoices.length || 1, color: "#8b6fff" },
+            { label: "3-day",   count: invoices.filter((i) => i.chaseStage === "CHASE_3D").length,  total: invoices.length || 1, color: "#f5a623" },
+            { label: "7-day",   count: invoices.filter((i) => i.chaseStage === "CHASE_7D").length,  total: invoices.length || 1, color: "#f5a623" },
+            { label: "14-day",  count: invoices.filter((i) => i.chaseStage === "CHASE_14D").length, total: invoices.length || 1, color: "#ff5f5f" },
+            { label: "Paused",  count: invoices.filter((i) => i.chaseStage === "PAUSED").length,    total: invoices.length || 1, color: "#8b6fff" },
+          ]}
+        />
 
       {/* ── Summary row ────────────────────────────────────────────────────── */}
       <div className={styles.icSummaryRow}>

@@ -6,6 +6,7 @@ import { cx, styles } from "../style";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { saveSession } from "../../../../lib/auth/session";
 import { loadAdminStaffPerformanceWithRefresh, type AdminStaffPerformance } from "../../../../lib/api/admin";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 type StaffMember = AdminStaffPerformance & { id: number; avatar: string; color: string; notes: string };
 
@@ -142,196 +143,78 @@ export function PerformancePage({ session }: { session: AuthSession | null }) {
     );
   }
 
+  const deliveryData = filtered.map(m => ({ label: m.name.split(" ")[0], count: m.deliveryScore }));
+
+  const tableRows = filtered.map(m => ({
+    name:     m.name,
+    role:     m.role,
+    delivery: m.deliveryScore,
+    onTime:   `${m.onTimeRate}%`,
+    util:     `${m.billablePct}%`,
+    bonus:    m.bonusEligible ? `R${m.bonusAmount.toLocaleString()}` : "Not eligible",
+  }));
+
   return (
-    <div className={cx(styles.pageBody, styles.perfRoot)}>
+    <div className={styles.pageBody}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / STAFF PERFORMANCE</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / PERFORMANCE</div>
           <h1 className={styles.pageTitle}>Performance Overview</h1>
-          <div className={styles.pageSub}>Delivery, quality, utilization, and incentive readiness across the team.</div>
+          <div className={styles.pageSub}>Delivery scores · Utilisation · Incentive readiness</div>
         </div>
         <div className={styles.pageActions}>
           <button type="button" className={cx("btnSm", "btnGhost")}>Export Report</button>
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Avg Delivery Score", value: `${avgDelivery}/100`, color: barColor(avgDelivery), sub: "Current month" },
-          { label: "Avg On-Time Rate", value: `${avgOnTime}%`, color: barColor(avgOnTime, 90, 75), sub: "Across active staff" },
-          { label: "Team Billable Hours", value: `${Math.round(totalBillable)}h`, color: "var(--blue)", sub: "Target: 800h" },
-          { label: "Bonus Pool", value: `R${(totalBonus / 1000).toFixed(1)}k`, color: "var(--accent)", sub: `${staff.filter((s) => s.bonusEligible).length} eligible staff` }
-        ].map((kpi) => (
-          <div key={kpi.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{kpi.label}</div>
-            <div className={cx(styles.statValue, "mb4", styles.perfToneText, toneClass(kpi.color))}>{kpi.value}</div>
-            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* Row 1 — Stats */}
+      <WidgetGrid>
+        <StatWidget label="Avg Delivery Score" value={`${avgDelivery}/100`} sub="Current month" tone={avgDelivery >= 85 ? "green" : avgDelivery >= 70 ? "amber" : "red"} />
+        <StatWidget label="Avg On-Time Rate" value={`${avgOnTime}%`} sub="Across active staff" tone={avgOnTime >= 90 ? "green" : avgOnTime >= 75 ? "amber" : "red"} />
+        <StatWidget label="Team Billable Hours" value={`${Math.round(totalBillable)}h`} sub="Target: 800h" tone="default" />
+        <StatWidget label="Bonus Pool" value={`R${(totalBonus / 1000).toFixed(1)}k`} sub={`${staff.filter(s => s.bonusEligible).length} eligible`} subTone="up" tone="accent" />
+      </WidgetGrid>
 
-      <div className={cx("overflowAuto", "minH0")}>
-        <AdminFilterBar panelColor="var(--surface)" borderColor="var(--border)">
-          <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>
-            {tabs.map((tab) => (
-              <option key={tab} value={tab}>{tab}</option>
-            ))}
-          </select>
-          <select title="Filter by role" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as RoleFilter)} className={styles.formInput}>
-            <option value="all">Role: All</option>
-            <option value="account">Role: Account</option>
-            <option value="creative">Role: Creative</option>
-            <option value="ops">Role: Ops</option>
-          </select>
-          <select title="Filter by band" value={bandFilter} onChange={(e) => setBandFilter(e.target.value as BandFilter)} className={styles.formInput}>
-            <option value="all">Band: All</option>
-            <option value="top">Band: Top performers</option>
-            <option value="watch">Band: Watchlist</option>
-          </select>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search staff" className={cx("formInput", styles.perfSearchInput)} />
-        </AdminFilterBar>
+      {/* Row 2 — Chart + Pipeline */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Delivery Scores"
+          data={deliveryData}
+          dataKey="count"
+          type="bar"
+          xKey="label"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Performance Bands"
+          stages={[
+            { label: "Top performers", count: staff.filter(m => m.deliveryScore >= 90 && m.onTimeRate >= 90).length, total: Math.max(staff.length, 1), color: "#34d98b" },
+            { label: "On track",       count: staff.filter(m => m.deliveryScore >= 70 && m.deliveryScore < 90).length, total: Math.max(staff.length, 1), color: "#8b6fff" },
+            { label: "Watchlist",      count: staff.filter(m => m.deliveryScore < 70).length, total: Math.max(staff.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
-        {activeTab === "scoreboard" ? (
-          <div className={cx("card", "overflowHidden")}>
-            <div className={cx("perfScoreHead", "text10", "colorMuted", "uppercase", "fontMono")}>
-              {[
-                "Staff",
-                "Delivery",
-                "On-time",
-                "CSAT",
-                "Utilization",
-                "Tasks (done/missed)",
-                "Bonus"
-              ].map((h) => <span key={h}>{h}</span>)}
-            </div>
-            {filtered.length === 0 && (
-              <div className={cx("p24", "textCenter", "colorMuted", "text13")}>
-                <div className={cx("fw700", "text14", "mb8")}>No performance data yet</div>
-                <div>Performance metrics will populate here as staff complete tasks and time entries are recorded. Staff are managed in Team Structure.</div>
-              </div>
-            )}
-            {filtered.map((m) => (
-              <div key={m.id} className={cx(styles.perfScoreRow, (m.deliveryScore < 80 || m.onTimeRate < 75) && styles.perfScoreWarn)}>
-                <div className={cx("flexRow", "gap10")}>
-                  <Avatar initials={m.avatar} color={m.color} size={28} />
-                  <div>
-                    <div className={cx("fw600", "text13")}>{m.name}</div>
-                    <div className={cx("text10", "colorMuted")}>{m.role}</div>
-                  </div>
-                </div>
-                <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(barColor(m.deliveryScore)))}>{m.deliveryScore}</span>
-                <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(barColor(m.onTimeRate, 90, 75)))}>{m.onTimeRate}%</span>
-                <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(m.clientSat >= 8.5 ? "var(--accent)" : m.clientSat >= 7.5 ? "var(--amber)" : "var(--red)"))}>{m.clientSat}/10</span>
-                <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(m.billablePct >= 80 ? "var(--accent)" : m.billablePct >= 70 ? "var(--amber)" : "var(--red)"))}>{m.billablePct}%</span>
-                <span className={cx("fontMono", "colorMuted")}>{m.tasksCompleted}/{m.tasksMissed}</span>
-                <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(m.bonusEligible ? "var(--accent)" : "var(--red)"))}>{m.bonusEligible ? `R${m.bonusAmount.toLocaleString()}` : "Not eligible"}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {activeTab === "delivery & quality" ? (
-          <div className={cx("grid2")}>
-            <div className={cx("card", "p20")}>
-              <div className={cx("text12", "fw700", "mb12", "uppercase")}>Delivery Ranking</div>
-              {filtered.length === 0 && <div className={cx("text12", "colorMuted", "p12")}>No data yet — delivery scores will appear as tasks are completed.</div>}
-              {filtered.slice().sort((a, b) => b.deliveryScore - a.deliveryScore).map((m) => (
-                <div key={m.id} className={cx("mb12")}>
-                  <div className={cx("flexBetween", "mb4")}>
-                    <span className={cx("text12")}>{m.name}</span>
-                    <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(barColor(m.deliveryScore)))}>{m.deliveryScore}</span>
-                  </div>
-                  <div className={cx("h6", styles.perfBarTrack)}>
-                    <progress className={cx(styles.perfBarFill, toneClass(barColor(m.deliveryScore)))} max={100} value={m.deliveryScore} aria-label={`${m.name} delivery score ${m.deliveryScore}`} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className={cx("card", "p20")}>
-              <div className={cx("text12", "fw700", "mb12", "uppercase")}>Quality Notes</div>
-              {filtered.map((m) => (
-                <div key={m.id} className={cx("py10", "borderB")}>
-                  <div className={cx("flexBetween", "mb4")}>
-                    <span className={cx("text12", "fw600")}>{m.name}</span>
-                    <span className={cx("text10", "fontMono", styles.perfToneTag, toneClass(m.tasksMissed > 3 ? "var(--red)" : "var(--accent)"))}>{m.tasksMissed > 3 ? "watch" : "stable"}</span>
-                  </div>
-                  <div className={cx("text11", "colorMuted", styles.perfLine16)}>{m.notes}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {activeTab === "utilization" ? (
-          <div className={cx("card", "overflowHidden")}>
-            <div className={cx("perfUtilHead", "text10", "colorMuted", "uppercase", "fontMono")}>
-              {["Staff", "Billable", "Non-bill", "Total", "Util %", "Revenue gen"].map((h) => <span key={h}>{h}</span>)}
-            </div>
-            {filtered.length === 0 && <div className={cx("p20", "text12", "colorMuted")}>No utilization data yet — time tracking will populate this view.</div>}
-            {filtered.map((m) => {
-              const nonBill = Math.max(0, m.totalHours - m.billableHours);
-              const revenue = Math.round(m.billableHours * (m.salary / 168) * 2.8);
-              return (
-                <div key={m.id} className={styles.perfUtilRow}>
-                  <div className={cx("flexRow", "gap10")}>
-                    <Avatar initials={m.avatar} color={m.color} size={28} />
-                    <span className={cx("fw600", "text13")}>{m.name}</span>
-                  </div>
-                  <span className={cx("fontMono", "fw700", "colorAccent")}>{m.billableHours}h</span>
-                  <span className={cx("fontMono", "colorMuted")}>{nonBill}h</span>
-                  <span className={cx("fontMono", "colorMuted")}>{m.totalHours}h</span>
-                  <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(m.billablePct >= 80 ? "var(--accent)" : m.billablePct >= 70 ? "var(--amber)" : "var(--red)"))}>{m.billablePct}%</span>
-                  <span className={cx("fontMono", "fw700", "colorBlue")}>R{(revenue / 1000).toFixed(0)}k</span>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {activeTab === "incentive planner" ? (
-          <div className={styles.perfIncentiveSplit}>
-            <div className={cx("card", "overflowHidden")}>
-              <div className={cx("perfIncentiveHead", "text10", "colorMuted", "uppercase", "fontMono")}>
-                {["Staff", "Delivery", "Util %", "CSAT", "Current bonus"].map((h) => <span key={h}>{h}</span>)}
-              </div>
-              {filtered.map((m) => (
-                <div key={m.id} className={styles.perfIncentiveRow}>
-                  <div className={cx("flexRow", "gap10")}>
-                    <Avatar initials={m.avatar} color={m.color} size={28} />
-                    <span className={cx("fw600", "text13")}>{m.name}</span>
-                  </div>
-                  <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(barColor(m.deliveryScore)))}>{m.deliveryScore}</span>
-                  <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(m.billablePct >= 80 ? "var(--accent)" : m.billablePct >= 70 ? "var(--amber)" : "var(--red)"))}>{m.billablePct}%</span>
-                  <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(m.clientSat >= 8.5 ? "var(--accent)" : "var(--amber)"))}>{m.clientSat}</span>
-                  <span className={cx("fontMono", "fw700", styles.perfToneText, toneClass(m.bonusEligible ? "var(--accent)" : "var(--red)"))}>{m.bonusEligible ? `R${m.bonusAmount.toLocaleString()}` : "Not eligible"}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className={cx("card", "p20")}>
-              <div className={cx("text12", "fw700", "mb12", "uppercase")}>Incentive Policy</div>
-              <div className={cx("text12", "colorMuted", "mb12", styles.perfLine17)}>
-                Bonus eligibility should combine output and behavior signals. Do not tie payout to a single metric.
-              </div>
-              {[
-                "Delivery score >= 80",
-                "On-time rate >= 75%",
-                "Billable utilization >= 70%",
-                "Client satisfaction >= 8.0"
-              ].map((rule) => (
-                <div key={rule} className={cx("text12", "py10", "borderB")}>
-                  {rule}
-                </div>
-              ))}
-              <div className={cx("flexBetween", "mt14")}>
-                <span className={cx("fw700")}>Total bonus pool</span>
-                <span className={cx("fontMono", "fw800", "colorAccent")}>R{totalBonus.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      {/* Row 3 — Table */}
+      <WidgetGrid>
+        <TableWidget
+          label="Scoreboard"
+          rows={tableRows as Record<string, unknown>[]}
+          columns={[
+            { key: "name",     header: "Staff" },
+            { key: "role",     header: "Role" },
+            { key: "delivery", header: "Delivery",   align: "right" },
+            { key: "onTime",   header: "On-Time",    align: "right" },
+            { key: "util",     header: "Utilisation", align: "right" },
+            { key: "bonus",    header: "Bonus",       align: "right", render: (v) => {
+              const val = v as string;
+              const cls = val.startsWith("R") ? cx("badge", "badgeGreen") : cx("badge", "badgeMuted");
+              return <span className={cls}>{val}</span>;
+            }},
+          ]}
+          emptyMessage="No performance data yet"
+        />
+      </WidgetGrid>
     </div>
   );
 }

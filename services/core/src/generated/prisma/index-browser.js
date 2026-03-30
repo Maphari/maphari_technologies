@@ -1527,6 +1527,156 @@ exports.Prisma.Calendar_eventsScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.WebhookEndpointScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  url: 'url',
+  events: 'events',
+  secret: 'secret',
+  active: 'active',
+  lastFiredAt: 'lastFiredAt',
+  failCount: 'failCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AdminProposedActionScalarFieldEnum = {
+  id: 'id',
+  proposedBy: 'proposedBy',
+  proposedByName: 'proposedByName',
+  action: 'action',
+  resourceType: 'resourceType',
+  resourceId: 'resourceId',
+  payload: 'payload',
+  reason: 'reason',
+  status: 'status',
+  reviewedBy: 'reviewedBy',
+  reviewedByName: 'reviewedByName',
+  reviewedAt: 'reviewedAt',
+  reviewNote: 'reviewNote',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StaffLearningBudgetScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  fiscalYear: 'fiscalYear',
+  budgetZAR: 'budgetZAR',
+  spentZAR: 'spentZAR',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StaffSkillProficiencyScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  skill: 'skill',
+  level: 'level',
+  certifiedAt: 'certifiedAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ContractRenewalProposalScalarFieldEnum = {
+  id: 'id',
+  contractId: 'contractId',
+  sentAt: 'sentAt',
+  sentByAdminId: 'sentByAdminId',
+  proposedTerms: 'proposedTerms',
+  status: 'status',
+  clientNotes: 'clientNotes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.EmailTemplateScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  templateKey: 'templateKey',
+  name: 'name',
+  subject: 'subject',
+  bodyHtml: 'bodyHtml',
+  status: 'status',
+  sentCount: 'sentCount',
+  lastEditedAt: 'lastEditedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CustomDomainScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  domain: 'domain',
+  domainType: 'domainType',
+  status: 'status',
+  sslActive: 'sslActive',
+  verified: 'verified',
+  verifiedAt: 'verifiedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CrisisEscalationLevelScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  level: 'level',
+  role: 'role',
+  personLabel: 'personLabel',
+  triggerDesc: 'triggerDesc',
+  colorToken: 'colorToken',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CrisisPlaybookScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PlaybookStepScalarFieldEnum = {
+  id: 'id',
+  playbookId: 'playbookId',
+  order: 'order',
+  action: 'action'
+};
+
+exports.Prisma.AutomationJobMetricScalarFieldEnum = {
+  id: 'id',
+  workflowId: 'workflowId',
+  workspaceId: 'workspaceId',
+  runAt: 'runAt',
+  success: 'success',
+  durationMs: 'durationMs',
+  errorMessage: 'errorMessage',
+  triggeredBy: 'triggeredBy'
+};
+
+exports.Prisma.CashFlowScenarioScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  name: 'name',
+  description: 'description',
+  adjustments: 'adjustments',
+  isBaseline: 'isBaseline',
+  createdByAdminId: 'createdByAdminId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProspectingCampaignScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  filters: 'filters',
+  resultsCount: 'resultsCount',
+  status: 'status',
+  createdByAdminId: 'createdByAdminId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1660,7 +1810,20 @@ exports.Prisma.ModelName = {
   FeatureRequest: 'FeatureRequest',
   FeatureVote: 'FeatureVote',
   EftVerification: 'EftVerification',
-  calendar_events: 'calendar_events'
+  calendar_events: 'calendar_events',
+  WebhookEndpoint: 'WebhookEndpoint',
+  AdminProposedAction: 'AdminProposedAction',
+  StaffLearningBudget: 'StaffLearningBudget',
+  StaffSkillProficiency: 'StaffSkillProficiency',
+  ContractRenewalProposal: 'ContractRenewalProposal',
+  EmailTemplate: 'EmailTemplate',
+  CustomDomain: 'CustomDomain',
+  CrisisEscalationLevel: 'CrisisEscalationLevel',
+  CrisisPlaybook: 'CrisisPlaybook',
+  PlaybookStep: 'PlaybookStep',
+  AutomationJobMetric: 'AutomationJobMetric',
+  CashFlowScenario: 'CashFlowScenario',
+  ProspectingCampaign: 'ProspectingCampaign'
 };
 
 /**

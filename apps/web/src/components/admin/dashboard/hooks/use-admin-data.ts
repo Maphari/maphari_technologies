@@ -44,9 +44,9 @@ export function useAdminData({ session, activePage, pushToast }: Params): UseAdm
   const [publicApiKeys, setPublicApiKeys] = useState<PartnerApiKey[]>([]);
   const [analyticsMetricsRows, setAnalyticsMetricsRows] = useState(0);
   const [adminDisplayCurrency, setAdminDisplayCurrency] = useState<string>(() => {
-    if (typeof navigator === "undefined") return "USD";
+    if (typeof navigator === "undefined") return "ZAR";
     const country = inferCountryFromLocale(navigator.language);
-    return currencyFromCountry(country) ?? "USD";
+    return currencyFromCountry(country) ?? "ZAR";
   });
 
   // Load currency preference + notification jobs on session load

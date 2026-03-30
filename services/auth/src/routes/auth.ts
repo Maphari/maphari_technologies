@@ -238,8 +238,7 @@ export async function registerAuthRoutes(
       });
 
       await publishOtpNotification(deps, request.headers, email, otp);
-      // DEV ONLY — remove before production
-      console.log(`\n[DEV] Admin OTP for ${email}: ${otp}\n`);
+      request.log.info({ event: "otp_issued", role: "admin" });
       request.log.debug({ userId: user.id }, "Admin OTP issued (check email)");
 
       return {
@@ -467,10 +466,7 @@ export async function registerAuthRoutes(
     const pinCredentials = hashPassword(plainPin);
     const pin = `${pinCredentials.hash}:${pinCredentials.salt}`;
 
-    // DEV ONLY — remove before going to production
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[DEV] Staff register OTP/PIN for ${email}: ${plainPin}`);
-    }
+    request.log.info({ event: "pin_issued", role: "staff" });
 
     try {
       const requestRecord = await prisma.staffAccessRequest.upsert({

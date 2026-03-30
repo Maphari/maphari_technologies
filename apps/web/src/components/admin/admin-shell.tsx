@@ -22,10 +22,7 @@ function currency(amountCents: number): string {
 }
 
 function shortCurrency(amountCents: number): string {
-  const amount = amountCents / 100;
-  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
-  return `$${amount.toFixed(0)}`;
+  return formatMoneyCents(amountCents, { currency: resolveCurrency() });
 }
 
 function totalInvoices(snapshot: AdminSnapshot): number {

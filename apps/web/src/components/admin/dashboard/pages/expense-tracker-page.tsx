@@ -12,6 +12,7 @@ import { toneClass } from "./admin-page-utils";
 import type { AuthSession } from "../../../../lib/auth/session";
 import { loadExpensesWithRefresh, loadExpenseBudgetsWithRefresh, approveExpenseWithRefresh, type AdminExpense, type AdminExpenseBudget } from "../../../../lib/api/admin";
 import { saveSession } from "../../../../lib/auth/session";
+import { StatWidget, ChartWidget, TableWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtDate(iso: string) {
@@ -102,6 +103,30 @@ export function ExpenseTrackerPage({ session }: { session: AuthSession | null })
     if (!r.error) setApiExpenses((prev) => prev.map((e) => e.id === rawId ? { ...e, status: "APPROVED" } : e));
   };
 
+  // ── Widget data ────────────────────────────────────────────────────────────
+  const chartData = budgets.slice(0, 8).map((b) => ({
+    label: b.category,
+    value: b.spent,
+  }));
+
+  const pipelineStages = [
+    { label: "Approved",  count: expenses.filter((e) => e.status === "approved").length,  total: Math.max(expenses.length, 1), color: "#34d98b" },
+    { label: "Pending",   count: expenses.filter((e) => e.status === "pending").length,   total: Math.max(expenses.length, 1), color: "#f5a623" },
+    { label: "Flagged",   count: expenses.filter((e) => e.status === "flagged").length,   total: Math.max(expenses.length, 1), color: "#ff5f5f" },
+    { label: "Rejected",  count: expenses.filter((e) => e.status === "rejected").length,  total: Math.max(expenses.length, 1), color: "#888888" },
+  ].filter((s) => s.count > 0);
+
+  const tableRows = filtered.slice(0, 50).map((e) => ({
+    id:          e.id,
+    date:        e.date,
+    description: e.description,
+    category:    e.category,
+    amount:      `R${e.amount.toLocaleString()}`,
+    status:      e.status,
+    rawStatus:   e.status,
+    rawId:       e.rawId,
+  })) as Record<string, unknown>[];
+
   if (loading) {
     return (
       <div className={cx("pageBody")}>
@@ -128,9 +153,10 @@ export function ExpenseTrackerPage({ session }: { session: AuthSession | null })
 
   return (
     <div className={cx(styles.pageBody, styles.expenseRoot)}>
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / FINANCIAL</div>
+          <div className={styles.pageEyebrow}>FINANCE / EXPENSE TRACKER</div>
           <h1 className={styles.pageTitle}>Expense Tracker</h1>
           <div className={styles.pageSub}>Ad hoc expenses, receipts, budget tracking, and SARS categorisation</div>
         </div>
@@ -140,21 +166,71 @@ export function ExpenseTrackerPage({ session }: { session: AuthSession | null })
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Total Expenses",      value: `R${(totalSpent / 1000).toFixed(1)}k`,   color: "var(--amber)", sub: `${expenses.length} items` },
-          { label: "Pending Approval",    value: pendingItems.length.toString(),            color: pendingItems.length > 0 ? "var(--red)" : "var(--accent)", sub: "Require review" },
-          { label: "Billable to Clients", value: `R${(billableTotal / 1000).toFixed(1)}k`, color: "var(--blue)",  sub: "To be recovered" },
-          { label: "Missing Receipts",    value: missingReceipts.toString(),                color: missingReceipts > 0 ? "var(--red)" : "var(--accent)", sub: "SARS non-compliant" },
-        ].map((s) => (
-          <div key={s.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={cx(styles.statValue, "mb4", styles.expenseToneText, toneClass(s.color))}>{s.value}</div>
-            <div className={cx("text11", "colorMuted")}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Row 1: KPI stats ── */}
+      <WidgetGrid>
+        <StatWidget
+          label="Total Expenses"
+          value={`R${(totalSpent / 1000).toFixed(1)}k`}
+          sub={`${expenses.length} items`}
+          tone="amber"
+        />
+        <StatWidget
+          label="Pending Approval"
+          value={pendingItems.length}
+          sub="Require review"
+          tone={pendingItems.length > 0 ? "red" : "default"}
+        />
+        <StatWidget
+          label="Billable to Clients"
+          value={`R${(billableTotal / 1000).toFixed(1)}k`}
+          sub="To be recovered"
+          tone="default"
+        />
+        <StatWidget
+          label="Missing Receipts"
+          value={missingReceipts}
+          sub="SARS non-compliant"
+          tone={missingReceipts > 0 ? "red" : "default"}
+        />
+      </WidgetGrid>
 
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Spend by Category"
+          data={chartData.length > 0 ? chartData : [{ label: "No data", value: 0 }]}
+          dataKey="value"
+          type="bar"
+          color="#f5a623"
+          xKey="label"
+        />
+        <PipelineWidget
+          label="Expense Status Breakdown"
+          stages={pipelineStages.length > 0 ? pipelineStages : [{ label: "No data", count: 0, total: 1 }]}
+        />
+      </WidgetGrid>
+
+      {/* ── Row 3: Expense table ── */}
+      <WidgetGrid>
+        <TableWidget
+          label="Expense Log"
+          rows={tableRows}
+          rowKey="id"
+          emptyMessage="No expenses match the current filter."
+          columns={[
+            { key: "date",        header: "Date",        align: "left" },
+            { key: "description", header: "Description", align: "left" },
+            { key: "category",    header: "Category",    align: "left" },
+            { key: "amount",      header: "Amount",      align: "right" },
+            { key: "status",      header: "Status",      align: "left", render: (val) => {
+              const sc = statusConfig[String(val)] ?? { badge: "badgeMuted", label: String(val) };
+              return <span className={cx(sc.badge)}>{sc.label}</span>;
+            }},
+          ]}
+        />
+      </WidgetGrid>
+
+      {/* ── Detail views ── */}
       <div className={cx("overflowAuto", "minH0")}>
         <AdminFilterBar panelColor="var(--surface)" borderColor="var(--border)">
           <select title="Select tab" value={activeTab} onChange={(e) => setActiveTab(e.target.value as Tab)} className={styles.formInput}>

@@ -13,6 +13,7 @@ import {
 import type { DashboardToast } from "../../../shared/dashboard-core";
 import { EmptyState, colorClass as toneClass, formatDate, formatDateTime } from "./admin-page-utils";
 import { cx, styles } from "../style";
+import { StatWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 function formatMoney(cents: number, currency: string): string {
   return formatMoneyCents(cents, { currency: currency === "AUTO" ? null : currency });
@@ -169,7 +170,7 @@ export function AdminReportsPageClient({
     <div className={cx(styles.pageBody, styles.reportsRoot)}>
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>GOVERNANCE / REPORTING</div>
+          <div className={styles.pageEyebrow}>GOVERNANCE / REPORTS</div>
           <h1 className={styles.pageTitle}>Reports</h1>
           <div className={styles.pageSub}>Operational export center for handoff packs and audited CSV extracts.</div>
         </div>
@@ -183,20 +184,31 @@ export function AdminReportsPageClient({
         </div>
       </div>
 
-      <div className={cx("topCardsStack", "mb16")}>
-        {[
-          { label: "Invoice Rows", value: `${financeRows.length}`, color: "var(--blue)", sub: "Finance export coverage" },
-          { label: "Project Rows", value: `${projectRows.length}`, color: "var(--accent)", sub: "Delivery export coverage" },
-          { label: "Handoff Exports", value: `${handoffExports.length}`, color: "var(--amber)", sub: "Generated package history" },
-          { label: "Export Readiness", value: financeRows.length > 0 || projectRows.length > 0 ? "Ready" : "Limited", color: financeRows.length > 0 || projectRows.length > 0 ? "var(--accent)" : "var(--red)", sub: "Based on live data availability" }
-        ].map((kpi) => (
-          <div key={kpi.label} className={styles.statCard}>
-            <div className={styles.statLabel}>{kpi.label}</div>
-            <div className={cx(styles.statValue, toneClass(kpi.color))}>{kpi.value}</div>
-            <div className={cx("text11", "colorMuted")}>{kpi.sub}</div>
-          </div>
-        ))}
-      </div>
+      <WidgetGrid>
+        <StatWidget label="Invoice Rows"     value={financeRows.length}  sub="Finance export coverage"   tone="accent" />
+        <StatWidget label="Project Rows"     value={projectRows.length}  sub="Delivery export coverage"  tone="accent" />
+        <StatWidget label="Handoff Exports"  value={handoffExports.length} sub="Generated package history" tone="amber" />
+        <StatWidget label="Export Readiness" value={financeRows.length > 0 || projectRows.length > 0 ? "Ready" : "Limited"} sub="Based on live data" tone={financeRows.length > 0 || projectRows.length > 0 ? "green" : "red"} />
+      </WidgetGrid>
+
+      <WidgetGrid columns={2}>
+        <PipelineWidget
+          label="Pack Types Available"
+          stages={[
+            { label: "Finance",    count: reportPacks.filter((p) => p.type === "finance").length,    total: reportPacks.length || 1, color: "#8b6fff" },
+            { label: "Delivery",   count: reportPacks.filter((p) => p.type === "delivery").length,   total: reportPacks.length || 1, color: "#34d98b" },
+            { label: "Operations", count: reportPacks.filter((p) => p.type === "operations").length, total: reportPacks.length || 1, color: "#f5a623" },
+          ]}
+        />
+        <PipelineWidget
+          label="Data Availability"
+          stages={[
+            { label: "Invoices",  count: snapshot.invoices.length,  total: Math.max(snapshot.invoices.length, snapshot.projects.length) || 1, color: "#8b6fff" },
+            { label: "Projects",  count: snapshot.projects.length,  total: Math.max(snapshot.invoices.length, snapshot.projects.length) || 1, color: "#34d98b" },
+            { label: "Handoffs",  count: handoffExports.length,     total: Math.max(snapshot.invoices.length, snapshot.projects.length) || 1, color: "#f5a623" },
+          ]}
+        />
+      </WidgetGrid>
 
       <div className={styles.filterRow}>
         <select title="Select tab" value={activeTab} onChange={e => setActiveTab(e.target.value as Tab)} className={styles.filterSelect}>

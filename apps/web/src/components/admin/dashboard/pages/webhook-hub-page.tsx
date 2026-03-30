@@ -22,6 +22,7 @@ import {
 } from "../../../../lib/api/admin/webhooks";
 import { cx, styles } from "../style";
 import { ConfirmDialog } from "@/components/shared/ui/confirm-dialog";
+import { StatWidget, ChartWidget, PipelineWidget, WidgetGrid } from "../widgets";
 
 // ── Event topic grouping ───────────────────────────────────────────────────
 // Topic string values mirror packages/platform/src/events/topics.ts exactly.
@@ -285,14 +286,25 @@ export function WebhookHubPage({
     );
   }
 
+  // ── Widget data ─────────────────────────────────────────────────────────
+  const activeWebhooks   = webhooks.filter((w) => w.active).length;
+  const inactiveWebhooks = webhooks.filter((w) => !w.active).length;
+  const failingWebhooks  = webhooks.filter((w) => w.failCount > 0).length;
+  const totalTopics      = subscribedTopics.size;
+
+  const eventGroupCounts = EVENT_GROUPS.map((g) => ({
+    name: g.label,
+    value: g.topics.filter((t) => subscribedTopics.has(t.value)).length,
+  })).filter((d) => d.value > 0);
+
   return (
     <div className={cx(styles.pageBody)}>
-      {/* Header */}
+      {/* ── Header ── */}
       <div className={styles.pageHeader}>
         <div>
-          <div className={styles.pageEyebrow}>ADMIN / AUTOMATION</div>
-          <h1 className={styles.pageTitle}>Webhook &amp; Integration Hub</h1>
-          <div className={styles.pageSub}>Send real-time events to Zapier, Make, or your own systems</div>
+          <div className={styles.pageEyebrow}>AI/ML / WEBHOOKS</div>
+          <h1 className={styles.pageTitle}>Webhook Hub</h1>
+          <div className={styles.pageSub}>Active endpoints · Event coverage · Delivery health</div>
         </div>
         <button
           type="button"
@@ -302,6 +314,34 @@ export function WebhookHubPage({
           + Add Webhook
         </button>
       </div>
+
+      {/* ── Row 1: Stats ── */}
+      <WidgetGrid>
+        <StatWidget label="Total Webhooks" value={webhooks.length} tone="accent" sparkData={[1, 2, 2, 3, 3, 4, 4, webhooks.length]} />
+        <StatWidget label="Active" value={activeWebhooks} tone="green" progressValue={webhooks.length > 0 ? Math.round((activeWebhooks / webhooks.length) * 100) : 0} />
+        <StatWidget label="Failing" value={failingWebhooks} tone={failingWebhooks > 0 ? "red" : "default"} progressValue={webhooks.length > 0 ? Math.round((failingWebhooks / webhooks.length) * 100) : 0} />
+        <StatWidget label="Topics Covered" value={totalTopics} sub={`of ${ALL_TOPIC_VALUES.length} total`} />
+      </WidgetGrid>
+
+      {/* ── Row 2: Chart + Pipeline ── */}
+      <WidgetGrid>
+        <ChartWidget
+          label="Subscriptions by Event Group"
+          type="bar"
+          data={eventGroupCounts.length > 0 ? eventGroupCounts : [{ name: "No data", value: 0 }]}
+          dataKey="value"
+          xKey="name"
+          color="#8b6fff"
+        />
+        <PipelineWidget
+          label="Webhook Status"
+          stages={[
+            { label: "Active", count: activeWebhooks, total: Math.max(webhooks.length, 1), color: "#34d98b" },
+            { label: "Inactive", count: inactiveWebhooks, total: Math.max(webhooks.length, 1), color: "#6b7280" },
+            { label: "Failing", count: failingWebhooks, total: Math.max(webhooks.length, 1), color: "#ff5f5f" },
+          ]}
+        />
+      </WidgetGrid>
 
       {/* Zapier/Make hint */}
       <div className={cx(styles.infoCard, "mb20", styles.whInfoCard)}>
