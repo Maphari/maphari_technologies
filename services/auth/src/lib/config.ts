@@ -31,7 +31,7 @@ export function readAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
     refreshTokenSessionTtlHours: Number(env.REFRESH_TOKEN_SESSION_TTL_HOURS ?? 24),
     idleTimeoutHours: Number(env.REFRESH_IDLE_TIMEOUT_HOURS ?? 2),
     natsUrl: env.NATS_URL ?? "nats://localhost:4222",
-    redisUrl: env.REDIS_URL ?? "redis://localhost:6379",
+    redisUrl: env.REDIS_URL!,
     adminEmails: parseEmailList(env.ADMIN_EMAILS),
     staffEmails: parseEmailList(env.STAFF_EMAILS),
     adminPassword: env.ADMIN_LOGIN_PASSWORD!,
