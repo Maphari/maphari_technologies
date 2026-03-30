@@ -8,6 +8,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ApiResponse } from "@maphari/contracts";
 import { registerServiceRateLimit, ServiceMetrics } from "@maphari/platform";
+import { validateRequiredEnv } from "./lib/validate-env.js";
 
 // ── Existing routes ───────────────────────────────────────────────────────────
 import { registerClientRoutes } from "./routes/clients.js";
@@ -153,6 +154,16 @@ import { registerProspectingCampaignRoutes } from "./routes/prospecting-campaign
 import { scheduleStandupReminder, scheduleStandupDigest } from "./cron/standup-reminder.js";
 
 export async function createCoreApp(): Promise<FastifyInstance> {
+  // ── Startup: env + key validation ─────────────────────────────────────────
+  validateRequiredEnv(["INTEGRATION_ENCRYPTION_KEY"]);
+  const _keyBuf = Buffer.from(process.env.INTEGRATION_ENCRYPTION_KEY!, "base64");
+  if (_keyBuf.length !== 32) {
+    throw new Error(
+      "[startup] INTEGRATION_ENCRYPTION_KEY must decode to exactly 32 bytes. " +
+      `Got ${_keyBuf.length} bytes. Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+    );
+  }
+
   const app = Fastify({ logger: true });
   const metrics = new ServiceMetrics();
   const publicLimit = Number(process.env.SERVICE_RATE_LIMIT_PUBLIC_MAX ?? 120);
