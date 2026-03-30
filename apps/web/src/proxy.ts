@@ -132,6 +132,9 @@ export function proxy(request: NextRequest): NextResponse {
   requestHeaders.set("x-csp-nonce", nonce);
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // Phase 1: Report-Only. Monitor for violations (browser DevTools → CSP violations).
+  // Phase 2: Switch to "Content-Security-Policy" once zero violations confirmed in prod.
+  // See: P0-Group3 production hardening — enforcement transition required.
   response.headers.set("Content-Security-Policy-Report-Only", buildCsp(nonce));
   return response;
 }
