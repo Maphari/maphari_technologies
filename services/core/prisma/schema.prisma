@@ -53,6 +53,8 @@ model Client {
   slaRecords          SLARecord[]
   supportTickets      SupportTicket[]
   surveyTokens        SurveyToken[]
+  publicApiProjects   PublicApiProject[] @relation("ClientPublicApiProjects")
+  publicApiKeys       PublicApiKey[]     @relation("ClientPublicApiKeys")
 
   @@index([status])
   @@index([priority])
@@ -2162,4 +2164,41 @@ model ProspectingCampaign {
   updatedAt        DateTime @updatedAt
 
   @@map("prospecting_campaigns")
+}
+
+// ── Public API Key Storage ────────────────────────────────────────────────────
+
+model PublicApiProject {
+  id          String          @id @default(cuid())
+  clientId    String
+  client      Client          @relation("ClientPublicApiProjects", fields: [clientId], references: [id])
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  keys        PublicApiKey[]
+}
+
+model PublicApiKey {
+  id               String             @id @default(cuid())
+  projectId        String
+  project          PublicApiProject   @relation(fields: [projectId], references: [id])
+  clientId         String
+  client           Client             @relation("ClientPublicApiKeys", fields: [clientId], references: [id])
+  label            String
+  keyId            String             @unique
+  keySecretEnc     String
+  status           PublicApiKeyStatus @default(ACTIVE)
+  expiresAt        DateTime?
+  createdBy        String?
+  revokedAt        DateTime?
+  revokedBy        String?
+  lastUsedAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+enum PublicApiKeyStatus {
+  ACTIVE
+  REVOKED
 }
