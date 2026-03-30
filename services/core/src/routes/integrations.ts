@@ -14,6 +14,7 @@ import { readScopeHeaders, resolveClientFilter } from "../lib/scope.js";
 import { prisma } from "../lib/prisma.js";
 import { eventBus } from "../lib/infrastructure.js";
 import { encryptField, decryptField } from "../lib/integration-crypto.js";
+import { encryptMetadataSecrets, decryptMetadataSecrets } from "../lib/integration-secret-registry.js";
 
 type ProviderKind = "oauth" | "assisted" | "coming_soon";
 type ProviderAvailabilityStatus = "active" | "beta" | "hidden" | "coming_soon" | "deprecated";
@@ -948,7 +949,11 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
       } as ApiResponse);
     }
 
-    const metadata = parseMetadataRecord(connection.metadata);
+    const rawMeta = connection.metadata as Record<string, unknown> | null;
+    const metaInternal = rawMeta != null
+      ? decryptMetadataSecrets(connection.providerKey, rawMeta, process.env.INTEGRATION_ENCRYPTION_KEY!, connection.id, request.log).internal
+      : null;
+    const metadata = parseMetadataRecord(metaInternal);
     const title = (typeof body.title === "string" && body.title.trim().length > 0 ? body.title.trim() : task.title).slice(0, 180);
     const description = typeof body.description === "string" && body.description.trim().length > 0
       ? body.description.trim()
@@ -1482,6 +1487,12 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
       } as ApiResponse);
     }
 
+    // Extract rawMetadata before upsert — connection.id is needed for AAD
+    const rawMetadata = body.metadata != null && typeof body.metadata === "object"
+      ? (body.metadata as Record<string, unknown>)
+      : null;
+
+    // Step A: upsert without touching metadata (id needed for AAD in Step B)
     const connection = await prisma.clientIntegrationConnection.upsert({
       where: { clientId_providerKey: { clientId, providerKey } },
       create: {
@@ -1498,7 +1509,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
         externalAccountId: typeof body.externalAccountId === "string" ? body.externalAccountId.trim() : null,
         externalAccountLabel: typeof body.externalAccountLabel === "string" ? body.externalAccountLabel.trim() : null,
         configurationSummary: body.configurationSummary ?? null,
-        metadata: body.metadata ?? null,
+        metadata: null,
       },
       update: {
         providerId: provider.id,
@@ -1512,14 +1523,30 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
         externalAccountId: typeof body.externalAccountId === "string" ? body.externalAccountId.trim() : null,
         externalAccountLabel: typeof body.externalAccountLabel === "string" ? body.externalAccountLabel.trim() : null,
         configurationSummary: body.configurationSummary ?? null,
-        metadata: body.metadata ?? null,
+        // metadata intentionally omitted — updated in Step B only if provided
       },
     });
+
+    // Step B: encrypt metadata and write if caller provided it
+    let metaApiView: Record<string, unknown> | null = null;
+    if (rawMetadata != null) {
+      const encrypted = encryptMetadataSecrets(
+        providerKey, rawMetadata, process.env.INTEGRATION_ENCRYPTION_KEY!, connection.id
+      );
+      await prisma.clientIntegrationConnection.update({
+        where: { id: connection.id },
+        data: { metadata: encrypted as unknown as Record<string, string> },
+      });
+      metaApiView = decryptMetadataSecrets(
+        providerKey, encrypted, process.env.INTEGRATION_ENCRYPTION_KEY!, connection.id, request.log
+      ).apiView;
+    }
 
     return {
       success: true,
       data: {
         ...connection,
+        metadata: metaApiView,
         connectedAt: connection.connectedAt?.toISOString() ?? null,
         disconnectedAt: connection.disconnectedAt?.toISOString() ?? null,
         lastCheckedAt: connection.lastCheckedAt?.toISOString() ?? null,
@@ -1585,17 +1612,28 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
     setDateTime("lastSyncedAt");
     setDateTime("lastSuccessfulSyncAt");
     if (body.configurationSummary !== undefined) data.configurationSummary = body.configurationSummary;
-    if (body.metadata !== undefined) data.metadata = body.metadata;
+    if (body.metadata !== undefined && body.metadata !== null) {
+      const raw = body.metadata as Record<string, unknown>;
+      data.metadata = encryptMetadataSecrets(existing.providerKey, raw, process.env.INTEGRATION_ENCRYPTION_KEY!, connectionId);
+    } else if (body.metadata === null) {
+      data.metadata = null;
+    }
 
     const updated = await prisma.clientIntegrationConnection.update({
       where: { id: connectionId },
       data,
     });
 
+    const metaRaw = updated.metadata as Record<string, unknown> | null;
+    const { apiView: updatedMetaApiView } = metaRaw != null
+      ? decryptMetadataSecrets(existing.providerKey, metaRaw, process.env.INTEGRATION_ENCRYPTION_KEY!, connectionId, request.log)
+      : { apiView: null };
+
     return {
       success: true,
       data: {
         ...updated,
+        metadata: updatedMetaApiView,
         connectedAt: updated.connectedAt?.toISOString() ?? null,
         disconnectedAt: updated.disconnectedAt?.toISOString() ?? null,
         lastCheckedAt: updated.lastCheckedAt?.toISOString() ?? null,
