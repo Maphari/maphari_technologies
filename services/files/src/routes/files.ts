@@ -284,7 +284,7 @@ export async function registerFileRoutes(app: FastifyInstance): Promise<void> {
         clientId: fileRecord.clientId,
         storageKey: fileRecord.storageKey,
         ttlSeconds,
-        secret: process.env.UPLOAD_TOKEN_SECRET ?? "maphari-upload-secret"
+        secret: process.env.UPLOAD_TOKEN_SECRET!
       });
       const baseUrl = process.env.DOWNLOAD_GET_BASE_URL ?? "http://localhost:4005/downloads";
       const downloadUrl = `${baseUrl}/${encodeURIComponent(fileRecord.storageKey)}?token=${encodeURIComponent(token)}`;
@@ -444,7 +444,7 @@ export async function registerFileRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const storageKey = decodeURIComponent(request.params.storageKey);
-    const tokenPayload = verifyUploadToken(token, process.env.UPLOAD_TOKEN_SECRET ?? "maphari-upload-secret");
+    const tokenPayload = verifyUploadToken(token, process.env.UPLOAD_TOKEN_SECRET!);
     if (!tokenPayload || tokenPayload.storageKey !== storageKey) {
       reply.status(403);
       return {
