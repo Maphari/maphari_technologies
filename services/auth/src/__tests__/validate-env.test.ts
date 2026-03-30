@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { validateRequiredEnv } from "../lib/validate-env.js";
+import { readAuthConfig } from "../lib/config.js";
 
 describe("validateRequiredEnv", () => {
   const ORIGINAL = { ...process.env };
@@ -43,5 +44,24 @@ describe("validateRequiredEnv", () => {
   it("does not throw for a non-empty string with surrounding whitespace", () => {
     process.env.PADDED_VAR = "  actual-secret  ";
     expect(() => validateRequiredEnv(["PADDED_VAR"])).not.toThrow();
+  });
+});
+
+describe("readAuthConfig — no fallback secrets", () => {
+  it("reads JWT_ACCESS_SECRET directly from env without fallback", () => {
+    const saved = process.env.JWT_ACCESS_SECRET;
+    process.env.JWT_ACCESS_SECRET = "my-real-secret";
+    const config = readAuthConfig(process.env);
+    expect(config.accessTokenSecret).toBe("my-real-secret");
+    if (saved !== undefined) process.env.JWT_ACCESS_SECRET = saved;
+    else delete process.env.JWT_ACCESS_SECRET;
+  });
+
+  it("returns undefined (not 'dev-access-secret') when JWT_ACCESS_SECRET is absent", () => {
+    const saved = process.env.JWT_ACCESS_SECRET;
+    delete process.env.JWT_ACCESS_SECRET;
+    const config = readAuthConfig(process.env);
+    expect(config.accessTokenSecret).toBeUndefined();
+    if (saved !== undefined) process.env.JWT_ACCESS_SECRET = saved;
   });
 });

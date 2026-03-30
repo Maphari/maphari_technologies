@@ -25,7 +25,7 @@ function parseEmailList(value: string | undefined): string[] {
 export function readAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig {
   return {
     port: Number(env.PORT ?? 4001),
-    accessTokenSecret: env.JWT_ACCESS_SECRET ?? "dev-access-secret",
+    accessTokenSecret: env.JWT_ACCESS_SECRET!,
     accessTokenTtlSeconds: Number(env.ACCESS_TOKEN_TTL_SECONDS ?? 900),
     refreshTokenTtlDays: Number(env.REFRESH_TOKEN_TTL_DAYS ?? 7),
     refreshTokenSessionTtlHours: Number(env.REFRESH_TOKEN_SESSION_TTL_HOURS ?? 24),
@@ -34,8 +34,8 @@ export function readAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
     redisUrl: env.REDIS_URL ?? "redis://localhost:6379",
     adminEmails: parseEmailList(env.ADMIN_EMAILS),
     staffEmails: parseEmailList(env.STAFF_EMAILS),
-    adminPassword: env.ADMIN_LOGIN_PASSWORD ?? "",
-    staffPassword: env.STAFF_LOGIN_PASSWORD ?? "",
+    adminPassword: env.ADMIN_LOGIN_PASSWORD!,
+    staffPassword: env.STAFF_LOGIN_PASSWORD!,
     authBootstrapLogs: env.AUTH_BOOTSTRAP_LOGS === "true"
   };
 }
