@@ -8,6 +8,7 @@
   position: absolute;
   inset: 0;
   background: rgb(5 5 8 / 75%);
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 

@@ -81,6 +81,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 12px 14px;
   display: flex;
@@ -112,6 +113,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   overflow: hidden;
 }
@@ -444,6 +446,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 14px 16px;
 }
@@ -476,6 +479,7 @@
   color: var(--muted);
   border: 1px solid var(--border);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: var(--r-xs);
   padding: 5px 8px;
@@ -536,6 +540,7 @@
   border: 1px solid var(--border);
   border-bottom: none;
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: var(--r-sm) var(--r-sm) 0 0;
   padding: 8px 10px;
@@ -627,6 +632,7 @@
   border: 1px solid var(--border);
   border-bottom: none;
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: var(--r-sm) var(--r-sm) 0 0;
   padding: 8px 10px;
@@ -681,6 +687,7 @@
   inset: 0;
   z-index: 140;
   background: rgb(5 5 8 / 84%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -691,6 +698,7 @@
   border: 1px solid var(--b3);
   border-radius: var(--r-md);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: var(--shadow-modal);
   color: inherit;
@@ -1214,6 +1222,7 @@
 .aiAutoSidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 18px 0;
   display: flex;
@@ -1435,6 +1444,7 @@
 .aiAutoSummaryCard {
   border: 1px solid color-mix(in oklab, var(--purple) 48%, var(--border));
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: var(--r-md);
   padding: 18px 18px 14px;
@@ -1555,6 +1565,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 12px;
   display: flex;
@@ -1710,6 +1721,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -1749,6 +1761,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 14px;
 }
@@ -1839,6 +1852,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 12px 14px;
 }
@@ -1872,6 +1886,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 14px;
   display: flex;
@@ -2026,6 +2041,7 @@
 .docsSidebar {
   border-right: 1px solid var(--border);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 18px 0;
   display: flex;
@@ -2396,6 +2412,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 14px;
 }
@@ -2636,6 +2653,7 @@
   position: fixed;
   inset: 0;
   background: rgb(5 5 8 / 82%);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   z-index: 100;
   display: grid;
@@ -2648,6 +2666,7 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   overflow: hidden;
 }

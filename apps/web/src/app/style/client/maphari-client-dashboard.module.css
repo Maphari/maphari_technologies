@@ -96,6 +96,7 @@
   border: 1px solid rgb(255 255 255 / 9%);
   padding: 16px 20px;
   border-radius: var(--r-md);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: var(--shadow-card);
   position: relative;
@@ -303,6 +304,7 @@
   display: grid;
   place-items: start center;
   padding-top: 10vh;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -2208,6 +2210,7 @@
   inset: 0;
   z-index: 100;
   background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -2709,6 +2712,7 @@
   inset: 0;
   z-index: 100;
   background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -3064,6 +3068,7 @@
   inset: 0;
   z-index: 100;
   background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -5623,6 +5628,7 @@
   inset: 0;
   z-index: 90;
   background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -8186,6 +8192,7 @@
   inset: 0;
   z-index: 100;
   background: rgb(5 5 8 / 84%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -11626,6 +11633,7 @@
   inset: 0;
   z-index: 120;
   background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -12487,6 +12495,7 @@
   inset: 0;
   z-index: 140;
   background: rgb(5 5 8 / 84%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -14428,6 +14437,7 @@
   position: fixed;
   inset: 0;
   background: rgb(5 5 8 / 82%);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   z-index: 100;
   display: grid;
@@ -15190,6 +15200,7 @@
   position: fixed;
   inset: 0;
   background: rgb(5 5 8 / 82%);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   z-index: 100;
   display: grid;
@@ -16369,6 +16380,7 @@
   inset: 0;
   z-index: 100;
   background: rgb(5 5 8 / 82%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -17255,6 +17267,7 @@
   inset: 0;
   z-index: 100;
   background: rgb(5 5 8 / 84%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -17988,6 +18001,7 @@
   inset: 0;
   z-index: 100;
   background: rgb(5 5 8 / 84%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
@@ -20135,6 +20149,7 @@
   align-items: center;
   justify-content: center;
   background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -21845,6 +21860,7 @@
   align-items: center;
   justify-content: center;
   background: rgb(5 5 8 / 85%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -28393,6 +28409,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 52%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;

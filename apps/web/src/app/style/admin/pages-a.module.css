@@ -20,6 +20,7 @@
   border-radius: var(--r-md);
   overflow: hidden;
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -97,6 +98,7 @@
 .healthIntvTimelineCard {
   border-radius: var(--r-sm);
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -668,6 +670,7 @@
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -937,6 +940,7 @@
   border-radius: var(--r-sm);
   padding: 16px 18px;
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -1335,6 +1339,7 @@
   border-radius: var(--r-sm);
   line-height: 1.6;
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -1546,6 +1551,7 @@
   border-radius: var(--r-sm);
   background: var(--s2);
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -1982,6 +1988,7 @@
   border-radius: var(--r-sm);
   background: rgb(255 255 255 / 2%);
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -2178,6 +2185,7 @@
   padding: 20px;
   background: var(--s2);
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -2222,6 +2230,7 @@
   justify-content: space-between;
   gap: 10px;
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -3074,6 +3083,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .qaCardTone {
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -3414,6 +3424,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .resAllocProjectCard {
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -3795,6 +3806,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .accessAdminCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4002,6 +4014,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .accessInfoCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4013,6 +4026,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .accessDelegationCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4044,6 +4058,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .accessKeyCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4208,6 +4223,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .brandTemplateCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4288,6 +4304,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .brandInfoCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4299,6 +4316,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .brandDomainCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4339,6 +4357,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .brandWhiteLabelCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4478,6 +4497,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .dvtSideCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4531,6 +4551,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   padding: 20px;
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -4568,6 +4589,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 .dvtContractRow {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
@@ -4809,6 +4831,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   padding: 16px 18px;
   background: rgb(19 19 30 / 75%);
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -5092,6 +5115,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   background: rgb(19 19 30 / 75%);
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -5195,6 +5219,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   border-radius: var(--r-md);
   background: rgb(19 19 30 / 75%);
   border-left: 3px solid transparent;
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
   backdrop-filter: blur(8px) saturate(130%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 10%);
 }
@@ -7321,6 +7346,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
   text-align: center;
   padding: 28px 24px;
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid var(--accent-d);
   border-radius: var(--r-md);
@@ -7484,7 +7510,7 @@ progress.pportFillBorder::-webkit-progress-value { background: var(--border); }
 
 /* --- Expense: Budget cards --- */
 
-.expenseBudgetCard 
+.expenseBudgetCard {}
 
 .expenseBudgetWarn {
   border-color: var(--red-d);

@@ -466,8 +466,8 @@
 .tasksStatusBadge { border-radius: var(--r-sm); }
 .tasksProjectBadge { border-radius: var(--r-sm); }
 
-.tasksDueLabel 
-.tasksPriorityDot 
+.tasksDueLabel {}
+.tasksPriorityDot {}
 
 .tasksActionBtn {
   min-width: 92px;
@@ -649,9 +649,9 @@
 
 /* ── Kanban Board ───────────────────────────────────────────────── */
 
-.kanbanPage 
+.kanbanPage {}
 
-.kbHeader 
+.kbHeader {}
 .kbHeaderActions { display: flex; align-items: center; gap: 8px; }
 
 /* Alert buttons */
@@ -1191,7 +1191,7 @@
 
 /* ── Focus Mode ──────────────────────────────────────────────────── */
 
-.fmHeaderBar 
+.fmHeaderBar {}
 
 .fmLayout {
   display: grid;
@@ -1236,7 +1236,7 @@
 
 .fmTaskRow:hover { border-color: var(--b3); background: var(--s2); }
 
-.fmTaskOption 
+.fmTaskOption {}
 .fmTaskOptionSelected { border-color: var(--accent); }
 .fmTaskSelAccent  { border-color: var(--accent); background: var(--accent-g) !important; }
 .fmTaskSelPurple  { border-color: var(--purple); background: var(--purple-d) !important; }
@@ -1276,7 +1276,7 @@
 .fmToneOrange  { color: var(--accent); }
 
 /* Duration pills */
-.fmDurBtn 
+.fmDurBtn {}
 
 .fmDurPill {
   height: 30px;
@@ -1310,8 +1310,8 @@
 
 .fmTextarea:focus { outline: none; border-color: var(--accent); }
 
-.fmNoteBox 
-.inputBase 
+.fmNoteBox {}
+.inputBase {}
 
 /* Buttons */
 .fmCtrlBtn {
@@ -1331,8 +1331,8 @@
 .fmPrimaryBtn { background: var(--accent); color: #fff; }
 .fmPrimaryBtn:hover { opacity: 0.88; }
 
-.fmStartBtn 
-.fmControlBtn 
+.fmStartBtn {}
+.fmControlBtn {}
 .fmBreakBtn { background: var(--blue); color: #fff; }
 .fmBreakBtn:hover { opacity: 0.88; }
 
@@ -1347,7 +1347,7 @@
   color: var(--muted);
 }
 
-.fmGhostBtn 
+.fmGhostBtn {}
 .fmAbandonBtn:hover { border-color: var(--b3); color: var(--text); }
 
 /* Ring */
@@ -1371,7 +1371,7 @@
 .fmRingTrack { stroke: var(--s3); }
 .fmRingProgress { transition: stroke-dasharray 1s linear; }
 
-.fmRingProgressRunning 
+.fmRingProgressRunning {}
 
 .fmRingCenter {
   position: absolute;
@@ -1415,7 +1415,7 @@
 }
 
 /* Linear progress */
-.fmLinearProgress 
+.fmLinearProgress {}
 
 /* Progress tones */
 .fmProgressAccent::-webkit-progress-value { background: var(--accent); }
@@ -2027,8 +2027,8 @@
 
 /* ── Recurring Tasks ─────────────────────────────────────────────── */
 
-.rtHeaderBar  
-.rtHeaderTop  
+.rtHeaderBar {}
+.rtHeaderTop {}
 .rtHeaderActions { display: flex; align-items: center; gap: 12px; }
 
 .rtAddMainBtn {
@@ -2045,18 +2045,18 @@
 }
 .rtAddMainBtn:hover { opacity: 0.88; }
 
-.rtPrimaryBtn 
+.rtPrimaryBtn {}
 
 /* Layout */
 .rtLayout { display: flex; flex-direction: column; gap: 12px; }
 .rtLayoutWithForm { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
 .rtListPane { display: flex; flex-direction: column; gap: 12px; }
 
-.rtListPaneWithForm 
+.rtListPaneWithForm {}
 
 
 /* Frequency groups */
-.rtFreqGroup 
+.rtFreqGroup {}
 
 .rtFreqHeader {
   display: flex;
@@ -2119,7 +2119,7 @@
 .rtTaskDueSoon { border-color: rgb(245 166 35 / 30%); background: var(--amber-d); }
 
 /* Done button */
-.rtDoneBtn 
+.rtDoneBtn {}
 
 .rtDoneCircle {
   width: 22px;
@@ -2174,7 +2174,7 @@
 .rtDueSoonText { color: var(--amber); }
 
 /* Hover actions */
-.rtTaskHoverActions 
+.rtTaskHoverActions {}
 
 .rtToggleBtn { cursor: pointer; }
 
@@ -2208,7 +2208,7 @@
 
 .rtDeleteBtn:hover { color: var(--red); border-color: rgb(255 95 95 / 30%); }
 
-.rtFilterBtn 
+.rtFilterBtn {}
 
 .rtCancelBtn {
   height: 30px;
@@ -2288,11 +2288,11 @@
 
 .rtSaveBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.rtPrimaryBtnSm 
+.rtPrimaryBtnSm {}
 
 /* ── Task Dependencies ───────────────────────────────────────────── */
 
-.tdHeaderBar  
+.tdHeaderBar {}
 .tdHeaderTop  { display: flex; align-items: flex-start; justify-content: space-between; }
 
 .tdTopStats {
@@ -2308,7 +2308,7 @@
 .tdLayoutWithPanel { display: grid; grid-template-columns: 1fr 280px; gap: 16px; }
 .tdGraphPane { overflow-x: auto; }
 
-.tdGraphPaneWithPanel 
+.tdGraphPaneWithPanel {}
 
 
 /* Client row */
@@ -2412,7 +2412,7 @@
 
 .tdArrowColMulti { align-self: stretch; }
 
-.tdArrowColSingle 
+.tdArrowColSingle {}
 
 .tdArrowLine {
   flex: 1;
@@ -2461,7 +2461,7 @@
 
 .tdMiniTask:hover { border-color: var(--b2); }
 
-.tdMiniStatus 
+.tdMiniStatus {}
 
 .tdCloseBtn {
   height: 28px;
@@ -2484,7 +2484,7 @@
   padding-bottom: 14px;
 }
 
-.snHeader 
+.snHeader {}
 .snHeaderActions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .snHeaderBtns { display: inline-flex; align-items: center; }
 
@@ -2516,10 +2516,10 @@
 
 .snIconBtn:hover { color: var(--text); border-color: var(--b3); }
 
-.snPrefsBtn 
+.snPrefsBtn {}
 .snPrefsBtnActive { background: var(--s3); color: var(--text); }
 
-.snMarkAllBtn 
+.snMarkAllBtn {}
 
 /* Filter wrap */
 .snFilterWrap {
@@ -2602,7 +2602,7 @@
 
 .snTypeMenuBtnActive { color: var(--text); border-color: var(--b3); }
 
-.snTypeMenuLabel 
+.snTypeMenuLabel {}
 .snTypeMenuCaret { font-size: 8px; }
 
 .snTypeMenuCaretIcon {
@@ -2778,7 +2778,7 @@
 .snGroupList { display: flex; flex-direction: column; gap: 3px; }
 
 /* Notif rows */
-.snNotifRow 
+.snNotifRow {}
 
 .staffListRow.snNotifRow {
   padding: 14px;
@@ -2803,7 +2803,7 @@
 .snRowSelected { border-color: var(--accent); background: var(--accent-g); }
 .snRowUnread { border-left: 2px solid var(--accent); }
 
-.snRowRead 
+.snRowRead {}
 
 /* Shared unread-row state used by notifications-page + communication-history-page */
 .staffNotifUnread {
@@ -3036,7 +3036,7 @@
 .snDetailActionBtn:hover { background: var(--s2); }
 .snDetailActionBtnPinned { color: var(--amber); }
 
-.snDismissBtn 
+.snDismissBtn {}
 
 /* ── Approval Queue ───────────────────────────────────────────────── */
 
@@ -3242,7 +3242,7 @@
   line-height: 1;
 }
 
-.high 
+.high {}
 
 .fieldSelect {
   appearance: none;

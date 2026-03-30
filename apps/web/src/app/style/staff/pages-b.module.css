@@ -37,7 +37,7 @@
 .progressMeter::-webkit-progress-value { border-radius: var(--r-xs); transition: width 300ms; }
 .progressMeter::-moz-progress-bar { border-radius: var(--r-xs); }
 
-.spCapacityMeter 
+.spCapacityMeter {}
 .spCapAccent::-webkit-progress-value { background: var(--accent); }
 .spCapAmber::-webkit-progress-value  { background: var(--amber); }
 .spCapRed::-webkit-progress-value    { background: var(--red); }
@@ -217,7 +217,7 @@
 }
 .spRemoveBtn:hover { color: var(--red); }
 
-.spRemoveIcon 
+.spRemoveIcon {}
 .spTaskRemoveMini { font-size: 12px; }
 
 /* Priority */
@@ -351,7 +351,7 @@
 .spBacklogAddBtn:hover { opacity: 0.8; }
 
 /* rdStudio-compatible class names used inline by sprint-planning */
-.rdStudioPage 
+.rdStudioPage {}
 
 .rdStudioLabel {
   font-size: 10px;
@@ -361,8 +361,8 @@
   color: var(--muted2);
 }
 
-.rdStudioSection 
-.rdStudioRow 
+.rdStudioSection {}
+.rdStudioRow {}
 
 .rdStudioMetric {
   font-family: var(--font-syne), sans-serif;
@@ -712,7 +712,7 @@
 .msoTimelineList::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 1px; background: var(--b2); }
 .msoTimelineItem { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; position: relative; margin-left: -16px; padding-left: 16px; }
 
-.msoTimelineItemPending 
+.msoTimelineItemPending {}
 .msoTimelineDot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; border: 2px solid var(--bg); z-index: 1; }
 .msoTimelineContent { display: flex; flex-direction: column; gap: 2px; }
 .msoTimelineLabel { font-size: 12px; color: var(--text); }
@@ -917,7 +917,7 @@
 .clv2ThreadItem:hover { background: var(--s2); }
 .clv2ThreadItemActive { background: var(--s2); border-left: 2px solid var(--accent); }
 
-.clv2ThreadItemUnread 
+.clv2ThreadItemUnread {}
 
 .clv2ItemAvatar {
   width: 34px;
@@ -1496,7 +1496,7 @@
 }
 .mpTabActive { color: var(--accent); border-bottom-color: var(--accent); }
 
-.mpTabInner 
+.mpTabInner {}
 
 .mpSection { display: flex; flex-direction: column; gap: 10px; }
 
@@ -2643,8 +2643,8 @@
    COMMUNICATION HISTORY — comms* classes (used by communication-history-page)
    ══════════════════════════════════════════════════════════════════════════════ */
 
-.commsHeaderBar 
-.commsHeaderTop 
+.commsHeaderBar {}
+.commsHeaderTop {}
 .commsTopStats  { display: flex; align-items: flex-start; gap: 24px; }
 .commsStatLabel { font-size: 10px; color: var(--muted2); font-family: var(--font-dm-mono), monospace; text-transform: uppercase; letter-spacing: 0.08em; }
 .commsStatValue { font-family: var(--font-syne), sans-serif; font-size: 1.5rem; font-weight: 800; line-height: 1; }
@@ -2652,8 +2652,8 @@
 .commsToneAccent { color: var(--accent); }
 .commsToneRed   { color: var(--red); }
 
-.commsClientRow 
-.commsFilterRow 
+.commsClientRow {}
+.commsFilterRow {}
 
 .commsSearchInput {
   height: 28px;
@@ -2713,7 +2713,7 @@
 }
 .commsEventRowGap   { margin-bottom: 6px; }
 
-.commsEventRowLast  
+.commsEventRowLast {}
 .commsEventRowIdle  { padding: 6px 10px; }
 .commsEventRowExpanded { padding: 10px 12px; background: var(--s1); border: 1px solid var(--b2); }
 .commsEventRowUnread { padding: 6px 10px; background: var(--accent-g); border-left: 2px solid var(--accent); }
@@ -3390,7 +3390,7 @@
 .chsStatGrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
 .chsStatCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 0; }
 
-.chsStatCardTop    
+.chsStatCardTop {}
 .chsStatCardBottom { margin-top: 6px; }
 .chsStatCardDivider { height: 1px; background: var(--b1); margin: 8px 0; }
 .chsStatDot { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; }
@@ -3442,7 +3442,7 @@
 .ltClientRow:hover { border-color: var(--b3); }
 .ltSentimentDot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-.ltTimelineRail 
+.ltTimelineRail {}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    PORTAL ACTIVITY — pa* extended classes
@@ -3518,7 +3518,7 @@
   font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: -1px; transition: color 100ms;
 }
 
-.rtStatCardTop    
+.rtStatCardTop {}
 .rtStatCardBottom { margin-top: 6px; }
 .rtStatCardDivider { height: 1px; background: var(--b1); margin: 8px 0; }
 .rtStatDot  { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; }
@@ -3575,7 +3575,7 @@
 .cjStatGrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
 .cjStatCard { background: var(--s1); border: 1px solid var(--b2); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 0; }
 
-.cjStatCardTop    
+.cjStatCardTop {}
 .cjStatCardBottom { margin-top: 6px; }
 .cjStatCardDivider { height: 1px; background: var(--b1); margin: 8px 0; }
 .cjStatDot  { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; }
@@ -4070,6 +4070,7 @@
   border-top-color: rgb(255 255 255 / 12%);
   border-radius: var(--r-md);
   background: var(--glass-card);
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   backdrop-filter: blur(var(--glass-sm));
   display: flex;
   flex-direction: column;

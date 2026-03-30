@@ -2149,6 +2149,7 @@
   inset: 0;
   z-index: 9999;
   background: rgb(0 0 0 / 60%);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;

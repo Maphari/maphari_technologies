@@ -146,6 +146,7 @@
 .rail {
   width: var(--rail-w);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(var(--glass-md));
   backdrop-filter: blur(var(--glass-md));
   position: fixed;
   left: 16px;
@@ -265,6 +266,7 @@
   top: 50%;
   transform: translateY(-50%) translateX(-8px);
   background: rgb(6 4 16 / 92%);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border: 1px solid rgb(139 111 255 / 28%);
   border-left: 2px solid var(--accent);
@@ -315,6 +317,7 @@
 .flyout {
   width: var(--flyout-w);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(var(--glass-md));
   backdrop-filter: blur(var(--glass-md));
   box-shadow: 0 10px 28px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(255 255 255 / 6%);
   position: fixed;
@@ -711,6 +714,7 @@
   gap: 0;
   padding: 0 16px;
   background: var(--s2);
+  -webkit-backdrop-filter: blur(var(--glass-lg));
   backdrop-filter: blur(var(--glass-lg));
   border-top: 2px solid var(--accent);
   border-radius: var(--r-md);
@@ -995,6 +999,7 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   background: rgb(13 13 20 / 85%);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   box-shadow: 0 16px 40px rgb(0 0 0 / 38%);
   z-index: 20;
@@ -1207,6 +1212,7 @@
 
 .statCard {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 12%);
   border-top: 2px solid var(--accent);
@@ -1368,6 +1374,7 @@
 
 .card {
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(139 111 255 / 12%);
   border-radius: var(--r-md);
@@ -2107,6 +2114,7 @@
   border: 1px solid rgb(139 111 255 / 10%);
   border-radius: var(--r-md);
   background: rgb(19 19 30 / 75%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   min-height: 520px;
   overflow: hidden;
@@ -2450,6 +2458,7 @@
   border: 1px solid var(--border2);
   border-radius: var(--r-sm);
   background: rgb(13 13 20 / 92%);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   color: var(--text);
   padding: 12px 14px;
@@ -2644,8 +2653,8 @@
 
 /* Defined here (after iconBtn) so display:none wins the source-order cascade */
 
-.topbarAppsBtn 
-.topbarHelpBtn 
+.topbarAppsBtn {}
+.topbarHelpBtn {}
 
 @media (width <= 640px) {
   .topbarAppsBtn { display: none; }
@@ -2970,6 +2979,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;

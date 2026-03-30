@@ -16,6 +16,7 @@
 
 .obsKpiCard {
   background: var(--s1);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--accent);
@@ -81,6 +82,7 @@
   font-size: 0.7rem;
   font-weight: 700;
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 2px solid var(--b2);
   color: var(--muted);
@@ -148,6 +150,7 @@
 
 .cohKpiCard {
   background: var(--s1);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--accent);
@@ -233,6 +236,7 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 0.62rem; font-weight: 700;
   background: var(--s2); border: 2px solid var(--b2); color: var(--muted);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 .pbrMilestoneNodeDone { background: color-mix(in oklab, var(--accent) 15%, transparent); border-color: var(--accent); color: var(--accent); }
@@ -250,6 +254,7 @@
 
 .obdKpiCard {
   background: var(--s1);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--accent);
@@ -606,6 +611,7 @@
   padding: 8px 14px;
   border-radius: var(--r-sm);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   color: var(--muted);
   border: 1px solid var(--b2);
@@ -635,6 +641,7 @@
 
 .cmdPod {
   background: var(--s1);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--b1);
   border-radius: var(--r-md);
@@ -833,6 +840,7 @@
   height: 13px;
   border-radius: 50%;
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 2px solid var(--b2);
   position: relative;
@@ -1035,6 +1043,7 @@
   font-size: 1.5rem;
   border-radius: var(--r-md);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid transparent;
   cursor: pointer;
@@ -1191,6 +1200,7 @@
   font-size: 1.2rem;
   border-radius: var(--r-sm);
   background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid transparent;
   cursor: pointer;
@@ -3272,6 +3282,7 @@
 
 .faqAccordionItem {
   border-radius: var(--r-sm); background: var(--s2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--b1); overflow: hidden;
   transition: background 0.15s, border-color 0.15s;
@@ -3310,6 +3321,7 @@
 .modalOverlayBlur {
   position: fixed; inset: 0; background: rgb(0 0 0 / 60%);
   z-index: 1000; display: flex; align-items: center; justify-content: center;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 
@@ -3698,7 +3710,7 @@
 /* Timeline: arc phase container */
 .arcPhaseUpcoming { opacity: 0.6; }
 
-.arcPhaseFull     
+.arcPhaseFull {}
 
 /* Settings: grid 1 col override */
 .profGridSingle { display: grid; grid-template-columns: 1fr; }
@@ -4747,6 +4759,7 @@
 
 .sprintColumn {
   background: var(--s2); border-radius: var(--r-md); border: 1px solid var(--b2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   overflow: hidden;
 }
@@ -4760,6 +4773,7 @@
 .sprintCard {
   padding: 10px 12px; border-radius: var(--r-sm); cursor: pointer;
   background: var(--s1); border: 1px solid var(--b2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   transition: box-shadow 0.12s;
 }
@@ -4876,6 +4890,7 @@
 .profileStatBox {
   flex: 1; padding: 12px 14px; border-radius: var(--r-sm); text-align: center;
   background: var(--s2); border: 1px solid var(--b2);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 .profileKvRow { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--b1); }
@@ -5125,6 +5140,7 @@
 .integrationCard {
   padding: 16px; border-radius: var(--r-md); cursor: pointer; transition: box-shadow 0.12s;
   background: var(--s1);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1.5px solid var(--color, var(--b2));
 }
@@ -6453,6 +6469,7 @@
 
 .maKpiCard {
   background: var(--s1);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid var(--b2);
   border-left: 3px solid var(--lime);
@@ -6590,6 +6607,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 65%);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -6887,6 +6905,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 45%);
+  -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   z-index: 399;
 }

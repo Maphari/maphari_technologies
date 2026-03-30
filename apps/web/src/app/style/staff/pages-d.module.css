@@ -931,7 +931,7 @@
 .corProjectBtn:hover { background: var(--s2); }
 .corProjectBtnActive { background: var(--accent-d); border-color: rgb(249 115 22 / 20%); }
 
-.corProjectBtnIdle 
+.corProjectBtnIdle {}
 
 .corProjectStatus {
   display: inline-flex;

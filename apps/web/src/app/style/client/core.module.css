@@ -130,6 +130,7 @@
   border: 1px solid rgb(255 255 255 / 9%);
   padding: 16px 20px;
   border-radius: var(--r-md);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: var(--shadow-card);
   position: relative;
@@ -235,6 +236,7 @@
 
 .tourCard {
   background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(255 255 255 / 6%);
   padding: 24px;
@@ -297,6 +299,7 @@
 
 .sessionCard {
   background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(255 255 255 / 6%);
   padding: 32px;
@@ -313,6 +316,7 @@
   right: 16px;
   top: 80px;
   background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(255 255 255 / 6%);
   padding: 16px 20px;
@@ -351,6 +355,7 @@
   display: grid;
   place-items: start center;
   padding-top: 10vh;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -358,6 +363,7 @@
   background: rgb(10 10 20 / 92%);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--r-md);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   box-shadow: var(--shadow-modal);
   border-top: 2px solid var(--accent);
@@ -843,6 +849,7 @@
   position: relative;
   overflow: hidden;
   background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--r-lg);
@@ -993,6 +1000,7 @@
 
 .cSidebar {
   border: none !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
   backdrop-filter: blur(20px) saturate(140%);
 }
 
@@ -1067,6 +1075,7 @@
   bottom: 12px;
   width: 220px;
   background: rgb(200 241 53 / 8%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgb(255 255 255 / 9%);
   border-radius: var(--r-lg);
@@ -1156,6 +1165,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
@@ -1393,6 +1403,7 @@
 /* ── Onboarding Checklist Modal ─────────────────────────────────────────── */
 .onboardingOverlay {
   position: fixed; inset: 0; z-index: 1000;
+  -webkit-backdrop-filter: blur(4px);
   background: rgb(0 0 0 / 60%); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
 }

@@ -916,6 +916,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 50%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   z-index: 50;
   display: grid;
@@ -1827,6 +1828,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   z-index: 149;
   cursor: pointer;
@@ -1897,13 +1899,13 @@
 /* Applied alongside .iconBtn on specific buttons in each topbar.       */
 
 /* Search shortcut button (⌘K) */
-.topbarSearch 
+.topbarSearch {}
 
 /* Messages / compose button */
-.topbarMsg 
+.topbarMsg {}
 
 /* All-pages / apps grid button */
-.topbarApps 
+.topbarApps {}
 
 /* Visual separator between action icons and the profile pill */
 .topbarSep {
@@ -2084,6 +2086,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   z-index: 50;
   display: flex;

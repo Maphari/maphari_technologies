@@ -808,6 +808,7 @@
 
 .dsvStatCard {
   background: var(--glass-card);
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
   border-top-color: rgb(255 255 255 / 12%);

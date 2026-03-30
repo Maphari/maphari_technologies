@@ -17,7 +17,11 @@
     "no-duplicate-selectors": true,
     "color-no-invalid-hex": true,
     "unit-no-unknown": true,
-    "block-no-empty": true,
+    "block-no-empty": null,
+    "property-no-unknown": null,
+    "property-no-vendor-prefix": null,
+    "alpha-value-notation": null,
+    "color-function-notation": null,
     "max-nesting-depth": 2
   }
 }

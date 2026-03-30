@@ -137,6 +137,7 @@
   gap: 4px;
   z-index: 20;
   box-shadow: var(--shadow-island);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   overflow: visible;
   transition: none;
@@ -267,6 +268,7 @@
   top: 50%;
   transform: translateY(-50%) translateX(-6px);
   background: rgb(4 3 10 / 92%);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: 1px solid rgb(200 241 53 / 22%);
   border-left: 2px solid var(--lime);
@@ -577,6 +579,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 60%);
+  -webkit-backdrop-filter: blur(6px) saturate(1.05);
   backdrop-filter: blur(6px) saturate(1.05);
   z-index: 40;
   display: grid;
@@ -1097,6 +1100,7 @@
   gap: 12px;
   padding: 0 14px;
   background: rgb(255 255 255 / 4%);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow: 0 8px 28px rgb(0 0 0 / 28%), inset 0 1px 0 rgb(255 255 255 / 8%);
   border-radius: 14px;
@@ -1284,6 +1288,7 @@
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 16px;
   box-shadow: 0 18px 40px rgb(0 0 0 / 32%), inset 0 1px 0 rgb(255 255 255 / 6%);
+  -webkit-backdrop-filter: none;
   backdrop-filter: none;
   z-index: 100;
   overflow: hidden;
@@ -1862,6 +1867,7 @@
   overflow: clip;
   min-width: 0;
   border-radius: var(--r-md);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: var(--shadow-card);
   position: relative;
@@ -4027,6 +4033,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 50%);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   z-index: 50;
   display: grid;
@@ -4975,6 +4982,7 @@
   inset: 0;
   background: rgb(0 0 0 / 60%);
   z-index: 19; /* below rail island (z:20) — island stays visible on mobile open */
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   cursor: pointer;
   animation: overlayFadeIn 0.2s ease forwards;
@@ -5038,18 +5046,18 @@
 /* Applied alongside .iconBtn on specific buttons in each topbar.       */
 
 /* Search shortcut button (⌘K) */
-.topbarSearch 
+.topbarSearch {}
 
 /* Messages / compose button */
-.topbarMsg 
+.topbarMsg {}
 
 /* All-pages / apps grid button */
-.topbarApps 
+.topbarApps {}
 
 /* Targeted mobile-hide selectors added to specific topbar buttons */
-.topbarAppsBtn 
-.topbarHelpBtn 
-.topbarQuickMenu 
+.topbarAppsBtn {}
+.topbarHelpBtn {}
+.topbarQuickMenu {}
 
 /* Visual separator between action icons and the profile pill */
 .topbarSep {

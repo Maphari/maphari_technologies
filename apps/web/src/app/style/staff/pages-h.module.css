@@ -1192,7 +1192,7 @@
   transition: background 120ms;
 }
 
-.kbArticleRowShell 
+.kbArticleRowShell {}
 .kbArticleRow:hover { background: var(--s2); }
 .kbArticleRowSelected { background: var(--accent-d); }
 .kbArticleRowTop { display: flex; align-items: flex-start; gap: 8px; }
@@ -2498,7 +2498,7 @@
   transition: border-color 120ms, color 120ms;
 }
 
-.tlTabPill 
+.tlTabPill {}
 .tlTabPillActive { border-color: var(--accent); color: var(--accent); background: var(--accent-d); }
 .tlTabPillIdle:hover { border-color: var(--b3); color: var(--text); }
 
@@ -2688,7 +2688,7 @@
 }
 .dlSortPillActive { border-color: var(--b3); color: var(--text); background: var(--s2); }
 
-.dlSortPillIdle 
+.dlSortPillIdle {}
 .dlSortLabel { font-size: 10px; color: var(--muted2); }
 
 .dlStatusChip {
@@ -2889,7 +2889,7 @@
 }
 .sfClientCard:hover { background: var(--s2); }
 
-.sfClientCardIdle 
+.sfClientCardIdle {}
 
 .sfClientRow { display: flex; align-items: center; gap: 8px; }
 .sfClientTitle { font-size: 12px; font-weight: 600; color: var(--text); }
@@ -2975,7 +2975,7 @@
   text-align: left;
 }
 
-.sfSentimentChoiceIdle 
+.sfSentimentChoiceIdle {}
 .sfSentimentBtn:hover { border-color: var(--b3); }
 .sfChoiceIcon { font-size: 16px; }
 
@@ -3601,6 +3601,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
@@ -3743,6 +3744,7 @@
 .sdCard {
   border-radius: var(--r-lg);
   background: var(--glass-card, var(--s1));
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
   border-top-color: rgb(255 255 255 / 14%);

@@ -835,6 +835,7 @@
 
 .stgv2Panel {
   background: var(--glass-card);
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
   border-top-color: rgb(255 255 255 / 12%);
@@ -1396,6 +1397,7 @@
 
 .ppStatCard {
   background: var(--glass-card);
+  -webkit-backdrop-filter: blur(var(--glass-sm));
   backdrop-filter: blur(var(--glass-sm));
   border: 1px solid var(--b2);
   border-top-color: rgb(255 255 255 / 12%);
@@ -2278,6 +2280,7 @@
   position: fixed;
   inset: 0;
   background: rgb(0 0 0 / 62%);
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   z-index: 1200;
   display: flex;
