@@ -302,6 +302,7 @@ export function ExecutiveDashboardPage({ session, onNotify, onNavigate }: Props)
         />
         <PipelineWidget
           label="Project Status"
+          className={widgetStyles.span2}
           stages={[
             { label: "In Progress", count: activeProjects, total: projects.length || 1 },
             { label: "Planning",    count: projects.filter(p => p.status === "PLANNING").length, total: projects.length || 1 },
