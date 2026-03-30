@@ -72,6 +72,9 @@ function encryptPref(userId: string, prefKey: string, value: string): string {
   return encryptField(value, process.env.INTEGRATION_ENCRYPTION_KEY!, prefAad(userId, prefKey));
 }
 
+// Always throws on decrypt failure (CREDENTIAL_DECRYPT_FAILED) — never returns null.
+// Plan specified string|null but throw-only is safer: null would silently suppress
+// downstream operations rather than surfacing the decrypt error as HTTP 500.
 function decryptPref(
   userId: string,
   prefKey: string,
