@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model PublicApiProject {
+  id          String          @id @default(cuid())
+  clientId    String
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  keys        PublicApiKey[]
+}
+
+model PublicApiKey {
+  id               String             @id @default(cuid())
+  projectId        String
+  project          PublicApiProject   @relation(fields: [projectId], references: [id])
+  clientId         String
+  label            String
+  keyId            String             @unique
+  keySecretEnc     String
+  status           PublicApiKeyStatus @default(ACTIVE)
+  expiresAt        DateTime?
+  createdBy        String?
+  revokedAt        DateTime?
+  revokedBy        String?
+  lastUsedAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+enum PublicApiKeyStatus {
+  ACTIVE
+  REVOKED
+}
