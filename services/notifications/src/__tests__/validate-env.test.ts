@@ -1,14 +1,20 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { validateRequiredEnv } from "../lib/validate-env.js";
 
 describe("validateRequiredEnv (notifications service)", () => {
+  const ORIGINAL = { ...process.env };
+  afterEach(() => {
+    for (const key of Object.keys(process.env)) {
+      if (!(key in ORIGINAL)) delete process.env[key];
+    }
+    Object.assign(process.env, ORIGINAL);
+  });
+
   it("throws when NOTIFICATION_CALLBACK_SECRET is missing", () => {
-    const saved = process.env.NOTIFICATION_CALLBACK_SECRET;
     delete process.env.NOTIFICATION_CALLBACK_SECRET;
     expect(() => validateRequiredEnv(["NOTIFICATION_CALLBACK_SECRET"])).toThrow(
       /NOTIFICATION_CALLBACK_SECRET/
     );
-    if (saved !== undefined) process.env.NOTIFICATION_CALLBACK_SECRET = saved;
   });
 });
 
