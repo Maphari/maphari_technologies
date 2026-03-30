@@ -1490,7 +1490,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance): Promise<v
       } as ApiResponse);
     }
 
-    if (body.configurationSummary != null && typeof body.configurationSummary === "object" && !Array.isArray(body.configurationSummary)) {
+    if (body.configurationSummary !== undefined && body.configurationSummary !== null && typeof body.configurationSummary === "object" && !Array.isArray(body.configurationSummary)) {
       const validationError = validateConfigSummary(
         providerKey,
         body.configurationSummary as Record<string, unknown>
