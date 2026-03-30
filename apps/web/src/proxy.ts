@@ -65,6 +65,7 @@ function detectAppType(host: string): AppType {
 }
 
 export function proxy(request: NextRequest): NextResponse {
+  const nonce = randomBytes(16).toString("base64");
   const host = request.headers.get("host") ?? "";
   const { pathname, search } = request.nextUrl;
   const appType = detectAppType(host);
@@ -125,13 +126,14 @@ export function proxy(request: NextRequest): NextResponse {
   const redirectPath = resolveAuthRedirect({ pathname, search, role });
   if (redirectPath) return NextResponse.redirect(new URL(redirectPath, request.url));
 
-  // ── Forward x-app-type header to page/layout server components ──────────
+  // ── Forward x-app-type + nonce headers to page/layout server components ──
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-app-type", appType);
+  requestHeaders.set("x-csp-nonce", nonce);
 
-  return NextResponse.next({
-    request: { headers: requestHeaders }
-  });
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("Content-Security-Policy-Report-Only", buildCsp(nonce));
+  return response;
 }
 
 export const config = {
